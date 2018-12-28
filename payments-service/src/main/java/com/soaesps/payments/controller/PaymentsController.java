@@ -1,5 +1,9 @@
 package com.soaesps.payments.controller;
 
+import com.soaesps.payments.DataModels.Transactions.BaseCheck;
+import com.soaesps.payments.DataModels.Transactions.BaseClientBill;
+import com.soaesps.payments.DataModels.Transactions.BaseTransaction;
+import com.soaesps.payments.service.PaymentsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
