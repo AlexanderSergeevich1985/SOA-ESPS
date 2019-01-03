@@ -35,6 +35,13 @@ public class MsgHeader implements Serializable {
         this.timestamp = timestamp;
         this.bodySize = bodySize;
     }
+    public MsgHeader(MsgHeader other) {
+        this.messageId = other.messageId;
+        this.messageType = other.messageType;
+        this.timestamp = other.timestamp;
+        this.bodySize = other.bodySize;
+        this.deviceUID = other.deviceUID;
+    }
     public void setMessageId(String messageId) { this.messageId = messageId; }
     public String getMessageId() { return this.messageId; }
     public void setMessageType(String messageType) { this.messageType = messageType; }
