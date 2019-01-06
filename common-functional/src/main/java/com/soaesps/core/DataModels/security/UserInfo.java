@@ -4,14 +4,14 @@ import com.soaesps.core.DataModels.BaseEntity;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import javax.persistence.*;
 import javax.validation.constraints.Email;
 
 @Entity
-@Table(name = "USER_INFO")
+@Table(name = "USERS_INFO")
 public class UserInfo extends BaseEntity {
+    public static final String USER_PROFILE_PROPERTY = "userProfile";
+
     @Column(name = "first_name", length = 40)
     private String firstName;
 
@@ -21,15 +21,19 @@ public class UserInfo extends BaseEntity {
     @Column(name = "last_name", length = 70)
     private String lastName;
 
-    @Column(name = "BIRTHDAY", length = 70)
+    @Column(name = "birthday", length = 70)
     private String birthday;
 
-    @Column(name = "EMAIL", unique = true, nullable = false)
+    @Column(name = "email", unique = true, nullable = false)
     @Email
     private String email;
 
-    @Column(name = "TELEPHONE", length = 35)
+    @Column(name = "telephone", length = 35)
     private String telephone;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_profile_id")
+    private UserProfile userProfile;
 
     public UserInfo() {}
 
