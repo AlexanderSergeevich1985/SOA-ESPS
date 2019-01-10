@@ -9,12 +9,13 @@
 	<name>soaesps</name>
 
 	<modules>
+		<module>common-functional</module>
 		<module>config</module>
-		<module>account-service</module>
+		<module>gateway-api</module>
+		<module>auth-service</module>
 		<module>payments-service</module>
-        <module>common-functional</module>
         <module>msg-process</module>
         <module>profile-service</module>
-    </modules>
+	</modules>
 
 </project>
