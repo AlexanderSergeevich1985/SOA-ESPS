@@ -24,3 +24,8 @@ spring:
       fail-fast: true
       password: ${CONFIG_SERVICE_PASSWORD}
       username: ${CONFIG_USER_NAME}
+  kafka:
+    bootstrap-servers: localhost:9092
+    topic:
+      result: msg-process-result
+    group-id: msgresult
