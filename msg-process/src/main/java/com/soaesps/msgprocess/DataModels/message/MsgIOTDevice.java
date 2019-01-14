@@ -24,8 +24,8 @@ public class MsgIOTDevice implements Serializable {
     private MsgHeader header;
     private MsgBody body;
 
-    MsgIOTDevice() {}
-    MsgIOTDevice(MsgHeader header, MsgBody body) {
+    public MsgIOTDevice() {}
+    public MsgIOTDevice(MsgHeader header, MsgBody body) {
         this.header = header;
         this.body = body;
     }

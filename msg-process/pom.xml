@@ -96,6 +96,12 @@
             <artifactId>spring-cloud-stream-binder-kafka</artifactId>
             <version>LATEST</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>LATEST</version>
+        </dependency>
     </dependencies>
 
     <build>
