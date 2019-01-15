@@ -12,10 +12,11 @@
 		<module>common-functional</module>
 		<module>config</module>
 		<module>gateway-api</module>
+		<module>kafka-starter</module>
 		<module>auth-service</module>
 		<module>payments-service</module>
 		<module>msg-process</module>
 		<module>profile-service</module>
-	</modules>
+    </modules>
 
 </project>
