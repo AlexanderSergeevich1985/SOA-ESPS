@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: kafka-starter
+    config:
+      uri: http://config:8888
+      fail-fast: true
+      password: ${CONFIG_SERVICE_PASSWORD}
+      username: ${CONFIG_USER_NAME}
+  kafka:
+    consumer:
+    auto-offset-reset: earliest
+kafka:
+  topics:
+    name: msg-process-result
+    num-partitions: 5
+    replication-factor: 2
