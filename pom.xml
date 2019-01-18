@@ -17,6 +17,7 @@
 		<module>payments-service</module>
 		<module>msg-process</module>
 		<module>profile-service</module>
-    </modules>
+		<module>documents-service</module>
+	</modules>
 
 </project>
