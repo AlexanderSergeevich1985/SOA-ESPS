@@ -1,4 +1,4 @@
-package com.soaesps.msgprocess;
+package com.soaesps.documentsservice;
 
 import feign.RequestInterceptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,15 +31,15 @@ import org.springframework.security.oauth2.provider.token.ResourceServerTokenSer
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 @EnableConfigurationProperties
 @Configuration
-public class MsgProcessApplication extends ResourceServerConfigurerAdapter {
+public class DocumentsApplication extends ResourceServerConfigurerAdapter {
     @Autowired
     private ResourceServerTokenServices tokenServices;
 
     @Autowired
     private ResourceServerProperties rsp;
 
-    public static void main(String[] args) throws InterruptedException {
-        SpringApplication.run(MsgProcessApplication.class, args);
+    public static void main(String[] args) {
+        SpringApplication.run(DocumentsApplication.class, args);
     }
 
     @Bean
@@ -67,7 +67,7 @@ public class MsgProcessApplication extends ResourceServerConfigurerAdapter {
     public void configure(HttpSecurity http) throws Exception {
         http.anonymous().disable()
                 .authorizeRequests()
-                .antMatchers("/apps/**").permitAll().anyRequest().authenticated()
+                .antMatchers("/documents/**").permitAll().anyRequest().authenticated()
                 .and().exceptionHandling().accessDeniedHandler(new OAuth2AccessDeniedHandler());
     }
 }
