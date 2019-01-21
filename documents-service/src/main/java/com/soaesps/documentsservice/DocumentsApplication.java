@@ -22,8 +22,10 @@ import org.springframework.security.oauth2.config.annotation.web.configuration.E
 import org.springframework.security.oauth2.config.annotation.web.configuration.ResourceServerConfigurerAdapter;
 import org.springframework.security.oauth2.provider.error.OAuth2AccessDeniedHandler;
 import org.springframework.security.oauth2.provider.token.ResourceServerTokenServices;
+import org.springframework.web.reactive.config.EnableWebFlux;
 
 @SpringBootApplication
+@EnableWebFlux
 @EnableResourceServer
 @EnableDiscoveryClient
 @EnableOAuth2Client
