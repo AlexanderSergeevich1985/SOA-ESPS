@@ -1,0 +1,15 @@
+server:
+  port: 8888
+
+security:
+  user:
+    password: ${CONFIG_SERVICE_PASSWORD}
+
+spring:
+  cloud:
+    config:
+      server:
+        git:
+          uri: ${HOME}/mcg-config
+  profiles:
+     active: native
