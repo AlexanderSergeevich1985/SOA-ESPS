@@ -11,5 +11,7 @@ spring:
       server:
         git:
           uri: ${HOME}/mcg-config
-  profiles:
-     active: native
+        #native:
+        #  searchLocations: ${HOME}/files-config
+  #profiles:
+     #active: native
