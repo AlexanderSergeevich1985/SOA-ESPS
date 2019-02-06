@@ -8,6 +8,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.security.Principal;
 import java.util.List;
 
 @RestController
@@ -16,10 +17,20 @@ public class ProfileController {
     @Autowired
     private ProfileService profileService;
 
+    @GetMapping("/current")
+    public UserProfile getUserProfile(Principal principal) {
+        return profileService.getUserProfile(principal.getName());
+    }
+
     @PreAuthorize("#oauth2.hasScope('user_'.concat(#id).concat('_view')) or #oauth2.clientHasRole('admin')")
     @GetMapping("/{id}")
     public UserProfile getUserProfile(@PathVariable("id") long id) {
         return profileService.getUserProfile(id);
+    }
+
+    @GetMapping("/currentuserdevice")
+    public List<DeviceInfo> getUserDevice(Principal principal) {
+        return profileService.getUserDevice(principal.getName());
     }
 
     @PreAuthorize("#oauth2.hasScope('user_'.concat(#id).concat('_view')) or #oauth2.clientHasRole('admin')")
@@ -27,7 +38,6 @@ public class ProfileController {
     public List<DeviceInfo> getUserDevice(@PathVariable("id") long id) {
         return profileService.getUserDevice(id);
     }
-
     @PreAuthorize("#oauth2.clientHasRole('admin')")
     @PostMapping("/creation")
     public void createUserProfile(@Valid @RequestBody UserProfile profile) {
@@ -35,9 +45,14 @@ public class ProfileController {
     }
 
     @PreAuthorize("#oauth2.hasScope('user_'.concat(#id).concat('_edit'))")
-    @PostMapping("/renovation")
+    @PutMapping("/renovation")
     public void updateUserProfile(@Valid @RequestBody UserProfile profile) {
         profileService.updateProfile(profile);
+    }
+
+    @PutMapping("/current")
+    public void updateUserProfile(Principal principal, @Valid @RequestBody UserProfile profile) {
+        profileService.updateProfile(principal.getName(), profile);
     }
 
     @PreAuthorize("#oauth2.clientHasRole('admin')")
