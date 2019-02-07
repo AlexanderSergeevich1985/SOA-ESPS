@@ -1,5 +1,7 @@
 package com.soaesps.core.DataModels.device;
 
+import com.soaesps.core.DataModels.BaseEntity;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.persistence.Column;
@@ -10,7 +12,7 @@ import java.security.Principal;
 
 @Entity
 @Table(name = "DEVICES_INFO")
-public class DeviceInfo implements Principal {
+public class DeviceInfo extends BaseEntity implements Principal {
     @Column(name = "device_uuid", nullable = false)
     private String deviceUUID;
 
