@@ -5,6 +5,7 @@ import com.soaesps.core.DataModels.security.UserProfile;
 import com.soaesps.profile.client.AuthServiceClient;
 import com.soaesps.profile.repository.UserProfilesRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.validation.constraints.NotNull;
@@ -14,6 +15,7 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+@Service
 public class ProfileServiceImpl implements ProfileService {
     static private final Logger logger;
 
