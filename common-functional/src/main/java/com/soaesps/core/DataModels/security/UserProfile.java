@@ -1,77 +1,43 @@
 package com.soaesps.core.DataModels.security;
 
 import com.soaesps.core.DataModels.BaseEntity;
-import org.springframework.security.core.userdetails.UserDetails;
+import com.soaesps.core.DataModels.device.DeviceInfo;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.persistence.*;
+import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.util.List;
 
 @Entity
 @Table(name="USER_PROFILES")
-public class UserProfile extends BaseEntity implements UserDetails {
-    @ManyToMany(fetch = FetchType.LAZY, cascade = { CascadeType.ALL })
-    @JoinTable(
-            name = "USERS_ROLES",
-            joinColumns = { @JoinColumn(name = "user_profile_id") },
-            inverseJoinColumns = { @JoinColumn(name = "role_id") }
-    )
-    private List<Role> authorities;
-
-    @Column(nullable = false)
-    @Size(min = 8, max = 40)
-    private String password;
-
-    @Column(nullable = false)
+public class UserProfile extends BaseEntity {
+    @Column(name = "login", nullable = false)
     @Size(min = 8, max = 100)
     private String userName;
 
     @OneToOne(fetch = FetchType.LAZY, mappedBy = UserInfo.USER_PROFILE_PROPERTY)
     private UserInfo userInfo;
 
-    @Column(name = "is_account_expired", nullable = false)
-    private boolean accountNonExpired;
+    @ManyToMany(fetch = FetchType.LAZY, cascade = { CascadeType.ALL })
+    @JoinTable(
+            name = "USERS_DEVICE",
+            joinColumns = { @JoinColumn(name = "user_profile_id") },
+            inverseJoinColumns = { @JoinColumn(name = "device_id") }
+    )
+    private List<DeviceInfo> devices;
 
-    @Column(name = "is_locked", nullable = false)
-    private boolean accountNonLocked;
-
-    @Column(name = "is_credentials_expired", nullable = false)
-    private boolean credentialsNonExpired;
-
-    @Column(name = "is_enabled", nullable = false)
-    private boolean enabled;
+    @Transient
+    private BaseUserDetails userDetails;
 
     public UserProfile() {}
 
-    @Nullable
-    @Override
-    public List<Role> getAuthorities() {
-        return null;
-    }
-
-    public void setAuthorities(@Nullable List<Role> authorities) {
-        this.authorities = authorities;
-    }
-
-    @Nonnull
-    @Override
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(@Nonnull String password) {
-        this.password = password;
-    }
-
-    @Nonnull
-    @Override
-    public String getUsername() {
+    @NotNull
+    public String getUserName() {
         return userName;
     }
 
-    public void setUserName(@Nonnull String userName) {
+    public void setUserName(@NotNull String userName) {
         this.userName = userName;
     }
 
@@ -84,40 +50,21 @@ public class UserProfile extends BaseEntity implements UserDetails {
         this.userInfo = userInfo;
     }
 
-    @Override
-    public boolean isAccountNonExpired() {
-        return accountNonExpired;
+    public List<DeviceInfo> getDevices() {
+        return devices;
     }
 
-    public void setAccountNonExpired(boolean accountNonExpired) {
-        this.accountNonExpired = accountNonExpired;
+    public void setDevices(List<DeviceInfo> devices) {
+        this.devices = devices;
     }
 
-    @Override
-    public boolean isAccountNonLocked() {
-        return accountNonLocked;
+    @Nullable
+    public BaseUserDetails getUserDetails() {
+        return userDetails;
     }
 
-    public void setAccountNonLocked(boolean accountNonLocked) {
-        this.accountNonLocked = accountNonLocked;
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return credentialsNonExpired;
-    }
-
-    public void setCredentialsNonExpired(boolean credentialsNonExpired) {
-        this.credentialsNonExpired = credentialsNonExpired;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
+    public void setUserDetails(@Nullable BaseUserDetails userDetails) {
+        this.userDetails = userDetails;
     }
 
     @Override
@@ -132,8 +79,7 @@ public class UserProfile extends BaseEntity implements UserDetails {
             return false;
         }
         UserProfile other = (UserProfile) obj;
-        if(this.userName == null || other.getUsername() == null || !this.userName.equalsIgnoreCase(other.getUsername())) return false;
-        if(this.password == null || other.getPassword() == null || !this.password.equals(other.getPassword())) return false;
+        if(this.userName == null || other.getUserName() == null || !this.userName.equalsIgnoreCase(other.getUserName())) return false;
         return true;
     }
 }

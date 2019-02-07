@@ -4,7 +4,10 @@ import com.soaesps.core.DataModels.security.UserProfile;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface UserProfilesRepository extends CrudRepository<UserProfile, String> {
-    UserProfile findByName(String name);
+    Optional<UserProfile> findByName(String name);
+    Optional<UserProfile> findById(final long id);
 }

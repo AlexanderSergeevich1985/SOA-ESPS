@@ -21,7 +21,7 @@ public interface ProfileService {
 
     boolean updateProfile(final String name, @NotNull UserProfile profile);
 
-    void deleteUserProfile(final long id);
+    boolean deleteUserProfile(final long id);
 
     List<String> listAllProfiles();
 }
