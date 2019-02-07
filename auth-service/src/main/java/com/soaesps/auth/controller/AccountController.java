@@ -16,7 +16,7 @@ public class AccountController {
 	@Autowired
 	private BaseUserDetailsService userDetailsService;
 
-	@PreAuthorize("#oauth2.clientHasRole('admin') and #oauth2.hasScope('server')")
+	@PreAuthorize("#oauth2.clientHasRole('admin') or #oauth2.hasScope('server')")
 	@GetMapping("/{name}")
 	public UserDetails getUserDetailsByName(@PathVariable String name) {
 		return userDetailsService.loadUserByUsername(name);
@@ -32,15 +32,15 @@ public class AccountController {
 		userDetailsService.updateUserAccount(principal.getName(), account);
 	}
 
-	@PreAuthorize("#oauth2.clientHasRole('admin') and #oauth2.hasScope('server')")
+	@PreAuthorize("#oauth2.clientHasRole('admin') or #oauth2.hasScope('server')")
 	@PostMapping("/creation")
 	public void createNewUser(@Valid @RequestBody BaseUserDetails userDetails) {
 		userDetailsService.createUserAccount(userDetails);
 	}
 
-	@PreAuthorize("#oauth2.clientHasRole('admin') and #oauth2.hasScope('server')")
-	@PostMapping("/{name}/removing")
-	public void createNewUser(@PathVariable String name) {
+	@PreAuthorize("#oauth2.clientHasRole('admin') or #oauth2.hasScope('server')")
+	@DeleteMapping("/{name}/removing")
+	public void removeUser(@PathVariable String name) {
 		userDetailsService.deleteUserAccount(name);
 	}
 }
