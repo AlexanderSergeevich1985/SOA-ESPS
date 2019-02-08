@@ -4,6 +4,7 @@ import com.soaesps.auth.repository.UserDetailsRepository;
 import com.soaesps.core.DataModels.security.BaseUserDetails;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -14,9 +15,11 @@ public class BaseUserDetailsServiceImpl implements BaseUserDetailsService {
     @Autowired
     private UserDetailsRepository repository;
 
-    public UserDetails loadUserByUsername(final String userName) {
+    public UserDetails loadUserByUsername(final String userName) throws UsernameNotFoundException {
         Optional<BaseUserDetails> result = this.repository.findByName(userName);
-        if(!result.isPresent()) return null;
+        if(result == null) {
+            throw new UsernameNotFoundException(userName);
+        }
         return result.get();
     }
 
