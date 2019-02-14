@@ -7,7 +7,7 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.time.Instant;
 
-public class RegisteredTask {
+public class CompletionTask {
     @Id
     private Long taskId;
 
@@ -15,11 +15,7 @@ public class RegisteredTask {
     @Size(min = 8, max = 50)
     private String workerNodeId;
 
-    @NotBlank
-    @Size(min = 8, max = 50)
-    private String reservedNodeId;
-
-    private Instant startTime;
+    private Instant endTime;
 
     @NotNull
     public Long getTaskId() {
@@ -39,21 +35,12 @@ public class RegisteredTask {
         this.workerNodeId = workerNodeId;
     }
 
-    @NotBlank
-    public String getReservedNodeId() {
-        return reservedNodeId;
-    }
-
-    public void setReservedNodeId(@NotBlank final String reservedNodeId) {
-        this.reservedNodeId = reservedNodeId;
-    }
-
     @Nullable
-    public Instant getStartTime() {
-        return startTime;
+    public Instant getEndTime() {
+        return endTime;
     }
 
-    public void setStartTime(@Nullable final Instant startTime) {
-        this.startTime = startTime;
+    public void setEndTime(@Nullable final Instant endTime) {
+        this.endTime = endTime;
     }
 }
