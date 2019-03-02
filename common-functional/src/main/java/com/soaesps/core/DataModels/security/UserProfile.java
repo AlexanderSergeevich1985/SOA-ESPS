@@ -1,5 +1,6 @@
 package com.soaesps.core.DataModels.security;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.soaesps.core.DataModels.BaseEntity;
 import com.soaesps.core.DataModels.device.DeviceInfo;
 
@@ -11,6 +12,7 @@ import java.util.List;
 
 @Entity
 @Table(name="USER_PROFILES")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class UserProfile extends BaseEntity {
     @Column(name = "login", nullable = false)
     @Size(min = 8, max = 100)

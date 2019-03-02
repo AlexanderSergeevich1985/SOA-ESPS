@@ -1,5 +1,6 @@
 package com.soaesps.core.DataModels.security;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.soaesps.core.DataModels.BaseEntity;
 
 import javax.annotation.Nonnull;
@@ -9,6 +10,7 @@ import javax.validation.constraints.Email;
 
 @Entity
 @Table(name = "USERS_INFO")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class UserInfo extends BaseEntity {
     public static final String USER_PROFILE_PROPERTY = "userProfile";
 

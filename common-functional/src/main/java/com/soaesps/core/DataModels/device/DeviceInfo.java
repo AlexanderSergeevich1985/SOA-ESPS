@@ -1,5 +1,6 @@
 package com.soaesps.core.DataModels.device;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.soaesps.core.DataModels.BaseEntity;
 
 import javax.annotation.Nonnull;
@@ -12,6 +13,7 @@ import java.security.Principal;
 
 @Entity
 @Table(name = "DEVICES_INFO")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class DeviceInfo extends BaseEntity implements Principal {
     @Column(name = "device_uuid", nullable = false)
     private String deviceUUID;

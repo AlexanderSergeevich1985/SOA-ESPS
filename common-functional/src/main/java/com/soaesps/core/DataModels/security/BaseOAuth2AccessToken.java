@@ -18,6 +18,7 @@
  */
 package com.soaesps.core.DataModels.security;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.soaesps.core.DataModels.BaseEntity;
 import com.soaesps.core.Utils.DateTimeHelper;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
@@ -31,6 +32,7 @@ import java.util.*;
 
 @Entity
 @Table(name = "ISSUED_ACCESS_TOKENS")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class BaseOAuth2AccessToken extends BaseEntity implements OAuth2AccessToken {
     @Column(name = "acc_token_value", length = 500, nullable = false)
     private String value;

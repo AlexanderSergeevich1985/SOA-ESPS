@@ -18,6 +18,7 @@
  */
 package com.soaesps.payments.DataModels.Transactions;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.soaesps.core.DataModels.BaseEntity;
 
 import javax.annotation.Nonnull;
@@ -25,6 +26,7 @@ import javax.persistence.*;
 
 @Entity
 @Table(name = "SERVER_BILLS")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class BaseServerBill extends BaseEntity {
     @Embedded
     ServerBillDesc serverBillDesc;

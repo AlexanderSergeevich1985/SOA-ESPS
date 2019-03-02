@@ -18,6 +18,7 @@
  */
 package com.soaesps.payments.DataModels.Transactions;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.soaesps.core.DataModels.BaseEntity;
 
 import javax.annotation.Nonnull;
@@ -26,6 +27,7 @@ import javax.persistence.*;
 
 @Entity
 @Table(name = "TRANSACTIONS")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class BaseTransaction extends BaseEntity {
     @Column(name = "transaction_id")
     private Long transactionId;

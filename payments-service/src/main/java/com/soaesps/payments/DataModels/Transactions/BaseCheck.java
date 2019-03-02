@@ -18,6 +18,7 @@
  */
 package com.soaesps.payments.DataModels.Transactions;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.soaesps.core.DataModels.BaseEntity;
 
 import javax.annotation.Nonnull;
@@ -25,6 +26,7 @@ import javax.persistence.*;
 
 @Entity
 @Table(name = "BASE_CHECK")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class BaseCheck extends BaseEntity {
     @Embedded
     private CheckDesc checkDesc;
