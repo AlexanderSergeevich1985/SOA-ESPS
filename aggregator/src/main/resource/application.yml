@@ -1,0 +1,7 @@
+rabbitmq:
+    queueName: "statistics"
+    topicExchangeName: "statistics_exchange"
+    host: "localhost:"
+    username: "rabbitmq"
+    password: ""
+    timeout: 900000
