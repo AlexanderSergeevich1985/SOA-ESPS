@@ -18,6 +18,7 @@
  */
 package com.soaesps.schedulerservice.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -30,13 +31,12 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class FailedDTO {
     @JsonProperty("start_period")
     private LocalDateTime startTime;
 
     @JsonProperty("end_period")
-    @JsonSerialize(using = LocalDateTimeSerializer.class)
-    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     private LocalDateTime endTime;
 
     private Map<String, Object> jobs = new HashMap<>();
@@ -70,18 +70,12 @@ public class FailedDTO {
         private String handlerName;
 
         @JsonProperty("start_time")
-        @JsonSerialize(using = LocalDateTimeSerializer.class)
-        @JsonDeserialize(using = LocalDateTimeDeserializer.class)
         private LocalDateTime startTime;
 
         @JsonProperty("exception_time")
-        @JsonSerialize(using = LocalDateTimeSerializer.class)
-        @JsonDeserialize(using = LocalDateTimeDeserializer.class)
         private LocalDateTime endTime;
 
         @JsonProperty("exception")
-        @JsonSerialize(using = ExceptionSerializer.class)
-        @JsonDeserialize(using = ExceptionDeserializer.class)
         private Exception exception;
 
         public String getHandlerName() {
