@@ -20,12 +20,6 @@ package com.soaesps.schedulerservice.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.soaesps.core.DataModels.serializer.ExceptionDeserializer;
-import com.soaesps.core.DataModels.serializer.ExceptionSerializer;
-import com.soaesps.core.DataModels.serializer.LocalDateTimeDeserializer;
-import com.soaesps.core.DataModels.serializer.LocalDateTimeSerializer;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -39,7 +33,7 @@ public class FailedDTO {
     @JsonProperty("end_period")
     private LocalDateTime endTime;
 
-    private Map<String, Object> jobs = new HashMap<>();
+    private Map<String, FailedDTO.JobDesc> jobs = new HashMap<>();
 
     public LocalDateTime getStartTime() {
         return startTime;
@@ -57,11 +51,15 @@ public class FailedDTO {
         this.endTime = endTime;
     }
 
-    public Map<String, Object> getJobs() {
+    public void setJob(final String jobName, final FailedDTO.JobDesc job) {
+        this.jobs.put(jobName, new FailedDTO.JobDesc());
+    }
+
+    public Map<String, FailedDTO.JobDesc> getJobs() {
         return jobs;
     }
 
-    public void setJobs(final Map<String, Object> jobs) {
+    public void setJobs(final Map<String, FailedDTO.JobDesc> jobs) {
         this.jobs = jobs;
     }
 
