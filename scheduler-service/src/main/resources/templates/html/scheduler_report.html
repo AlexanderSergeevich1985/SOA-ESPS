@@ -98,8 +98,8 @@
         <td><p class="parameter">1.</p></td>
         <td th:text="${incident.className}"></td>
         <td th:text="${incident.methodName}"></td>
-        <td th:text="${incident.startTime}"></td>
-        <td th:text="${incident.exceptionTime}"></td>
+        <td th:text="${#dates.format(incident.startTime, 'dd/MM/yyyy HH:mm:ss Z')}"></td>
+        <td th:text="${#dates.format(incident.exceptionTime, 'dd/MM/yyyy HH:mm:ss Z')}"></td>
         <td th:text="${incident.exceptionDesc}"></td>
         <td th:text="${incident.additionalInfo}"></td>
     </tr>

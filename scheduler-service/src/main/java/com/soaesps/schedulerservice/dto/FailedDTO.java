@@ -65,6 +65,9 @@ public class FailedDTO {
 
     static public class JobDesc {
         @JsonProperty("job_name")
+        private String className;
+
+        @JsonProperty("method_name")
         private String handlerName;
 
         @JsonProperty("start_time")
@@ -75,6 +78,17 @@ public class FailedDTO {
 
         @JsonProperty("exception")
         private Exception exception;
+
+        @JsonProperty("additional_info")
+        private String additionalInfo;
+
+        public String getClassName() {
+            return className;
+        }
+
+        public void setClassName(final String className) {
+            this.className = className;
+        }
 
         public String getHandlerName() {
             return handlerName;
@@ -106,6 +120,14 @@ public class FailedDTO {
 
         public void setException(Exception exception) {
             this.exception = exception;
+        }
+
+        public String getAdditionalInfo() {
+            return additionalInfo;
+        }
+
+        public void setAdditionalInfo(final String additionalInfo) {
+            this.additionalInfo = additionalInfo;
         }
     }
 }
