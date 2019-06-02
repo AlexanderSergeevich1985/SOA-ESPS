@@ -2,8 +2,10 @@ package com.soaesps.schedulerservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.soaesps.schedulerservice.dto.FailedDTO;
+import com.soaesps.schedulerservice.reports.SchedulerReport;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -17,7 +19,7 @@ import java.time.LocalDateTime;
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = FailedDTO.class, loader=AnnotationConfigContextLoader.class)
 public class SchedulerReportTest {
-    //@Autowired
+    @Autowired
     private SchedulerReport schedulerReport;
 
     private ObjectMapper mapper = new ObjectMapper();
