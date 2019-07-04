@@ -17,6 +17,9 @@ public class EventReport {
     @Column(name = "end_to", nullable = false)
     private LocalDateTime endTo;
 
+    @Column(name = "description", nullable = false)
+    private String description;
+
     public EventReport() {}
 
     public Integer getId() {

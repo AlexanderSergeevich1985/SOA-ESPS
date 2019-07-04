@@ -22,7 +22,7 @@ public class SchedulerReport {
     public ModelAndView getModelAndView() {
         ModelAndView mav = new ModelAndView();
         mav.setViewName("welcomePage");
-        mav.addObject("WelcomeMessage", message);
+        //mav.addObject("WelcomeMessage", message);
         return mav;
     }
 

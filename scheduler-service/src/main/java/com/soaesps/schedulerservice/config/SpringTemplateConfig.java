@@ -9,10 +9,10 @@ import org.thymeleaf.spring5.view.ThymeleafViewResolver;
 import org.thymeleaf.templatemode.TemplateMode;
 
 @Configuration
-@EnableWebMvc
+//@EnableWebMvc
 public class SpringTemplateConfig {
     @Bean
-    public SpringResourceTemplateResolver thymeleafTemplateResolver(SpringTemplateEngine templateEngine) {
+    public SpringResourceTemplateResolver thymeleafTemplateResolver() {
         SpringResourceTemplateResolver templateResolver = new SpringResourceTemplateResolver();
         templateResolver.setPrefix("/templates/html/");
         templateResolver.setSuffix(".html");

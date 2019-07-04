@@ -1,7 +1,7 @@
 package com.soaesps.schedulerservice.domain;
 
 import javax.persistence.*;
-import javax.validation.constraints.NotBlank;
+//import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
@@ -42,7 +42,7 @@ public class BaseEvent {
         return description;
     }
 
-    public void setDescription(@NotBlank final String description) {
+    public void setDescription(/*@NotBlank*/ final String description) {
         this.description = description;
     }
 }

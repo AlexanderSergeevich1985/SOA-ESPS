@@ -1,13 +1,17 @@
 package com.soaesps.schedulerservice.domain;
 
+import com.soaesps.core.Utils.convertor.hibernate.TimestampConverter;
+import org.hibernate.annotations.Type;
+
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 @Entity
-@Table(name = "public.soa_esps.event_audit")
+@Table(name = "soa_esps.event_audit")
 public class EventAudit {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Integer id;
 
@@ -15,8 +19,10 @@ public class EventAudit {
     @Column(name = "event_status", nullable = false)
     private EventStatus eventStatus;
 
-    @Column(name = "last_update", nullable = false)
-    private LocalDateTime timestamp;
+    @Column(name = "last_update")//, columnDefinition= "TIMESTAMP WITH TIME ZONE"
+    ///@Type(type="java.time.ZonedDateTime")
+    @Convert(converter = TimestampConverter.class)
+    private ZonedDateTime timestamp;
 
     public EventAudit() {}
 
@@ -36,11 +42,11 @@ public class EventAudit {
         this.eventStatus = eventStatus;
     }
 
-    public LocalDateTime getTimestamp() {
+    public ZonedDateTime getTimestamp() {
         return timestamp;
     }
 
-    public void setTimestamp(final LocalDateTime timestamp) {
+    public void setTimestamp(final ZonedDateTime timestamp) {
         this.timestamp = timestamp;
     }
 

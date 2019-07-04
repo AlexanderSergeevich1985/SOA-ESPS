@@ -1,6 +1,7 @@
 package com.soaesps.schedulerservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.soaesps.schedulerservice.config.SpringTemplateConfig;
 import com.soaesps.schedulerservice.dto.FailedDTO;
 import com.soaesps.schedulerservice.reports.SchedulerReport;
 import org.junit.Test;
@@ -17,7 +18,7 @@ import java.time.LocalDateTime;
 
 @SpringBootTest
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = FailedDTO.class, loader=AnnotationConfigContextLoader.class)
+@ContextConfiguration(classes = {SpringTemplateConfig.class, SchedulerReport.class}, loader=AnnotationConfigContextLoader.class)
 public class SchedulerReportTest {
     @Autowired
     private SchedulerReport schedulerReport;
