@@ -1,6 +1,7 @@
 package com.soaesps.schedulerservice.domain;
 
 import com.soaesps.core.Utils.convertor.hibernate.TimestampConverter;
+import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
 
 import javax.persistence.*;
@@ -11,7 +12,8 @@ import java.time.ZonedDateTime;
 @Table(name = "soa_esps.event_audit")
 public class EventAudit {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GenericGenerator(name="kaugen" , strategy="increment")
+    @GeneratedValue(generator="kaugen")
     @Column(name = "id", nullable = false)
     private Integer id;
 

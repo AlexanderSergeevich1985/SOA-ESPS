@@ -36,9 +36,14 @@ public class EventAuditRepositoryTest {
         Assert.assertNotNull(eventAuditRepository);
     }
 
+    @Transactional
     @Test
     public void B_get_all_test() {
         List<EventAudit> events = eventAuditRepository.findAll();
+        EventAudit event = events.get(0);
+        event.setId(null);
+        event.setEventStatus(EventAudit.EventStatus.REPORTED);
+        eventAuditRepository.save(getOneForTest());
         Assert.assertNotNull(events);
         print_result(events);
     }
