@@ -73,4 +73,14 @@ public class EventAudit {
             return "EventStatus [eventStatus=" + this.eventStatus + "]";
         }
     }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append("EventAudit [");
+        builder.append("id: ").append(id).append(", \n");
+        builder.append(eventStatus.toString()).append(", \n");
+        builder.append(timestamp.toString()).append("\n");
+        return builder.toString();
+    }
 }
