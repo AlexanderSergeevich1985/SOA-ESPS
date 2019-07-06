@@ -15,6 +15,7 @@ import org.springframework.test.context.support.AnnotationConfigContextLoader;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @SpringBootTest
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -26,7 +27,12 @@ public class SchedulerReportTest {
     private ObjectMapper mapper = new ObjectMapper();
 
     @Test
-    public void convert_withOut_Exception() throws IOException {
+    public void A_convert_withOut_Exception() throws IOException {
+        System.out.println(mapper.writeValueAsString(getFailedDto()));
+    }
+
+    @Test
+    public void B_convert_withOut_Exception() throws IOException {
         System.out.println(mapper.writeValueAsString(getFailedDto()));
     }
 
@@ -35,8 +41,8 @@ public class SchedulerReportTest {
 
         dto.setJob("1", new FailedDTO.JobDesc());
 
-        dto.setStartTime(LocalDateTime.now().minus(Duration.ofHours(10)));
-        dto.setEndTime(LocalDateTime.now().minus(Duration.ofHours(9)));
+        dto.setStartTimeStamp(LocalDateTime.now().minus(Duration.ofHours(10)).atZone(ZoneId.of("UTC")));
+        dto.setEndTimeStamp(LocalDateTime.now().minus(Duration.ofHours(9)).atZone(ZoneId.of("UTC")));
 
 
         return dto;

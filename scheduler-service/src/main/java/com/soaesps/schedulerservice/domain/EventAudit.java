@@ -1,6 +1,8 @@
 package com.soaesps.schedulerservice.domain;
 
 import com.soaesps.core.Utils.convertor.hibernate.TimestampConverter;
+import com.soaesps.schedulerservice.Utils.convertor.FailedDTOConvertor;
+import com.soaesps.schedulerservice.dto.FailedDTO;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
 
@@ -26,6 +28,10 @@ public class EventAudit {
     @Convert(converter = TimestampConverter.class)
     private ZonedDateTime timestamp;
 
+    @Column(name = "event_desc")
+    @Convert(converter = FailedDTOConvertor.class)
+    private FailedDTO failedDTO;
+
     public EventAudit() {}
 
     public Integer getId() {
@@ -50,6 +56,14 @@ public class EventAudit {
 
     public void setTimestamp(final ZonedDateTime timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public FailedDTO getFailedDTO() {
+        return failedDTO;
+    }
+
+    public void setFailedDTO(FailedDTO failedDTO) {
+        this.failedDTO = failedDTO;
     }
 
     public enum EventStatus {

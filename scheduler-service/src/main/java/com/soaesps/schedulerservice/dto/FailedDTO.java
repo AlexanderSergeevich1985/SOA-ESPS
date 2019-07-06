@@ -26,30 +26,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class FailedDTO {
-    @JsonProperty("start_period")
-    private LocalDateTime startTime;
-
-    @JsonProperty("end_period")
-    private LocalDateTime endTime;
-
+public class FailedDTO extends SysEventDTO {
     private Map<String, FailedDTO.JobDesc> jobs = new HashMap<>();
-
-    public LocalDateTime getStartTime() {
-        return startTime;
-    }
-
-    public void setStartTime(LocalDateTime startTime) {
-        this.startTime = startTime;
-    }
-
-    public LocalDateTime getEndTime() {
-        return endTime;
-    }
-
-    public void setEndTime(LocalDateTime endTime) {
-        this.endTime = endTime;
-    }
 
     public void setJob(final String jobName, final FailedDTO.JobDesc job) {
         this.jobs.put(jobName, new FailedDTO.JobDesc());
