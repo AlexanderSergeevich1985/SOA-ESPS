@@ -61,7 +61,7 @@ public class TimeSynchronizer {
         return this.new TimeMsg();
     }
 
-    private class TimeMsg {
+    private class TimeMsg {//implements  {
         private ZonedDateTime timeStamp;
 
         private Instant delayEst;

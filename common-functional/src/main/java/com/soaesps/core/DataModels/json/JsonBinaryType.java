@@ -1,4 +1,4 @@
-package com.soaesps.core.Utils.convertor.json;
+package com.soaesps.core.DataModels.json;
 
 import com.soaesps.core.Utils.JsonUtil;
 
@@ -7,7 +7,8 @@ import javax.persistence.AttributeConverter;
 import javax.persistence.Converter;
 import java.lang.reflect.ParameterizedType;
 
-public abstract class JsonHConvertor<T> implements AttributeConverter<T, String> {
+@Converter
+public class JsonBinaryType<T> implements AttributeConverter<T, String> {
     private Class<T> clazz;
 
     @Nullable

@@ -12,10 +12,10 @@ import org.springframework.test.context.web.WebAppConfiguration;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = AuthApplication.class)
+//@SpringBootTest(classes = AuthApplication.class)
 @WebAppConfiguration
 public class PredictionFilterImplTest {
-    @TestConfiguration
+    //@TestConfiguration
     static class EmployeeServiceImplTestContextConfiguration {
 
         @Bean
