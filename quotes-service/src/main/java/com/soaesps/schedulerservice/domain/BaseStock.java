@@ -15,11 +15,11 @@ public class BaseStock {
 
     private BigDecimal open;
 
+    private BigDecimal close;
+
     private BigDecimal high;
 
     private BigDecimal low;
-
-    private BigDecimal close;
 
     private BigDecimal volume;
 
@@ -86,6 +86,15 @@ public class BaseStock {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
+        builder.append("[BaseStock]: {").append('\n');
+        builder.append("timeStamp: ").append(timeStamp.toString()).append('\n');
+        builder.append("open: ").append(open.toString()).append('\n');
+        builder.append("close: ").append(close.toString()).append('\n');
+        builder.append("high: ").append(high.toString()).append('\n');
+        builder.append("low: ").append(low.toString()).append('\n');
+        builder.append("volume: ").append(volume.toString()).append('\n');
+        builder.append("adjClose: ").append(adjClose.toString()).append('\n');
+        builder.append("}");
         return builder.toString();
     }
 }
