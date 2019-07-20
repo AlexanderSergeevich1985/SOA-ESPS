@@ -1,4 +1,4 @@
-package com.soaesps.schedulerservice.domain;
+package com.soaesps.quotesservice.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;

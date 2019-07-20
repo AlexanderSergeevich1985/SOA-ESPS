@@ -1,4 +1,4 @@
-package com.soaesps.schedulerservice.domain;
+package com.soaesps.quotesservice.domain;
 
 import com.fasterxml.jackson.annotation.*;
 
