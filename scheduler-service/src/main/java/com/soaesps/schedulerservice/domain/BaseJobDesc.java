@@ -3,22 +3,12 @@ package com.soaesps.schedulerservice.domain;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.soaesps.core.Utils.convertor.hibernate.TimestampConverter;
 
-import javax.persistence.Column;
-import javax.persistence.Convert;
-import javax.persistence.Embeddable;
+import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 
 @Embeddable
 public class BaseJobDesc {
-    @JsonProperty("job_name")
-    @Column(name = "class_name")
-    private String className;
-
-    @JsonProperty("method_name")
-    @Column(name = "handler_name")
-    private String handlerName;
-
     @JsonProperty("start_time")
     @Column(name = "start_time")
     private LocalDateTime startTime;
@@ -36,21 +26,9 @@ public class BaseJobDesc {
     @Column(name = "additional_info")
     private String additionalInfo;
 
-    public String getClassName() {
-        return className;
-    }
-
-    public void setClassName(final String className) {
-        this.className = className;
-    }
-
-    public String getHandlerName() {
-        return handlerName;
-    }
-
-    public void setHandlerName(String handlerName) {
-        this.handlerName = handlerName;
-    }
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "scheduler_task")
+    private SchedulerTask task;
 
     public LocalDateTime getStartTime() {
         return startTime;

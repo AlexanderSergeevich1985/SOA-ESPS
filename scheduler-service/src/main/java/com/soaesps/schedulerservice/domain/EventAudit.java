@@ -23,8 +23,7 @@ public class EventAudit {
     @Column(name = "event_status", nullable = false)
     private EventStatus eventStatus;
 
-    @Column(name = "last_update")//, columnDefinition= "TIMESTAMP WITH TIME ZONE"
-    ///@Type(type="java.time.ZonedDateTime")
+    @Column(name = "last_update")
     @Convert(converter = TimestampConverter.class)
     private ZonedDateTime timestamp;
 
