@@ -15,13 +15,19 @@ public class LimitedQueue<T extends Serializable> extends BaseQueue<T> {
         super();
     }
 
+    public Persister getPersister() {
+        return persister;
+    }
+
+    public void setPersister(final Persister persister) {
+        this.persister = persister;
+    }
+
     @Override
     public boolean push(final T message) {
         if (getSize() >= DEFAULT_LIMIT) {
             if (persister != null) {
-                persister.persistMsg(message, ZonedDateTime.now(ZoneId.of("UTC")));
-
-                return true;
+                return persister.persistMsg(message, ZonedDateTime.now(ZoneId.of("UTC")));
             }
 
             return false;
