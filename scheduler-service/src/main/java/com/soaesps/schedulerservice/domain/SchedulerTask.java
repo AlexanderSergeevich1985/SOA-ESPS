@@ -21,6 +21,10 @@ public class SchedulerTask {
     @Column(name = "handler_name")
     private String handlerName;
 
+    @JsonProperty("timer")
+    @Column(name = "timer")
+    private String timer;
+
     protected SchedulerTask() {}
 
     public Integer getId() {
