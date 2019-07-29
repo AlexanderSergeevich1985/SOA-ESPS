@@ -21,9 +21,9 @@ public class SchedulerTask {
     @Column(name = "handler_name")
     private String handlerName;
 
-    @JsonProperty("timer")
-    @Column(name = "timer")
-    private String timer;
+    @JsonProperty("cron_trigger")
+    @Column(name = "cron_trigger")
+    private String cronTrigger;
 
     protected SchedulerTask() {}
 
@@ -49,5 +49,13 @@ public class SchedulerTask {
 
     public void setHandlerName(String handlerName) {
         this.handlerName = handlerName;
+    }
+
+    public String getCronTrigger() {
+        return cronTrigger;
+    }
+
+    public void setCronTrigger(final String cronTrigger) {
+        this.cronTrigger = cronTrigger;
     }
 }
