@@ -22,6 +22,7 @@
         <spring.boot.version>LATEST</spring.boot.version>
         <hibernate.version>LATEST</hibernate.version>
         <hibernate.validator.version>LATEST</hibernate.validator.version>
+        <jmh.version>1.21</jmh.version>
     </properties>
 
     <dependencies>
@@ -312,6 +313,25 @@
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp</artifactId>
             <version>3.4.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jblas</groupId>
+            <artifactId>jblas</artifactId>
+            <version>LATEST</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-core</artifactId>
+            <version>${jmh.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-generator-annprocess</artifactId>
+            <version>${jmh.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
