@@ -25,16 +25,16 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class LFUInMemoryCache<T, ID extends Serializable> extends AbstractInMemoryCache<T, ID> {
     static public long DEFAULT_OBSERVATION_TIME_INTERVAL = 1000;
 
-    private ConcurrentLinkedQueue<CacheKey<ID>> queue = new ConcurrentLinkedQueue<>();
+    private ConcurrentLinkedQueue<CacheKey<ID>> updateSeq = new ConcurrentLinkedQueue<>();
 
     @Override
     protected void updateStats(final AbstractInMemoryCache.CacheKey<ID> key) {
-        if (queue.size() >= DEFAULT_OBSERVATION_TIME_INTERVAL) {
-            CacheKey<ID> earlist = queue.poll();
-            earlist.setFrequency(earlist.getFrequency() - 1);
+        if (updateSeq.size() >= DEFAULT_OBSERVATION_TIME_INTERVAL) {
+            CacheKey<ID> earliest = updateSeq.poll();
+            earliest.setFrequency(earliest.getFrequency() - 1);
         }
         key.setFrequency(key.getFrequency() + 1);
-        queue.add(key);
+        updateSeq.add(key);
     }
 
     @Override
