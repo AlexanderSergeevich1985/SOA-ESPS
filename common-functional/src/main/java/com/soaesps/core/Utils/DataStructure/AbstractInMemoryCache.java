@@ -27,8 +27,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public abstract class AbstractInMemoryCache<T, ID extends Serializable> implements CacheI<T, ID> {
-    static public long DEFAULT_MAX_CASHE_SIZE = 1000;
+public abstract class AbstractInMemoryCache<ID extends Serializable, T> implements CacheI<ID, T> {
+    static public Integer DEFAULT_MAX_CASHE_SIZE = 1000;
 
     protected ConcurrentSkipListMap<CacheKey<ID>, ObjWraper<ID, T>> objects;
 
@@ -51,7 +51,7 @@ public abstract class AbstractInMemoryCache<T, ID extends Serializable> implemen
     @Override
     public T addWithEvict(final ID key, final T object) {
         ObjWraper<ID, T> oldObject = null;
-        if (DEFAULT_MAX_CASHE_SIZE >= objects.size()) {
+        if (objects.size() >= DEFAULT_MAX_CASHE_SIZE) {
             oldObject = objects.pollLastEntry().getValue();
         }
         CacheKey<ID> newKey = new CacheKey<>(key);

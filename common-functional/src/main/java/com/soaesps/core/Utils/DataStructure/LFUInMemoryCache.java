@@ -22,7 +22,7 @@ import java.io.Serializable;
 import java.util.Comparator;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class LFUInMemoryCache<T, ID extends Serializable> extends AbstractInMemoryCache<T, ID> {
+public class LFUInMemoryCache<ID extends Serializable, T> extends AbstractInMemoryCache<ID, T> {
     static public long DEFAULT_OBSERVATION_TIME_INTERVAL = 1000;
 
     private ConcurrentLinkedQueue<CacheKey<ID>> updateSeq = new ConcurrentLinkedQueue<>();

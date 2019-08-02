@@ -3,7 +3,7 @@ package com.soaesps.core.Utils.DataStructure;
 import java.io.Serializable;
 import java.util.Comparator;
 
-public interface CacheI<T, ID extends Serializable> {
+public interface CacheI<ID extends Serializable, T> {
     T addWithEvict(ID key, T object);
 
     T get(final ID key);

@@ -22,7 +22,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 
-public class LRUInMemoryCache<T, ID extends Serializable> extends AbstractInMemoryCache<T, ID> {
+public class LRUInMemoryCache<ID extends Serializable, T> extends AbstractInMemoryCache<ID, T> {
     @Override
     protected void updateStats(final CacheKey<ID> key) {
         LocalDateTime time = LocalDateTime.now();
