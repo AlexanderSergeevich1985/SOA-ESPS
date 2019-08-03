@@ -59,7 +59,7 @@ public abstract class AbstractInMemoryCache<ID extends Serializable, T> implemen
         newKey.setFrequency(1l);
         objects.put(newKey, new ObjWraper<>(object));
 
-        return oldObject.getItem();
+        return oldObject != null ? oldObject.getItem() : null;
     }
 
     @Override
