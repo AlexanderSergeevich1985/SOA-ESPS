@@ -3,7 +3,7 @@ package com.soaesps.core.Utils.DataStructure;
 import java.io.Serializable;
 import java.util.Comparator;
 
-public interface CacheI<ID extends Serializable, T> {
+public interface CacheI<ID extends Comparable<ID>, T> {
     long DEFAULT_MAX_CASHE_SIZE = 1000l;
 
     T addWithEvict(ID key, T object);

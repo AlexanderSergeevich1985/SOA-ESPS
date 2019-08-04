@@ -90,7 +90,7 @@ public class InMemoryCacheTest {
 
         {
             TestObject object = lruCache.peekLast();
-            Assert.assertTrue(object.getId() == newId);
+            Assert.assertTrue(object.getId().equals(newId));
         }
 
         {
@@ -102,7 +102,7 @@ public class InMemoryCacheTest {
         Assert.assertNotNull(firstObject);
         lruCache.get(firstObject.getId());
         TestObject lastObject = lruCache.peekLast();
-        Assert.assertTrue(firstObject.getId() == lastObject.getId());
+        Assert.assertEquals(firstObject.getId(), lastObject.getId());
     }
 
     @Test
@@ -120,8 +120,14 @@ public class InMemoryCacheTest {
         {
             TestObject object = lfuCache.get(newId);
             Assert.assertNotNull(object);
-            //whi
         }
+
+        TestObject firstObject = lfuCache.peekFirst();
+        Assert.assertNotNull(firstObject);
+        lfuCache.get(firstObject.getId());
+        lfuCache.get(firstObject.getId());
+        TestObject lastObject = lfuCache.peekLast();
+        Assert.assertEquals(firstObject.getId(), lastObject.getId());
     }
 
     private void fillCache(final CacheI<Long, TestObject> cache) {

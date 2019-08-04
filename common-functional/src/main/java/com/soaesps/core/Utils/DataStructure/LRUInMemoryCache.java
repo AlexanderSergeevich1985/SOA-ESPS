@@ -18,11 +18,10 @@
  */
 package com.soaesps.core.Utils.DataStructure;
 
-import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 
-public class LRUInMemoryCache<ID extends Serializable, T> extends AbstractInMemoryCache<ID, T> {
+public class LRUInMemoryCache<ID extends Comparable<ID>, T> extends AbstractInMemoryCache<ID, T> {
     @Override
     protected void updateStats(final CacheKey<ID> key) {
         LocalDateTime time = LocalDateTime.now();
@@ -35,11 +34,8 @@ public class LRUInMemoryCache<ID extends Serializable, T> extends AbstractInMemo
             if (o1.getKey().equals(o2.getKey())) {
                 return 0;
             }
-            if (o1.getLastUpdate() == null) {
-                return 1;
-            }
             int value = o1.getLastUpdate().compareTo(o2.getLastUpdate());
-            return value != 0 ? value : 1;
+            return value != 0 ? value : o1.getKey().compareTo(o2.getKey());
         };
     }
 }

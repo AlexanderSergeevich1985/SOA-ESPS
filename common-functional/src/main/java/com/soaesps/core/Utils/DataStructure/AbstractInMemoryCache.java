@@ -18,33 +18,32 @@
  */
 package com.soaesps.core.Utils.DataStructure;
 
-import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public abstract class AbstractInMemoryCache<ID extends Serializable, T> implements CacheI<ID, T> {
+public abstract class AbstractInMemoryCache<ID extends Comparable<ID>, T> implements CacheI<ID, T> {
     protected ConcurrentHashMap<ID, ObjWraper<ID, T>> objects;
 
-    protected ConcurrentSkipListMap<CacheKey<ID>, ObjWraper<ID, T>> keys;
+    protected ConcurrentSkipListSet<CacheKey<ID>> keys;
 
     public AbstractInMemoryCache() {
         objects = new ConcurrentHashMap<>();
-        keys = new ConcurrentSkipListMap<>(createComparator());
+        keys = new ConcurrentSkipListSet<>(createComparator());
     }
 
     public AbstractInMemoryCache(final Comparator<CacheKey<ID>> comparator) {
         objects = new ConcurrentHashMap<>();
-        keys = new ConcurrentSkipListMap<>(comparator);
+        keys = new ConcurrentSkipListSet<>(comparator);
     }
 
     public void setComparator(final Comparator<CacheKey<ID>> comparator) {
-        ConcurrentSkipListMap<CacheKey<ID>, ObjWraper<ID, T>> newKeys = new ConcurrentSkipListMap<>(comparator);
-        newKeys.putAll(keys);
+        ConcurrentSkipListSet<CacheKey<ID>> newKeys = new ConcurrentSkipListSet<>(comparator);
+        newKeys.addAll(keys);
         keys = newKeys;
     }
 
@@ -52,14 +51,14 @@ public abstract class AbstractInMemoryCache<ID extends Serializable, T> implemen
     public T addWithEvict(final ID key, final T object) {
         ObjWraper<ID, T> worstObject = null;
         if (objects.size() >= DEFAULT_MAX_CASHE_SIZE) {
-            CacheKey<ID> worstKey = keys.pollFirstEntry().getKey();
+            CacheKey<ID> worstKey = keys.pollFirst();
             worstObject = objects.remove(worstKey.getKey());
         }
-        CacheKey<ID> newKey = new CacheKey<>(key);
-        newKey.setLastUpdate(LocalDateTime.now());
-        newKey.setFrequency(1l);
-        keys.put(newKey, new ObjWraper<>(newKey, object));
-        objects.put(key, new ObjWraper<>(newKey, object));
+        CacheKey<ID> cacheKey = new CacheKey<>(key);
+        cacheKey.setLastUpdate(LocalDateTime.now());
+        cacheKey.setFrequency(1l);
+        keys.add(cacheKey);
+        objects.put(key, new ObjWraper<>(cacheKey, object));
 
         return worstObject != null ? worstObject.getItem() : null;
     }
@@ -73,7 +72,7 @@ public abstract class AbstractInMemoryCache<ID extends Serializable, T> implemen
         CacheKey<ID> cacheKey = wraper.getCacheKey();
         keys.remove(cacheKey);
         updateStats(cacheKey);
-        keys.put(cacheKey, wraper);
+        keys.add(cacheKey);
 
         return wraper.getItem();
     }
@@ -91,7 +90,7 @@ public abstract class AbstractInMemoryCache<ID extends Serializable, T> implemen
         CacheKey<ID> cacheKey = wraper.getCacheKey();
         keys.remove(cacheKey);
         updateStats(cacheKey);
-        keys.put(cacheKey, wraper);
+        keys.add(cacheKey);
 
         return oldObject;
     }
@@ -122,14 +121,14 @@ public abstract class AbstractInMemoryCache<ID extends Serializable, T> implemen
 
     @Override
     public T peekFirst() {
-        ObjWraper<ID, T> objWraper = objects.get(keys.firstEntry().getKey().getKey());
+        ObjWraper<ID, T> objWraper = objects.get(keys.first().getKey());
 
         return objWraper != null ? objWraper.getItem() : null;
     }
 
     @Override
     public T peekLast() {
-        ObjWraper<ID, T> objWraper = objects.get(keys.firstEntry().getKey().getKey());
+        ObjWraper<ID, T> objWraper = objects.get(keys.last().getKey());
 
         return objWraper != null ? objWraper.getItem() : null;
     }
@@ -193,7 +192,7 @@ public abstract class AbstractInMemoryCache<ID extends Serializable, T> implemen
         }
     }
 
-    public static class ObjWraper<ID extends Serializable, T> {
+    public static class ObjWraper<ID extends Comparable<ID>, T> {
         private CacheKey<ID> cacheKey;
 
         private T item;

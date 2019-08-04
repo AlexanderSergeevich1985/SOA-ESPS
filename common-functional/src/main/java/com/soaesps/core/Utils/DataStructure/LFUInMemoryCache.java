@@ -18,11 +18,10 @@
  */
 package com.soaesps.core.Utils.DataStructure;
 
-import java.io.Serializable;
 import java.util.Comparator;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class LFUInMemoryCache<ID extends Serializable, T> extends AbstractInMemoryCache<ID, T> {
+public class LFUInMemoryCache<ID extends Comparable<ID>, T> extends AbstractInMemoryCache<ID, T> {
     static public long DEFAULT_OBSERVATION_TIME_INTERVAL = 1000;
 
     private ConcurrentLinkedQueue<CacheKey<ID>> updateSeq = new ConcurrentLinkedQueue<>();
@@ -43,11 +42,8 @@ public class LFUInMemoryCache<ID extends Serializable, T> extends AbstractInMemo
             if (o1.getKey().equals(o2.getKey())) {
                 return 0;
             }
-            if (o1.getFrequency() == null) {
-                return 1;
-            }
             int value = o1.getFrequency().compareTo(o2.getFrequency());
-            return value != 0 ? value : 1;
+            return value != 0 ? value : o1.getKey().compareTo(o2.getKey());
         };
     }
 }
