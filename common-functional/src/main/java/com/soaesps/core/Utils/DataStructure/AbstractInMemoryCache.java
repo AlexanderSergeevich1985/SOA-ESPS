@@ -21,51 +21,59 @@ package com.soaesps.core.Utils.DataStructure;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Comparator;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public abstract class AbstractInMemoryCache<ID extends Serializable, T> implements CacheI<ID, T> {
-    protected ConcurrentSkipListMap<CacheKey<ID>, ObjWraper<ID, T>> objects;
+    protected ConcurrentHashMap<ID, ObjWraper<ID, T>> objects;
+
+    protected ConcurrentSkipListMap<CacheKey<ID>, ObjWraper<ID, T>> keys;
 
     public AbstractInMemoryCache() {
-        objects = new ConcurrentSkipListMap<>(createComparator());
+        objects = new ConcurrentHashMap<>();
+        keys = new ConcurrentSkipListMap<>(createComparator());
     }
 
     public AbstractInMemoryCache(final Comparator<CacheKey<ID>> comparator) {
-        objects = new ConcurrentSkipListMap<>(comparator);
+        objects = new ConcurrentHashMap<>();
+        keys = new ConcurrentSkipListMap<>(comparator);
     }
 
     public void setComparator(final Comparator<CacheKey<ID>> comparator) {
-        ConcurrentSkipListMap<CacheKey<ID>, ObjWraper<ID, T>> newObjects = new ConcurrentSkipListMap<>(comparator);
-        newObjects.putAll(objects);
-        objects = newObjects;
+        ConcurrentSkipListMap<CacheKey<ID>, ObjWraper<ID, T>> newKeys = new ConcurrentSkipListMap<>(comparator);
+        newKeys.putAll(keys);
+        keys = newKeys;
     }
 
     @Override
     public T addWithEvict(final ID key, final T object) {
-        ObjWraper<ID, T> oldObject = null;
+        ObjWraper<ID, T> worstObject = null;
         if (objects.size() >= DEFAULT_MAX_CASHE_SIZE) {
-            oldObject = objects.pollFirstEntry().getValue();
+            CacheKey<ID> worstKey = keys.pollFirstEntry().getKey();
+            worstObject = objects.remove(worstKey.getKey());
         }
         CacheKey<ID> newKey = new CacheKey<>(key);
         newKey.setLastUpdate(LocalDateTime.now());
         newKey.setFrequency(1l);
-        objects.put(newKey, new ObjWraper<>(newKey, object));
+        keys.put(newKey, new ObjWraper<>(newKey, object));
+        objects.put(key, new ObjWraper<>(newKey, object));
 
-        return oldObject != null ? oldObject.getItem() : null;
+        return worstObject != null ? worstObject.getItem() : null;
     }
 
     @Override
     public T get(final ID key) {
-        ObjWraper<ID, T> wraper = objects.remove(new CacheKey<>(key));
+        ObjWraper<ID, T> wraper = objects.get(key);
         if (wraper == null) {
             return null;
         }
         CacheKey<ID> cacheKey = wraper.getCacheKey();
+        keys.remove(cacheKey);
         updateStats(cacheKey);
-        objects.put(cacheKey, wraper);
+        keys.put(cacheKey, wraper);
 
         return wraper.getItem();
     }
@@ -74,17 +82,29 @@ public abstract class AbstractInMemoryCache<ID extends Serializable, T> implemen
 
     @Override
     public T updateValue(final ID key, final T object) {
-        CacheKey<ID> cacheKey = new CacheKey<>(key);
-        ObjWraper<ID, T> oldObject = objects.replace(cacheKey, new ObjWraper<>(cacheKey, object));
+        ObjWraper<ID, T> wraper = objects.get(key);
+        if (wraper == null) {
+            return null;
+        }
+        T oldObject = wraper.getItem();
+        wraper.setItem(object);
+        CacheKey<ID> cacheKey = wraper.getCacheKey();
+        keys.remove(cacheKey);
+        updateStats(cacheKey);
+        keys.put(cacheKey, wraper);
 
-        return oldObject != null ? oldObject.getItem() : null;
+        return oldObject;
     }
 
     @Override
     public T remove(final ID key) {
-        ObjWraper<ID, T> deleted = objects.remove(new CacheKey<>(key));
+        ObjWraper<ID, T> deleted = objects.remove(key);
+        if (deleted == null) {
+            return null;
+        }
+        keys.remove(deleted.getCacheKey());
 
-        return deleted != null ? deleted.getItem() : null;
+        return deleted.getItem();
     }
 
     @Override
@@ -102,12 +122,16 @@ public abstract class AbstractInMemoryCache<ID extends Serializable, T> implemen
 
     @Override
     public T peekFirst() {
-        return objects.firstEntry().getValue().getItem();
+        ObjWraper<ID, T> objWraper = objects.get(keys.firstEntry().getKey().getKey());
+
+        return objWraper != null ? objWraper.getItem() : null;
     }
 
     @Override
     public T peekLast() {
-        return objects.lastEntry().getValue().getItem();
+        ObjWraper<ID, T> objWraper = objects.get(keys.firstEntry().getKey().getKey());
+
+        return objWraper != null ? objWraper.getItem() : null;
     }
 
     abstract public Comparator<CacheKey<ID>> createComparator();
@@ -201,6 +225,10 @@ public abstract class AbstractInMemoryCache<ID extends Serializable, T> implemen
 
         public T getItem() {
             return item;
+        }
+
+        public void setItem(final T item) {
+            this.item = item;
         }
 
         @Override
