@@ -46,7 +46,8 @@ public class LFUInMemoryCache<ID extends Serializable, T> extends AbstractInMemo
             if (o1.getFrequency() == null) {
                 return 1;
             }
-            return o1.getFrequency().compareTo(o2.getFrequency());
+            int value = o1.getFrequency().compareTo(o2.getFrequency());
+            return value != 0 ? value : 1;
         };
     }
 }

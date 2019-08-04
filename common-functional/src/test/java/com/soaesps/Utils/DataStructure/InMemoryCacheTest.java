@@ -30,6 +30,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static com.soaesps.core.Utils.DataStructure.CacheI.DEFAULT_MAX_CASHE_SIZE;
+
 
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -79,6 +81,36 @@ public class InMemoryCacheTest {
         Assert.assertNotNull(lfuCache);
     }
 
+    @Test
+    public void B_lruCorrectWork() {
+        fillCache(lruCache);
+        Assert.assertTrue(lruCache.size() == DEFAULT_MAX_CASHE_SIZE);
+        Long newId = addOneToCache(lruCache);
+        Assert.assertEquals(lruCache.size(), DEFAULT_MAX_CASHE_SIZE);
+    }
+
+    @Test
+    public void C_lfuCorrectWork() {
+        fillCache(lfuCache);
+        Assert.assertTrue(lfuCache.size() == DEFAULT_MAX_CASHE_SIZE);
+        Long newId = addOneToCache(lfuCache);
+        Assert.assertEquals(lfuCache.size(), DEFAULT_MAX_CASHE_SIZE);
+    }
+
+    private void fillCache(final CacheI<Long, TestObject> cache) {
+        while (cache.size() < DEFAULT_MAX_CASHE_SIZE) {
+            TestObject object = TestObject.getOneTestObject();
+            cache.addWithEvict(object.getId(), object);
+        }
+    }
+
+    private Long addOneToCache(final CacheI<Long, TestObject> cache) {
+        TestObject object = TestObject.getOneTestObject();
+        cache.addWithEvict(object.getId(), object);
+
+        return object.getId();
+    }
+
     @Param({"LRU", "LFU"})
     private String type;
 
@@ -97,7 +129,7 @@ public class InMemoryCacheTest {
     }
 
     @Test
-    public void runJmhBenchmark() throws RunnerException {
+    public void D_runJmhBenchmark() throws RunnerException {
         Options opt = new OptionsBuilder()
                 .include(InMemoryCacheTest.class.getSimpleName())
                 .build();

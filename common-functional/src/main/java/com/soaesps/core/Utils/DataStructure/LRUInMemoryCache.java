@@ -38,7 +38,8 @@ public class LRUInMemoryCache<ID extends Serializable, T> extends AbstractInMemo
             if (o1.getLastUpdate() == null) {
                 return 1;
             }
-            return o1.getLastUpdate().compareTo(o2.getLastUpdate());
+            int value = o1.getLastUpdate().compareTo(o2.getLastUpdate());
+            return value != 0 ? value : 1;
         };
     }
 }
