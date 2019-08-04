@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class BaseQueue<T extends Serializable> {
+public class BaseQueue<T extends Serializable> implements QueueI<T> {
     private volatile long counter;
     private AtomicLong size = new AtomicLong(0);
     private AtomicBoolean writeFlag = new AtomicBoolean(true);
@@ -21,19 +21,23 @@ public class BaseQueue<T extends Serializable> {
         this.last.prev = this.first;
     }
 
+    @Override
     public long getSize() {
         return size.get();
     }
 
+    @Override
     public boolean push(final T transaction) {
-        if(!writeFlag.compareAndSet(true, false)) return false;
+        if(!writeFlag.compareAndSet(true, false)) {
+            return false;
+        }
         try {
-            if(this.size.get() > 1) {
+            if (this.size.get() > 1) {
                 final Node<T> newNode = new Node<>(last, transaction);
                 this.last.next = newNode;
                 this.last = newNode;
             }
-            else if(this.size.get() == 1) {
+            else if (this.size.get() == 1) {
                 this.last.item = transaction;
             }
             else {
@@ -47,11 +51,14 @@ public class BaseQueue<T extends Serializable> {
         }
     }
 
+    @Override
     public T pull() {
-        if(!readFlag.compareAndSet(true, false)) return null;
+        if (!readFlag.compareAndSet(true, false)) {
+            return null;
+        }
         try {
             T result;
-            if(this.size.get() > 2) {
+            if (this.size.get() > 2) {
                 result = this.first.item;
                 this.first.item = null;
                 final Node<T> next = this.first.next;
@@ -60,13 +67,15 @@ public class BaseQueue<T extends Serializable> {
                 this.first.prev = null;
                 this.size.decrementAndGet();
             }
-            else if(this.size.get() == 0) {
+            else if (this.size.get() == 0) {
                 return null;
             }
             else {
-                if(!writeFlag.compareAndSet(true, false)) return null;
+                if (!writeFlag.compareAndSet(true, false)) {
+                    return null;
+                }
                 result = this.first.item;
-                if(this.size.get() == 2) {
+                if (this.size.get() == 2) {
                     this.first.item = this.last.item;
                     this.last.item = null;
                 }
@@ -83,7 +92,7 @@ public class BaseQueue<T extends Serializable> {
         }
     }
 
-    private static class Node<E> {
+    protected static class Node<E> {
         volatile E item;
         Node<E> next;
         Node<E> prev;
