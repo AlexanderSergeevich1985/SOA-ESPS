@@ -1,19 +1,25 @@
 package com.soaesps.Utils.DataStructure;
 
+import com.soaesps.config.InMemoryCacheConfiguration;
 import com.soaesps.core.Utils.DataStructure.CacheI;
 import com.soaesps.core.Utils.DataStructure.LFUInMemoryCache;
 import com.soaesps.core.Utils.DataStructure.LRUInMemoryCache;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.runners.MethodSorters;
+import org.mockito.Spy;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.results.RunResult;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.io.Serializable;
 import java.text.DecimalFormat;
@@ -31,7 +37,9 @@ import java.util.logging.Logger;
 @Fork(value = 3, jvmArgs = {"-Xms2G", "-Xmx2G"})
 @Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.MILLISECONDS)
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.MILLISECONDS)
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(SpringJUnit4ClassRunner.class)
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@ContextConfiguration(classes = {InMemoryCacheConfiguration.class})
 public class InMemoryCacheTest {
     static private final Logger logger = Logger.getLogger(InMemoryCacheTest.class.getName());
 
@@ -39,7 +47,15 @@ public class InMemoryCacheTest {
 
     private static final double REFERENCE_SCORE = 37.132;
 
-    private Integer DEFAULT_COUNTER = 1000000;
+    private Integer DEFAULT_COUNTER = 10000;
+
+    @Spy
+    @Autowired
+    public CacheI<Long, TestObject> lruCache;
+
+    @Spy
+    @Autowired
+    public CacheI<Long, TestObject> lfuCache;
 
     static private CacheI<Long, TestObject> cache;
 
@@ -48,13 +64,19 @@ public class InMemoryCacheTest {
     @Before
     public void initTest() {
         try {
-            cache = new LRUInMemoryCache<>();
+            cache = new LFUInMemoryCache<>();
         }
         catch (final Exception ex) {
             if (logger.isLoggable(java.util.logging.Level.INFO)) {
                 logger.log(Level.INFO, "[InMemoryCacheTest/initTest] exception occurred: ", ex);
             }
         }
+    }
+
+    @Test
+    public void A_contextLoads() {
+        Assert.assertNotNull(lruCache);
+        Assert.assertNotNull(lfuCache);
     }
 
     @Param({"LRU", "LFU"})
@@ -87,14 +109,15 @@ public class InMemoryCacheTest {
     public void Benchmark_A_addSeveralTestObject() {
         int counter = 0;
         while (counter < DEFAULT_COUNTER) {
-            addOneTestObject();
+            addGetOneTestObject();
             ++counter;
         }
     }
 
-    public void addOneTestObject() {
+    public void addGetOneTestObject() {
         TestObject object = TestObject.getOneTestObject();
         cache.addWithEvict(object.getId(), object);
+        cache.get(object.getId());
     }
 
     static public class TestObject implements Serializable {

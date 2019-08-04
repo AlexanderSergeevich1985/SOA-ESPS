@@ -31,6 +31,14 @@ public class LRUInMemoryCache<ID extends Serializable, T> extends AbstractInMemo
 
     @Override
     public Comparator<CacheKey<ID>> createComparator() {
-        return (o1, o2) -> o1.getLastUpdate().compareTo(o2.getLastUpdate());
+        return (o1, o2) -> {
+            if (o1.getKey().equals(o2.getKey())) {
+                return 0;
+            }
+            if (o1.getLastUpdate() == null) {
+                return 1;
+            }
+            return o1.getLastUpdate().compareTo(o2.getLastUpdate());
+        };
     }
 }

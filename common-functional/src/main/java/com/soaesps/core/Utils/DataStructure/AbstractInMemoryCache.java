@@ -23,7 +23,6 @@ import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -31,8 +30,6 @@ public abstract class AbstractInMemoryCache<ID extends Serializable, T> implemen
     static public Integer DEFAULT_MAX_CASHE_SIZE = 1000;
 
     protected ConcurrentSkipListMap<CacheKey<ID>, ObjWraper<ID, T>> objects;
-
-    private AtomicLong size;
 
     public AbstractInMemoryCache() {
         objects = new ConcurrentSkipListMap<>(createComparator());
@@ -57,7 +54,7 @@ public abstract class AbstractInMemoryCache<ID extends Serializable, T> implemen
         CacheKey<ID> newKey = new CacheKey<>(key);
         newKey.setLastUpdate(LocalDateTime.now());
         newKey.setFrequency(1l);
-        objects.put(newKey, new ObjWraper<>(object));
+        objects.put(newKey, new ObjWraper<>(newKey, object));
 
         return oldObject != null ? oldObject.getItem() : null;
     }
@@ -79,7 +76,8 @@ public abstract class AbstractInMemoryCache<ID extends Serializable, T> implemen
 
     @Override
     public T updateValue(final ID key, final T object) {
-        ObjWraper<ID, T> oldObject = objects.replace(new CacheKey<>(key), new ObjWraper<>(object));
+        CacheKey<ID> cacheKey = new CacheKey<>(key);
+        ObjWraper<ID, T> oldObject = objects.replace(cacheKey, new ObjWraper<>(cacheKey, object));
 
         return oldObject != null ? oldObject.getItem() : null;
     }
@@ -101,7 +99,7 @@ public abstract class AbstractInMemoryCache<ID extends Serializable, T> implemen
 
     @Override
     public long size() {
-        return this.size.get();
+        return this.objects.size();
     }
 
     abstract public Comparator<CacheKey<ID>> createComparator();
@@ -114,7 +112,6 @@ public abstract class AbstractInMemoryCache<ID extends Serializable, T> implemen
         private ID key;
 
         public CacheKey(final ID key) {
-            lastUpdate = LocalDateTime.now();
             this.key = key;
         }
 
@@ -152,6 +149,9 @@ public abstract class AbstractInMemoryCache<ID extends Serializable, T> implemen
             if (object == null || !(object instanceof CacheKey)) {
                 return false;
             }
+            if (this == object) {
+                return true;
+            }
             CacheKey cacheKey = (CacheKey) object;
             if (key == null || cacheKey.getKey() == null) {
                 return false;
@@ -170,7 +170,8 @@ public abstract class AbstractInMemoryCache<ID extends Serializable, T> implemen
 
         private AtomicInteger counter = new AtomicInteger(1);
 
-        public ObjWraper(final T item) {
+        public ObjWraper(final CacheKey<ID> cacheKey, final T item) {
+            this.cacheKey = cacheKey;
             this.item = item;
         }
 

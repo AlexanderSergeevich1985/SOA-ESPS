@@ -39,6 +39,14 @@ public class LFUInMemoryCache<ID extends Serializable, T> extends AbstractInMemo
 
     @Override
     public Comparator<CacheKey<ID>> createComparator() {
-        return (o1, o2) -> o1.getFrequency().compareTo(o2.getFrequency());
+        return (o1, o2) -> {
+            if (o1.getKey().equals(o2.getKey())) {
+                return 0;
+            }
+            if (o1.getFrequency() == null) {
+                return 1;
+            }
+            return o1.getFrequency().compareTo(o2.getFrequency());
+        };
     }
 }
