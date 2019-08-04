@@ -47,7 +47,7 @@ public abstract class AbstractInMemoryCache<ID extends Serializable, T> implemen
     public T addWithEvict(final ID key, final T object) {
         ObjWraper<ID, T> oldObject = null;
         if (objects.size() >= DEFAULT_MAX_CASHE_SIZE) {
-            oldObject = objects.pollLastEntry().getValue();
+            oldObject = objects.pollFirstEntry().getValue();
         }
         CacheKey<ID> newKey = new CacheKey<>(key);
         newKey.setLastUpdate(LocalDateTime.now());
@@ -98,6 +98,16 @@ public abstract class AbstractInMemoryCache<ID extends Serializable, T> implemen
     @Override
     public long size() {
         return this.objects.size();
+    }
+
+    @Override
+    public T peekFirst() {
+        return objects.firstEntry().getValue().getItem();
+    }
+
+    @Override
+    public T peekLast() {
+        return objects.lastEntry().getValue().getItem();
     }
 
     abstract public Comparator<CacheKey<ID>> createComparator();

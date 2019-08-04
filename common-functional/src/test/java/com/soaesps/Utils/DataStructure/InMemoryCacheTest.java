@@ -49,7 +49,7 @@ public class InMemoryCacheTest {
 
     private static final double REFERENCE_SCORE = 37.132;
 
-    private Integer DEFAULT_COUNTER = 10000;
+    private long DEFAULT_COUNTER = 2 * DEFAULT_MAX_CASHE_SIZE;
 
     @Spy
     @Autowired
@@ -87,6 +87,22 @@ public class InMemoryCacheTest {
         Assert.assertTrue(lruCache.size() == DEFAULT_MAX_CASHE_SIZE);
         Long newId = addOneToCache(lruCache);
         Assert.assertEquals(lruCache.size(), DEFAULT_MAX_CASHE_SIZE);
+
+        {
+            TestObject object = lruCache.peekLast();
+            Assert.assertTrue(object.getId() == newId);
+        }
+
+        {
+            TestObject object = lruCache.get(newId);
+            Assert.assertNotNull(object);
+        }
+
+        TestObject firstObject = lruCache.peekFirst();
+        Assert.assertNotNull(firstObject);
+        lruCache.get(firstObject.getId());
+        TestObject lastObject = lruCache.peekLast();
+        Assert.assertTrue(firstObject.getId() == lastObject.getId());
     }
 
     @Test
@@ -95,6 +111,17 @@ public class InMemoryCacheTest {
         Assert.assertTrue(lfuCache.size() == DEFAULT_MAX_CASHE_SIZE);
         Long newId = addOneToCache(lfuCache);
         Assert.assertEquals(lfuCache.size(), DEFAULT_MAX_CASHE_SIZE);
+
+        {
+            TestObject object = lfuCache.peekLast();
+            Assert.assertEquals(object.getId(), newId);
+        }
+
+        {
+            TestObject object = lfuCache.get(newId);
+            Assert.assertNotNull(object);
+            //whi
+        }
     }
 
     private void fillCache(final CacheI<Long, TestObject> cache) {

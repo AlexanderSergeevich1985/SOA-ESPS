@@ -10,6 +10,10 @@ public interface CacheI<ID extends Serializable, T> {
 
     T get(final ID key);
 
+    T peekLast();
+
+    T peekFirst();
+
     T updateValue(final ID key, final T object);
 
     T remove(final ID key);
