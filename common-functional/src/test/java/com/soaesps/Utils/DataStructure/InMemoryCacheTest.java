@@ -81,7 +81,7 @@ public class InMemoryCacheTest {
     }
 
     @Test
-    public void B_lruCorrectWork() {
+    public void B_lruCorrectWork() throws InterruptedException {
         fillCache(lruCache);
         Assert.assertTrue(lruCache.size() == DEFAULT_MAX_CASHE_SIZE);
         Long newId = addOneToCache(lruCache);
@@ -99,7 +99,7 @@ public class InMemoryCacheTest {
 
         TestObject firstObject = lruCache.peekFirst();
         Assert.assertNotNull(firstObject);
-        lruCache.get(firstObject.getId());
+        TimeUnit.SECONDS.sleep(1);
         lruCache.get(firstObject.getId());
         TestObject lastObject = lruCache.peekLast();
         Assert.assertEquals(firstObject.getId(), lastObject.getId());
