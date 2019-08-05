@@ -18,6 +18,7 @@
  */
 package com.soaesps.core.Utils.DataStructure;
 
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -33,6 +34,7 @@ public class LFUInMemoryCache<ID extends Comparable<ID>, T> extends AbstractInMe
             earliest.setFrequency(earliest.getFrequency() - 1);
         }
         key.setFrequency(key.getFrequency() + 1);
+        key.setLastUpdate(LocalDateTime.now());
         updateSeq.add(key);
     }
 
@@ -43,7 +45,13 @@ public class LFUInMemoryCache<ID extends Comparable<ID>, T> extends AbstractInMe
                 return 0;
             }
             int value = o1.getFrequency().compareTo(o2.getFrequency());
-            return value != 0 ? value : o1.getKey().compareTo(o2.getKey());
+            if (0 == value) {
+                value = o1.getLastUpdate().compareTo(o2.getLastUpdate());
+                if (0 == value) {
+                    value = o1.getKey().compareTo(o2.getKey());
+                }
+            }
+            return value;
         };
     }
 }

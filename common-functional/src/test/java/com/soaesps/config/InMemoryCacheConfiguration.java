@@ -9,13 +9,13 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class InMemoryCacheConfiguration {
-    @Bean(value = "lruCache")
+    @Bean(name = "lruCache")
     public CacheI<Long, InMemoryCacheTest.TestObject> lruCache() {
-        return new LRUInMemoryCache<Long, InMemoryCacheTest.TestObject>();
+        return new LRUInMemoryCache<>();
     }
 
-    @Bean(value = "lfuCache")
+    @Bean(name = "lfuCache")
     public CacheI<Long, InMemoryCacheTest.TestObject> lfuCache() {
-        return new LFUInMemoryCache<Long, InMemoryCacheTest.TestObject>();
+        return new LFUInMemoryCache<>();
     }
 }

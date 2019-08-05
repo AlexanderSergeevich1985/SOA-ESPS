@@ -32,7 +32,6 @@ import java.util.logging.Logger;
 
 import static com.soaesps.core.Utils.DataStructure.CacheI.DEFAULT_MAX_CASHE_SIZE;
 
-
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @State(Scope.Benchmark)
@@ -101,12 +100,13 @@ public class InMemoryCacheTest {
         TestObject firstObject = lruCache.peekFirst();
         Assert.assertNotNull(firstObject);
         lruCache.get(firstObject.getId());
+        lruCache.get(firstObject.getId());
         TestObject lastObject = lruCache.peekLast();
         Assert.assertEquals(firstObject.getId(), lastObject.getId());
     }
 
     @Test
-    public void C_lfuCorrectWork() {
+    public void C_lfuCorrectWork() throws InterruptedException {
         fillCache(lfuCache);
         Assert.assertTrue(lfuCache.size() == DEFAULT_MAX_CASHE_SIZE);
         Long newId = addOneToCache(lfuCache);
@@ -124,7 +124,7 @@ public class InMemoryCacheTest {
 
         TestObject firstObject = lfuCache.peekFirst();
         Assert.assertNotNull(firstObject);
-        lfuCache.get(firstObject.getId());
+        TimeUnit.SECONDS.sleep(1);
         lfuCache.get(firstObject.getId());
         TestObject lastObject = lfuCache.peekLast();
         Assert.assertEquals(firstObject.getId(), lastObject.getId());
