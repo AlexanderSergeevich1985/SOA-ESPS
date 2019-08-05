@@ -2,6 +2,7 @@ package com.soaesps.Utils.DataStructure;
 
 import com.soaesps.config.BaseQueueTestConfiguration;
 import com.soaesps.core.Utils.DataStructure.BaseQueue;
+import com.soaesps.core.Utils.DataStructure.QueueI;
 import io.reactivex.Observable;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
@@ -29,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
-import static com.soaesps.core.Utils.DataStructure.CacheI.DEFAULT_MAX_CASHE_SIZE;
+import static com.soaesps.core.Utils.DataStructure.LimitedQueue.DEFAULT_LIMIT;
 
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -45,8 +46,8 @@ public class BaseQueueTest {
 
     @Spy
     @Autowired
-    @Qualifier("baseQueue")
-    private BaseQueue<TestObject> baseQueue;
+    @Qualifier("limitedQueue")
+    private QueueI<TestObject> limitedQueue;
 
     static private BaseQueue<TestObject> queue;
 
@@ -54,19 +55,26 @@ public class BaseQueueTest {
 
     @Test
     public void A_contextLoads() {
-        Assert.assertNotNull(baseQueue);
+        Assert.assertNotNull(limitedQueue);
     }
 
     @Test
-    public void B_baseQueueCorrectWork() throws InterruptedException {
-        fillQueue(baseQueue);
+    public void B_baseQueueCorrectWork() {
+        fillQueue(limitedQueue);
+        Assert.assertEquals(limitedQueue.getSize(), DEFAULT_LIMIT);
+        addOneTestObject(limitedQueue);
+        Assert.assertEquals(limitedQueue.getSize(), DEFAULT_LIMIT);
     }
 
-    private void fillQueue(final BaseQueue<TestObject> queue) {
-        while (queue.getSize() < DEFAULT_MAX_CASHE_SIZE) {
-            TestObject object = TestObject.getOneTestObject();
-            queue.push(object);
+    private void fillQueue(final QueueI<TestObject> queue) {
+        while (queue.getSize() < DEFAULT_LIMIT) {
+            addOneTestObject(queue);
         }
+    }
+
+    private void addOneTestObject(final QueueI<TestObject> queue) {
+        TestObject object = TestObject.getOneTestObject();
+        queue.push(object);
     }
 
     /*private Observable getObservable() {
@@ -100,7 +108,7 @@ public class BaseQueueTest {
             int counter = 0;
             int attempts = 0;
             while (attempts < 100) {
-                TestObject object = baseQueue.pull();
+                TestObject object = limitedQueue.pull();
                 if (object == null) {
                     ++counter;
                 }
@@ -116,7 +124,7 @@ public class BaseQueueTest {
             int attempts = 0;
             while (attempts < 100000) {
                 TestObject object = new TestObject();
-                baseQueue.push(object);
+                limitedQueue.push(object);
                 ++attempts;
                 System.out.println(attempts);
             }

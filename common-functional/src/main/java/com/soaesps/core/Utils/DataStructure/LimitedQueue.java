@@ -7,7 +7,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
 public class LimitedQueue<T extends Serializable> extends BaseQueue<T> {
-    public Integer DEFAULT_LIMIT = 100;
+    static public long DEFAULT_LIMIT = 100l;
 
     private Persister persister;
 
