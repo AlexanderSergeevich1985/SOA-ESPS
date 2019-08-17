@@ -12,8 +12,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-@Component
-public class AuthenticationProvider implements org.springframework.security.authentication.AuthenticationProvider {
+@Component("customAuthenticationProvider")
+public class CustomAuthenticationProvider implements org.springframework.security.authentication.AuthenticationProvider {
     @Autowired
     @Qualifier("passwordEncoder")
     private PasswordEncoder passwordEncoder;
