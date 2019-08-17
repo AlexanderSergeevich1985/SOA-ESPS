@@ -10,7 +10,7 @@ import org.springframework.util.Assert;
 
 import java.util.Optional;
 
-@Service
+@Service("baseUserDetailsServiceImpl")
 public class BaseUserDetailsServiceImpl implements BaseUserDetailsService {
     @Autowired
     private UserDetailsRepository repository;
