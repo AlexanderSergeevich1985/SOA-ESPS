@@ -3,6 +3,7 @@ package com.soaesps.core.DataModels.security;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.soaesps.core.DataModels.BaseEntity;
 import com.soaesps.core.DataModels.device.DeviceInfo;
+import org.hibernate.annotations.BatchSize;
 
 import javax.annotation.Nullable;
 import javax.persistence.*;
@@ -18,7 +19,7 @@ public class UserProfile extends BaseEntity {
     @Size(min = 8, max = 100)
     private String userName;
 
-    @OneToOne(fetch = FetchType.LAZY, mappedBy = UserInfo.USER_PROFILE_PROPERTY)
+    @OneToOne(fetch = FetchType.LAZY, mappedBy = UserInfo.USER_PROFILE_PROPERTY, optional = false)
     private UserInfo userInfo;
 
     @ManyToMany(fetch = FetchType.LAZY, cascade = { CascadeType.ALL })
@@ -27,6 +28,7 @@ public class UserProfile extends BaseEntity {
             joinColumns = { @JoinColumn(name = "user_profile_id") },
             inverseJoinColumns = { @JoinColumn(name = "device_id") }
     )
+    @BatchSize(size = 10)
     private List<DeviceInfo> devices;
 
     @Transient

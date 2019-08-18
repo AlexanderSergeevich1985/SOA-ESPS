@@ -33,7 +33,7 @@ public class UserInfo extends BaseEntity {
     @Column(name = "telephone", length = 35)
     private String telephone;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_profile_id")
     private UserProfile userProfile;
 

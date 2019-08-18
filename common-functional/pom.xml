@@ -22,6 +22,8 @@
         <spring.boot.version>LATEST</spring.boot.version>
         <hibernate.version>LATEST</hibernate.version>
         <hibernate.validator.version>LATEST</hibernate.validator.version>
+        <hibernate.ehcache.version>LATEST</hibernate.ehcache.version>
+        <data.jpa.version>LATEST</data.jpa.version>
         <jmh.version>1.21</jmh.version>
     </properties>
 
@@ -119,7 +121,7 @@
         <dependency>
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-ehcache</artifactId>
-            <version>${hibernate.version}</version>
+            <version>${hibernate.ehcache.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>net.sf.ehcache</groupId>
@@ -132,6 +134,12 @@
             <groupId>net.sf.ehcache</groupId>
             <artifactId>ehcache</artifactId>
             <version>2.10.5</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-jpa</artifactId>
+            <version>${data.jpa.version}</version>
         </dependency>
 
         <dependency>

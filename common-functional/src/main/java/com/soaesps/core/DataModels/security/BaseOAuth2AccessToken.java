@@ -47,7 +47,7 @@ public class BaseOAuth2AccessToken extends BaseEntity implements OAuth2AccessTok
     @Column(name = "session_uuid", length = 50, nullable = false)
     private String sessionUuid;
 
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, optional = false)
     @PrimaryKeyJoinColumn
     private OAuth2RefreshToken refreshToken;
 
