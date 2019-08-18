@@ -1,6 +1,8 @@
 package com.soaesps.core.DataModels.security;
 
 import com.soaesps.core.DataModels.BaseEntity;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.annotations.Cache;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import javax.annotation.Nonnull;
@@ -9,6 +11,10 @@ import javax.persistence.*;
 import javax.validation.constraints.Size;
 import java.util.List;
 
+@Entity
+@Table(name = "T_USER_DETAILS")
+@Cacheable
+@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE, region = "STATIC_DATA")
 public class BaseUserDetails extends BaseEntity implements UserDetails {
     @ManyToMany(fetch = FetchType.LAZY, cascade = { CascadeType.ALL })
     @JoinTable(
