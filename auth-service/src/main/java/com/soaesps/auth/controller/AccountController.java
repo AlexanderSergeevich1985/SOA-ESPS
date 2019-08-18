@@ -1,12 +1,19 @@
 package com.soaesps.auth.controller;
 
+import com.soaesps.auth.domain.CustomAuthenticationToken;
+import com.soaesps.auth.service.AuthenticationService;
 import com.soaesps.auth.service.BaseUserDetailsService;
 import com.soaesps.core.DataModels.security.BaseUserDetails;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.ServletRequest;
 import javax.validation.Valid;
 import java.security.Principal;
 
@@ -15,6 +22,18 @@ import java.security.Principal;
 public class AccountController {
 	@Autowired
 	private BaseUserDetailsService userDetailsService;
+
+	@Autowired
+	private AuthenticationService authenticationService;
+
+	@PreAuthorize("permitAll()")
+	@PostMapping(value = "/authenticate", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<OAuth2AccessToken> authenticate(ServletRequest servletRequest, @RequestBody CustomAuthenticationToken token) {
+		final OAuth2AccessToken accessToken = authenticationService.authorize(token);
+
+		return new ResponseEntity<>(accessToken, HttpStatus.OK);
+	}
+
 
 	@PreAuthorize("#oauth2.clientHasRole('admin') or #oauth2.hasScope('server')")
 	@GetMapping("/{name}")
