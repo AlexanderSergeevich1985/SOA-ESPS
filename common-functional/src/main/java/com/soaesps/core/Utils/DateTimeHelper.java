@@ -76,6 +76,22 @@ public class DateTimeHelper {
             timer.start();
             return timer;
         }
+
+        public Instant getStart() {
+            return start;
+        }
+
+        public void setStart(final Instant start) {
+            this.start = start;
+        }
+
+        public Instant getStop() {
+            return stop;
+        }
+
+        public void setStop(final Instant stop) {
+            this.stop = stop;
+        }
     }
 
     public static Long timeUnitConvert(@Nonnull final TimeUnit from, @Nonnull final TimeUnit to, @Nonnull final Long duration) {
