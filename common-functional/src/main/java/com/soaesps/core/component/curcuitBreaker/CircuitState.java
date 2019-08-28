@@ -39,6 +39,10 @@ public enum CircuitState {
         this.value = state.getValue();
     }
 
+    protected void setState(final CircuitState state) {
+        this.value = state.getValue();
+    }
+
     public CircuitState next() {
         state.changeState(this);
 
