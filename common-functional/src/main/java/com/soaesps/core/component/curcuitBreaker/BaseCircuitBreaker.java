@@ -124,7 +124,7 @@ public class BaseCircuitBreaker {
         }
 
         public double updateStats(final Double oldValue, final Double newValue) {
-            return calculator.update(newValue);
+            return calculator.update(oldValue, newValue);
         }
 
         public String getJobKey() {
@@ -159,7 +159,7 @@ public class BaseCircuitBreaker {
 
         private LightDeviationCalculator calculator;
 
-        public JobDesc(final BaseJobDesc jobDesc, final LightDeviationCalculator calculator) {
+        public OverralJobDesc(final BaseJobDesc jobDesc, final LightDeviationCalculator calculator) {
             this.jobDesc = jobDesc;
             this.calculator = calculator;
         }
