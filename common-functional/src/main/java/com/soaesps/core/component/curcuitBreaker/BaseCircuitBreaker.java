@@ -68,7 +68,7 @@ public class BaseCircuitBreaker {
         if (jobDesc == null) {
             return;
         }
-        jobDesc
+        jobDesc.updateStats(oldValue, newValue);
     }
 
     public void updateStatistic(final String jobKey, final Double oldValue, final Double newValue) {
@@ -108,6 +108,51 @@ public class BaseCircuitBreaker {
     }
 
     static public class JobDesc {
+        private String jobKey;
+
+        private BaseJobDesc jobDesc;
+
+        private LightDeviationCalculator calculator;
+
+        public JobDesc(final BaseJobDesc jobDesc, final LightDeviationCalculator calculator) {
+            this.jobDesc = jobDesc;
+            this.calculator = calculator;
+        }
+
+        public double updateStats(final Double newValue) {
+            return calculator.update(newValue);
+        }
+
+        public double updateStats(final Double oldValue, final Double newValue) {
+            return calculator.update(newValue);
+        }
+
+        public String getJobKey() {
+            return jobKey;
+        }
+
+        public void setJobKey(final String jobKey) {
+            this.jobKey = jobKey;
+        }
+
+        public BaseJobDesc getJobDesc() {
+            return jobDesc;
+        }
+
+        public void setJobDesc(final BaseJobDesc jobDesc) {
+            this.jobDesc = jobDesc;
+        }
+
+        public LightDeviationCalculator getCalculator() {
+            return calculator;
+        }
+
+        public void setCalculator(final LightDeviationCalculator calculator) {
+            this.calculator = calculator;
+        }
+    }
+
+    static public class OverralJobDesc {
         private String jobKey;
 
         private BaseJobDesc jobDesc;

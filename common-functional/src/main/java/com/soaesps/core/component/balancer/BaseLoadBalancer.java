@@ -14,6 +14,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 public class BaseLoadBalancer {
+    private ConcurrentHashMap<String, UsedNodeWrapper> usedNodesReg = new ConcurrentHashMap<>();
+
     private ConcurrentSkipListSet<UsedNodeWrapper> usedNodes = new ConcurrentSkipListSet<>(createComparatorUsed());
 
     private ConcurrentSkipListSet<NodeWrapper> nodes = new ConcurrentSkipListSet<>(createComparator());
@@ -23,6 +25,14 @@ public class BaseLoadBalancer {
 
     public NodeWrapper getBestNodeToUse() {
         NodeWrapper nodeWrapper = nodes.pollLast();
+        usedNodes.add(new UsedNodeWrapper(nodeWrapper));
+
+        return nodeWrapper;
+    }
+
+    public NodeWrapper updateNodeStatistic(final String nodeKey, final String jobKey) {
+        UsedNodeWrapper nodeWrapper = usedNodesReg.get(nodeKey);
+        JobDescWrapper jobDescWrapper = nodeWrapper.get
         usedNodes.add(new UsedNodeWrapper(nodeWrapper));
 
         return nodeWrapper;
@@ -67,6 +77,10 @@ public class BaseLoadBalancer {
 
         public UsedNodeWrapper(final ExecutorNode executorNode, final LightMeanCalculator lightMeanCalculator) {
             super(executorNode, lightMeanCalculator);
+        }
+
+        public JobDescWrapper getJobsDesc() {
+            return jobs.;
         }
 
         public void setJobDesc(final JobDescWrapper jobDescWrapper) {
