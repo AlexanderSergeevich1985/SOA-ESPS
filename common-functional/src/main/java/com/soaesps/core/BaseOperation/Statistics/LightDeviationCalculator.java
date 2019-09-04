@@ -40,6 +40,18 @@ public class LightDeviationCalculator extends LightMeanCalculator {
         return deviation;
     }
 
+    @Override
+    public double update(final double oldValue, final double newValue) {
+        double oldMean = super.update(oldValue, newValue);
+        variance -= (Math.pow(oldValue, 2) / super.getSize());
+        variance += (Math.pow(newValue, 2) / super.getSize());
+        variance += Math.pow(oldMean, 2);
+        variance -= Math.pow(super.getMean(), 2);
+        deviation = Math.sqrt(variance);
+
+        return deviation;
+    }
+
     public double getDeviation() {
         return deviation;
     }
