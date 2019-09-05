@@ -29,6 +29,14 @@ public class BaseJobDesc {
     @Column(name = "additional_info")
     private String additionalInfo;
 
+    public String getJobKey() {
+        return jobKey;
+    }
+
+    public void setJobKey(final String jobKey) {
+        this.jobKey = jobKey;
+    }
+
     public LocalDateTime getStartTime() {
         return startTime;
     }

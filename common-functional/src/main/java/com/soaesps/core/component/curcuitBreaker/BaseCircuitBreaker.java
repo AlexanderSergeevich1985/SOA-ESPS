@@ -31,12 +31,15 @@ public class BaseCircuitBreaker {
         if (jobDesc == null) {
             return null;
         }
-        double oldValue = jobDesc.updateStats((double) spentTime);
-        this.jobsDescs.get(jobKey).updateStats(oldValue, (double) spentTime);
+
         final CircuitState state = circuitStates.get(nodeId);
         if (jobDesc.getCalculator().getMean() > threshold) {
             state.next();
         }
+
+        double oldValue = jobDesc.getCalculator().getMean();
+        jobDesc.updateStats((double) spentTime);
+        updateGeneralStats(jobKey, oldValue, jobDesc.getCalculator().getMean());
 
         return state;
     }
