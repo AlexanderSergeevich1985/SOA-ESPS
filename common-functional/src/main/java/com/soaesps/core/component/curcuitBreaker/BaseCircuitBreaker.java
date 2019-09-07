@@ -2,6 +2,7 @@ package com.soaesps.core.component.curcuitBreaker;
 
 import com.soaesps.core.BaseOperation.Statistics.LightDeviationCalculator;
 import com.soaesps.core.DataModels.task.BaseJobDesc;
+import org.terracotta.statistics.Statistic;
 
 import javax.validation.constraints.NotNull;
 import java.util.Map;
@@ -33,8 +34,17 @@ public class BaseCircuitBreaker {
         }
 
         final CircuitState state = circuitStates.get(nodeId);
-        if (jobDesc.getCalculator().getMean() > threshold) {
-            state.next();
+        final JobDesc reference = jobsDescs.get(jobKey);
+        if (StatisticComparator.isOutliers(spentTime, reference)) {
+            if (state == CircuitState.Half_Open) {
+                state.prev();
+            }
+            else if (state == CircuitState.Closed && StatisticComparator.needToClosed(spentTime, jobDesc, reference)) {
+                state.next();
+            }
+        }
+        else {
+            
         }
 
         double oldValue = jobDesc.getCalculator().getMean();
@@ -197,6 +207,16 @@ public class BaseCircuitBreaker {
 
         public void setCalculator(final LightDeviationCalculator calculator) {
             this.calculator = calculator;
+        }
+    }
+
+    static public class StatisticComparator<T> {
+        static public boolean isOutliers(final Long spentTime, final JobDesc reference) {
+            return spentTime > threshold;
+        }
+
+        static public boolean needToClosed(final Long spentTime, final JobDesc nodeJobDesc, final JobDesc reference) {
+            return spentTime > threshold;
         }
     }
 }
