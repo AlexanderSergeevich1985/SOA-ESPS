@@ -49,6 +49,12 @@ public enum CircuitState {
         return this;
     }
 
+    public CircuitState prev() {
+        state.reverseState(this);
+
+        return this;
+    }
+
     static public abstract class State {
         private int value;
 
@@ -57,6 +63,10 @@ public enum CircuitState {
         }
 
         abstract public void changeState(final CircuitState circuitState);
+
+        public boolean reverseState(final CircuitState circuitState) {
+            return false;
+        }
 
         public int getValue() {
             return value;
@@ -94,6 +104,12 @@ public enum CircuitState {
 
         public void changeState(final CircuitState circuitState) {
             circuitState.setState(new ClosedState());
+        }
+
+        @Override
+        public boolean reverseState(final CircuitState circuitState) {
+            circuitState.setState(new OpenState());
+            return true;
         }
     }
 }
