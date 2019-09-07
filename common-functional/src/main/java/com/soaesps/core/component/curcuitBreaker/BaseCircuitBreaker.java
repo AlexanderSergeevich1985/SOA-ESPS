@@ -39,12 +39,14 @@ public class BaseCircuitBreaker {
             if (state == CircuitState.Half_Open) {
                 state.prev();
             }
-            else if (state == CircuitState.Closed && StatisticComparator.needToClosed(spentTime, jobDesc, reference)) {
+            else if (state == CircuitState.Closed && StatisticComparator.needToOpen(spentTime, jobDesc, reference)) {
                 state.next();
             }
         }
         else {
-            
+            if (state == CircuitState.Half_Open && StatisticComparator.canToClosed(spentTime, jobDesc, reference)) {
+                state.prev();
+            }
         }
 
         double oldValue = jobDesc.getCalculator().getMean();
@@ -215,7 +217,11 @@ public class BaseCircuitBreaker {
             return spentTime > threshold;
         }
 
-        static public boolean needToClosed(final Long spentTime, final JobDesc nodeJobDesc, final JobDesc reference) {
+        static public boolean canToClosed(final Long spentTime, final JobDesc nodeJobDesc, final JobDesc reference) {
+            return spentTime > threshold;
+        }
+
+        static public boolean needToOpen(final Long spentTime, final JobDesc nodeJobDesc, final JobDesc reference) {
             return spentTime > threshold;
         }
     }
