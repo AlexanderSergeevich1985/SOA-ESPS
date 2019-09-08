@@ -53,6 +53,24 @@ public class LightMeanCalculator {
         return oldMean;
     }
 
+    public double incSize(final double newValue) {
+        final double oldMean = this.mean;
+        this.mean = (size * this.mean + newValue) / (size + 1);
+        ++this.size;
+        sampler.updateMean(mean);
+
+        return oldMean;
+    }
+
+    public double decSize(final double oldValue) {
+        final double oldMean = this.mean;
+        this.mean = (size * this.mean - oldValue) / (size - 1);
+        --this.size;
+        sampler.updateMean(mean);
+
+        return oldMean;
+    }
+
     public double getMean() {
         return this.mean;
     }
