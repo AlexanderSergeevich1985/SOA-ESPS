@@ -2,8 +2,8 @@ package com.soaesps.core.component.curcuitBreaker;
 
 import com.soaesps.core.BaseOperation.Statistics.LightDeviationCalculator;
 import com.soaesps.core.DataModels.task.BaseJobDesc;
-import org.terracotta.statistics.Statistic;
 
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -45,13 +45,12 @@ public class BaseCircuitBreaker {
         }
         else {
             if (state == CircuitState.Half_Open && StatisticComparator.canToClosed(spentTime, jobDesc, reference)) {
-                state.prev();
+                state.next();
             }
+            double oldValue = jobDesc.getCalculator().getMean();
+            jobDesc.updateStats((double) spentTime);
+            updateGeneralStats(jobKey, oldValue, jobDesc.getCalculator().getMean());
         }
-
-        double oldValue = jobDesc.getCalculator().getMean();
-        jobDesc.updateStats((double) spentTime);
-        updateGeneralStats(jobKey, oldValue, jobDesc.getCalculator().getMean());
 
         return state;
     }
@@ -67,15 +66,6 @@ public class BaseCircuitBreaker {
         final JobDesc jobDesc = new JobDesc(baseJobDesc, calculator);
         nodeStatistic.addOneJob(jobKey, jobDesc);
         nodeStats.put(jobKey, nodeStatistic);
-    }
-
-    public JobDesc removeNodeJob(@NotNull final String nodeKey, @NotNull final String jobKey) {
-        NodeStatistic nodeStatistic = nodeStats.get(nodeKey);
-        if (nodeStatistic == null) {
-            return null;
-        }
-
-        return nodeStatistic.removeOneJob(jobKey);
     }
 
     public void updateGeneralStats(@NotNull final String jobKey, final Double oldValue, final Double newValue) {
@@ -96,6 +86,32 @@ public class BaseCircuitBreaker {
 
     public void setCircuitState(final String nodeId, final CircuitState circuitState) {
         this.circuitStates.get(nodeId).setState(circuitState);
+    }
+
+    public NodeStatistic removeNode(@NotBlank final String nodeKey) {
+        return nodeStats.remove(nodeKey);
+    }
+
+    public JobDesc removeNodeJob(@NotBlank final String nodeKey, @NotBlank final String jobKey) {
+        NodeStatistic nodeStatistic = nodeStats.get(nodeKey);
+        if (nodeStatistic == null) {
+            return null;
+        }
+
+        return nodeStatistic.removeOneJob(jobKey);
+    }
+
+    public NodeStatistic addNode(@NotBlank final String nodeKey, @NotBlank final NodeStatistic nodeStatistic) {
+        return nodeStats.put(nodeKey, nodeStatistic);
+    }
+
+    public JobDesc addNodeJob(@NotBlank final String nodeKey, @NotBlank final String jobKey, @NotNull final JobDesc jobDesc) {
+        NodeStatistic nodeStatistic = nodeStats.get(nodeKey);
+        if (nodeStatistic == null) {
+            return null;
+        }
+
+        return nodeStatistic.getJobs().put(jobKey, jobDesc);
     }
 
     static public class NodeStatistic {
