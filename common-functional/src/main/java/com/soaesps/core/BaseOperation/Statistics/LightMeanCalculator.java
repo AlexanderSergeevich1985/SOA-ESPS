@@ -41,6 +41,7 @@ public class LightMeanCalculator {
         mean -= ((double) sampleValue / size);
         mean += ((double) newValue / size);
         sampler.updateMean(mean);
+
         return sampleValue;
     }
 

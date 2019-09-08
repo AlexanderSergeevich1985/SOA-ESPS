@@ -37,6 +37,7 @@ public class LightDeviationCalculator extends LightMeanCalculator {
         variance += Math.pow(oldMean, 2);
         variance -= Math.pow(super.getMean(), 2);
         deviation = Math.sqrt(variance);
+
         return deviation;
     }
 
@@ -46,6 +47,30 @@ public class LightDeviationCalculator extends LightMeanCalculator {
         variance -= (Math.pow(oldValue, 2) / super.getSize());
         variance += (Math.pow(newValue, 2) / super.getSize());
         variance += Math.pow(oldMean, 2);
+        variance -= Math.pow(super.getMean(), 2);
+        deviation = Math.sqrt(variance);
+
+        return deviation;
+    }
+
+    @Override
+    public double incSize(final double newValue) {
+        double oldSize = super.getSize();
+        double oldMean = super.incSize(newValue);
+        variance += Math.pow(oldMean, 2);
+        variance = (oldSize * variance + Math.pow(newValue, 2)) / super.getSize();
+        variance -= Math.pow(super.getMean(), 2);
+        deviation = Math.sqrt(variance);
+
+        return deviation;
+    }
+
+    @Override
+    public double decSize(final double oldValue) {
+        double oldSize = super.getSize();
+        double oldMean = super.decSize(oldValue);
+        variance += Math.pow(oldMean, 2);
+        variance = (oldSize * variance - Math.pow(oldValue, 2)) / super.getSize();
         variance -= Math.pow(super.getMean(), 2);
         deviation = Math.sqrt(variance);
 
