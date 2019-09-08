@@ -16,7 +16,7 @@ public class BaseCircuitBreaker {
 
     private ConcurrentHashMap<String, NodeStatistic> nodeStats = new ConcurrentHashMap<>();
 
-    private ConcurrentHashMap<String, JobDesc> jobsDescs = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, RefJobDesc> jobsDescs = new ConcurrentHashMap<>();
 
     private ConcurrentHashMap<String, CircuitState> circuitStates = new ConcurrentHashMap<>();
 
@@ -89,6 +89,9 @@ public class BaseCircuitBreaker {
     }
 
     public NodeStatistic removeNode(@NotBlank final String nodeKey) {
+        final NodeStatistic nodeStatistic = nodeStats.remove(nodeKey);
+        nodeStatistic.getJobs().values().stream().forEach(j -> jobsDescs.get(j.getJobKey()).getCalculator().decSize(j.getCalculator().getMean()));
+
         return nodeStats.remove(nodeKey);
     }
 
@@ -97,11 +100,15 @@ public class BaseCircuitBreaker {
         if (nodeStatistic == null) {
             return null;
         }
+        final JobDesc jobDesc = nodeStatistic.removeOneJob(jobKey);
+        jobsDescs.get(jobKey).getCalculator().decSize(jobDesc.getCalculator().getMean());
 
-        return nodeStatistic.removeOneJob(jobKey);
+        return jobDesc;
     }
 
     public NodeStatistic addNode(@NotBlank final String nodeKey, @NotBlank final NodeStatistic nodeStatistic) {
+        nodeStatistic.getJobs().values().stream().forEach(j -> jobsDescs.get(j.getJobKey()).getCalculator().incSize(j.getCalculator().getMean()));
+
         return nodeStats.put(nodeKey, nodeStatistic);
     }
 
@@ -110,8 +117,10 @@ public class BaseCircuitBreaker {
         if (nodeStatistic == null) {
             return null;
         }
+        nodeStatistic.getJobs().put(jobKey, jobDesc);
+        jobsDescs.get(jobKey).getCalculator().incSize(jobDesc.getCalculator().getMean());
 
-        return nodeStatistic.getJobs().put(jobKey, jobDesc);
+        return jobDesc;
     }
 
     static public class NodeStatistic {
@@ -183,48 +192,34 @@ public class BaseCircuitBreaker {
         }
     }
 
-    static public class OverralJobDesc {
+    static public class RefJobDesc extends JobDesc {
         private String jobKey;
 
         private BaseJobDesc jobDesc;
 
         private LightDeviationCalculator calculator;
 
-        public OverralJobDesc(final BaseJobDesc jobDesc, final LightDeviationCalculator calculator) {
-            this.jobDesc = jobDesc;
-            this.calculator = calculator;
+        private Integer counter;
+
+        public RefJobDesc(final BaseJobDesc jobDesc, final LightDeviationCalculator calculator) {
+            super(jobDesc, calculator);
+            this.counter = 0;
         }
 
-        public double updateStats(final Double newValue) {
-            return calculator.update(newValue);
+        public Integer getCounter() {
+            return counter;
+        }
+
+        public void setCounter(final Integer counter) {
+            this.counter = counter;
         }
 
         public double updateStats(final Double oldValue, final Double newValue) {
-            return calculator.update(newValue);
+            return calculator.update(oldValue, newValue);
         }
 
-        public String getJobKey() {
-            return jobKey;
-        }
-
-        public void setJobKey(final String jobKey) {
-            this.jobKey = jobKey;
-        }
-
-        public BaseJobDesc getJobDesc() {
-            return jobDesc;
-        }
-
-        public void setJobDesc(final BaseJobDesc jobDesc) {
-            this.jobDesc = jobDesc;
-        }
-
-        public LightDeviationCalculator getCalculator() {
-            return calculator;
-        }
-
-        public void setCalculator(final LightDeviationCalculator calculator) {
-            this.calculator = calculator;
+        public double regNodeJob(final Double oldValue, final Double newValue) {
+            return calculator.update(oldValue, newValue);
         }
     }
 
