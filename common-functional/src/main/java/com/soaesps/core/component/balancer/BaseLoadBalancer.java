@@ -93,7 +93,7 @@ public class BaseLoadBalancer {
     }
 
     static public class UsedNodeWrapper extends NodeWrapper {
-        private ConcurrentHashMap<String, UsedJobDesc> jobs = new ConcurrentHashMap<>();
+        private ConcurrentHashMap<String, UsedJobDesc> usedJobs = new ConcurrentHashMap<>();
 
         public UsedNodeWrapper(final NodeWrapper nodeWrapper) {
             super(nodeWrapper.getExecutorNode(), nodeWrapper.getLightDeviationCalculator());
@@ -104,11 +104,11 @@ public class BaseLoadBalancer {
         }
 
         public UsedJobDesc getJobsDesc(final String jobKey) {
-            return jobs.get(jobKey);
+            return usedJobs.get(jobKey);
         }
 
         public void setJobDesc(final UsedJobDesc usedJobDesc) {
-            jobs.put(usedJobDesc.getJobKey(), usedJobDesc);
+            usedJobs.put(usedJobDesc.getJobKey(), usedJobDesc);
         }
     }
 
@@ -116,6 +116,8 @@ public class BaseLoadBalancer {
         private ExecutorNode executorNode;
 
         private LightDeviationCalculator lightDeviationCalculator;
+
+        private ConcurrentHashMap<String, JobDesc> jobs = new ConcurrentHashMap<>();
 
         public NodeWrapper(final ExecutorNode executorNode, final LightDeviationCalculator lightDeviationCalculator) {
             this.executorNode = executorNode;
@@ -134,8 +136,16 @@ public class BaseLoadBalancer {
             return lightDeviationCalculator;
         }
 
-        public void setLightDeviationCalculator(LightDeviationCalculator lightDeviationCalculator) {
+        public void setLightDeviationCalculator(final LightDeviationCalculator lightDeviationCalculator) {
             this.lightDeviationCalculator = lightDeviationCalculator;
+        }
+
+        public ConcurrentHashMap<String, JobDesc> getJobsDescs() {
+            return jobs;
+        }
+
+        public void setJobsDescs(final ConcurrentHashMap<String, JobDesc> jobs) {
+            this.jobs = jobs;
         }
     }
 
