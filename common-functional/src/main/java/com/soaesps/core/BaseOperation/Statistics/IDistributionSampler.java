@@ -18,16 +18,16 @@
  */
 package com.soaesps.core.BaseOperation.Statistics;
 
-public interface IDistributionSampler {
-    double updateMean(final double mean);
+public interface IDistributionSampler<T extends Number> {
+    T updateMean(final T mean);
 
-    void updateState(final double mean, final double deviation);
+    void updateState(final T mean, final T deviation);
 
-    double updateState(final Double... data);
+    T updateState(final T... data);
 
-    double sampleValue();
+    T sampleValue();
 
-    double sampleValue(final double mean, final double deviation);
+    T sampleValue(final T mean, final T deviation);
 
-    double sampleValue(final Double... data);
+    T sampleValue(final T... data);
 }

@@ -23,7 +23,7 @@ import javax.annotation.Nonnull;
 public class LightMeanCalculator {
     private double mean;
     private int size;
-    private IDistributionSampler sampler;
+    private IDistributionSampler<Double> sampler;
 
     public LightMeanCalculator(final double mean, final int size) {
         this.mean = mean;

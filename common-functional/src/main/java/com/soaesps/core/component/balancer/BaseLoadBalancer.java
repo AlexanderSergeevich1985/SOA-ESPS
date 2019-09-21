@@ -2,7 +2,11 @@ package com.soaesps.core.component.balancer;
 
 import com.soaesps.core.BaseOperation.Statistics.LightDeviationCalculator;
 import com.soaesps.core.DataModels.executor.ExecutorNode;
+import com.soaesps.core.DataModels.executor.Payload;
+import com.soaesps.core.DataModels.executor.Payloader;
+import com.soaesps.core.DataModels.executor.PayloaderImpl;
 import com.soaesps.core.DataModels.task.BaseJobDesc;
+import com.soaesps.core.Utils.DataStructure.LimitedQueue;
 import com.soaesps.core.Utils.DateTimeHelper;
 
 import java.time.LocalDateTime;
@@ -24,6 +28,10 @@ public class BaseLoadBalancer {
 
     private ConcurrentHashMap<String, JobDesc> refJobsDescs = new ConcurrentHashMap<>();
 
+    private LimitedQueue<Payload> payloads = new LimitedQueue<>();
+
+    private Payloader payloader = new PayloaderImpl();
+
     public BaseLoadBalancer() {
     }
 
@@ -43,16 +51,59 @@ public class BaseLoadBalancer {
         return refJobsDescs.get(jobKey);
     }
 
-    public NodeWrapper getBestNodeToUse() {
-        NodeWrapper nodeWrapper = nodes.pollLast();
-        usedNodes.add(new UsedNodeWrapper(nodeWrapper));
+    public NodeWrapper getBestNode() {
+        return nodes.last();
+    }
 
-        return nodeWrapper;
+    public UsedNodeWrapper getBestNodeToUse() {
+        final NodeWrapper nodeWrapper = nodes.pollLast();
+        final UsedNodeWrapper usedNodeWrapper = new UsedNodeWrapper(nodeWrapper);
+        usedNodes.add(usedNodeWrapper);
+
+        return usedNodeWrapper;
+    }
+
+    public Boolean registerJob(final Payload payload) {
+        final JobDesc refJobDesc = refJobsDescs.get(payload.getJobKey());
+        if (refJobDesc == null || refJobDesc.getCalculator() == null) {
+            return false;
+        }
+
+        return payloads.push(payload);
+    }
+
+    public Boolean startOneJob() {
+        final NodeWrapper nw = nodes.pollLast();
+        if (nw == null) {
+            return false;
+        }
+
+        return isPayloaded(nw);
+    }
+
+    protected boolean isPayloaded(final NodeWrapper nw) {
+        for (int i = 0; i < payloads.getSize(); ++i) {
+            final Payload payload = payloads.pull();
+            if (payload == null) {
+                return false;
+            }
+            if (nw.jobs.containsKey(payload.getJobKey())) {
+                if (payloader.load(payload)) {
+                    usedNodes.add(new UsedNodeWrapper(nw));
+                    return true;
+                }
+            }
+            payloads.push(payload);
+        }
+        return false;
     }
 
     public NodeWrapper updateNodeStatistic(final String nodeKey, final String jobKey, final Long newValue) {
-        UsedNodeWrapper nodeWrapper = usedNodesReg.get(nodeKey);
-        JobDesc refJobDesc = refJobsDescs.get(jobKey);
+        final UsedNodeWrapper nodeWrapper = usedNodesReg.get(nodeKey);
+        if (nodeWrapper == null) {
+            return null;
+        }
+        final JobDesc refJobDesc = refJobsDescs.get(jobKey);
         if (refJobDesc == null || refJobDesc.getCalculator() == null) {
             return null;
         }
@@ -103,11 +154,11 @@ public class BaseLoadBalancer {
             super(executorNode, lightDeviationCalculator);
         }
 
-        public UsedJobDesc getJobsDesc(final String jobKey) {
+        public UsedJobDesc getUsedJobsDesc(final String jobKey) {
             return usedJobs.get(jobKey);
         }
 
-        public void setJobDesc(final UsedJobDesc usedJobDesc) {
+        public void setUsedJobDesc(final UsedJobDesc usedJobDesc) {
             usedJobs.put(usedJobDesc.getJobKey(), usedJobDesc);
         }
     }
