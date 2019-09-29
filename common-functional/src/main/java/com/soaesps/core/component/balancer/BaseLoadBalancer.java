@@ -75,21 +75,31 @@ public class BaseLoadBalancer {
     public Boolean startOneJob() {
         final NodeWrapper nw = nodes.pollLast();
         if (nw == null) {
-            return false;
-        }
+            final UsedNodeWrapper unw = usedNodes.pollLast();
+            if (unw == null) {
+                return false;
+            }
 
-        return isPayloaded(nw);
+            return isPayloaded(nw, true);
+        }
+        else {
+            return isPayloaded(nw, false);
+        }
     }
 
-    protected boolean isPayloaded(final NodeWrapper nw) {
+    protected boolean isPayloaded(final NodeWrapper nw, final boolean isUsed) {
         for (int i = 0; i < payloads.getSize(); ++i) {
             final Payload payload = payloads.pull();
             if (payload == null) {
                 return false;
             }
             if (nw.jobs.containsKey(payload.getJobKey())) {
-                if (payloader.load(payload)) {
-                    usedNodes.add(new UsedNodeWrapper(nw));
+                if (payloader.load(payload, nw.getExecutorNode())) {
+                    UsedJobDesc ujd = new UsedJobDesc(nw.jobs.get(payload.getJobKey()));
+                    final UsedNodeWrapper unw = isUsed ? (UsedNodeWrapper) nw : new UsedNodeWrapper(nw);
+                    unw.setUsedJobDesc(ujd);
+                    usedNodes.add(unw);
+
                     return true;
                 }
             }
@@ -137,13 +147,14 @@ public class BaseLoadBalancer {
     }
 
     static public Comparator<UsedNodeWrapper> createComparatorUsed() {//Comparator.comparing(ExecutorNode::getStatistic);
-        return (o1, o2) -> {
-            int value = o1.getExecutorNode().getStatistic().compareTo(o2.getExecutorNode().getStatistic());
-            return value != 0 ? value : o1.getExecutorNode().getId().compareTo(o2.getExecutorNode().getId());
-        };
+        return Comparator.comparing((UsedNodeWrapper o) -> o.getExecutorNode().getStatistic())
+                .thenComparingDouble(UsedNodeWrapper::getLoadFactor)
+                .thenComparingInt(o -> o.getExecutorNode().getId());
     }
 
     static public class UsedNodeWrapper extends NodeWrapper {
+        private Double loadFactor = 0d;
+
         private ConcurrentHashMap<String, UsedJobDesc> usedJobs = new ConcurrentHashMap<>();
 
         public UsedNodeWrapper(final NodeWrapper nodeWrapper) {
@@ -160,6 +171,14 @@ public class BaseLoadBalancer {
 
         public void setUsedJobDesc(final UsedJobDesc usedJobDesc) {
             usedJobs.put(usedJobDesc.getJobKey(), usedJobDesc);
+        }
+
+        public Double getLoadFactor() {
+            return loadFactor;
+        }
+
+        public void setLoadFactor(final Double loadFactor) {
+            this.loadFactor = loadFactor;
         }
     }
 
@@ -203,6 +222,12 @@ public class BaseLoadBalancer {
     static public class UsedJobDesc extends JobDesc {
         private Map<String, DateTimeHelper.StopWatch> stopWatchs = new HashMap<>();
 
+        private Double loadFactor = 0.0;
+
+        public UsedJobDesc(final JobDesc jobDesc) {
+            super(jobDesc.getJobDesc(), jobDesc.getCalculator());
+        }
+
         public UsedJobDesc(final BaseJobDesc jobDesc, final LightDeviationCalculator calculator) {
             super(jobDesc, calculator);
         }
@@ -226,6 +251,14 @@ public class BaseLoadBalancer {
 
         public void setStopWatch(final String jobId, final DateTimeHelper.StopWatch stopWatch) {
             this.stopWatchs.put(jobId, stopWatch);
+        }
+
+        public Double getLoadFactor() {
+            return loadFactor;
+        }
+
+        public void setLoadFactor(final Double loadFactor) {
+            this.loadFactor = loadFactor;
         }
     }
 
