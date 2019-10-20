@@ -7,12 +7,15 @@ import java.util.concurrent.ConcurrentHashMap;
 public class NetVertex<T extends Serializable, T2 extends Number> implements Serializable {
     private T vertexId;
 
+    private Double probability;
+
     //adjacent vertexes
     private Map<NetVertex<T, T2>, NetEdge.NetEdgeDesc> vertices = new ConcurrentHashMap<>();
 
     public NetVertex(final T vertexId, final Map<NetVertex<T, T2>, NetEdge.NetEdgeDesc<T2>> vertexes) {
         this.vertexId = vertexId;
         this.vertices.putAll(vertexes);
+        probability = 1.0 / vertices.size();
     }
 
     public void setVertexId(final T vertexId) {
@@ -29,10 +32,23 @@ public class NetVertex<T extends Serializable, T2 extends Number> implements Ser
 
     public void setVertices(final Map<NetVertex<T, T2>, NetEdge.NetEdgeDesc<T2>> vertexes) {
         this.vertices.putAll(vertexes);
+        probability = 1.0 / vertices.size();
     }
 
     public void addAdjVertex(final NetVertex<T, T2> vertex, final NetEdge.NetEdgeDesc<T2> desc) {
         this.vertices.put(vertex, desc);
+        probability = 1.0 / vertices.size();
+    }
+
+    public Double getProbability() {
+        if (probability == null) {
+            probability = 1.0 / vertices.size();
+        }
+        return probability;
+    }
+
+    public void setProbability(final Double probability) {
+        this.probability = probability;
     }
 
     @Override
