@@ -69,5 +69,29 @@ public class NetGraph<T extends Serializable, T2 extends Number> {
         public void setKey2(final T key2) {
             this.key2 = key2;
         }
+
+        @Override
+        public int hashCode() {
+            int hash1 = key1.hashCode();
+            int hash2 = key2.hashCode();
+
+            return (hash1 * hash2)/(hash1 + hash2);
+        }
+
+        @Override
+        public boolean equals(final Object obj) {
+            if (obj == null || !this.getClass().isInstance(obj)) {
+                return false;
+            }
+            final EdgeKey<T> other = (EdgeKey<T>) obj;
+            if (key1 == null || key2 == null || other.getKey1() == null || other.getKey2() == null) {
+                return false;
+            }
+            if (!key1.equals(other.getKey1()) || !key2.equals(other.getKey2())) {
+                return false;
+            }
+
+            return true;
+        }
     }
 }
