@@ -2,12 +2,16 @@ package com.soaesps.core.graph;
 
 import java.io.Serializable;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 public class NetVertex<T extends Serializable, T2 extends Number> implements Serializable {
     private T vertexId;
 
     private Double probability;
+
+    private Map<T, Double> probabilities = new ConcurrentHashMap<>();
 
     //adjacent vertices
     private Map<NetVertex<T, T2>, NetEdge.NetEdgeDesc> vertices = new ConcurrentHashMap<>();
@@ -49,6 +53,22 @@ public class NetVertex<T extends Serializable, T2 extends Number> implements Ser
             probability = 1.0 / vertices.size();
         }
         return probability;
+    }
+
+    public void calculateProbs() {
+        Optional<Double> max = vertices.values().stream().map(d -> (Double) d.getDistance()).max(Double::compare);
+        if (!max.isPresent()) {
+            return;
+        }
+        final Map<T, Double> coeff = new ConcurrentHashMap<>();
+        vertices.entrySet().stream().forEach(e -> {
+            coeff.put(e.getKey().getVertexId(), max.get()/(Double) e.getValue().getDistance());
+        });
+        final Double sum = coeff.values().stream().collect(Collectors.summingDouble(Double::intValue));
+        final Double minProb = 1/sum;
+        coeff.entrySet().stream().forEach(e -> {
+            probabilities.put(e.getKey(), minProb * e.getValue());
+        });
     }
 
     public void setProbability(final Double probability) {
