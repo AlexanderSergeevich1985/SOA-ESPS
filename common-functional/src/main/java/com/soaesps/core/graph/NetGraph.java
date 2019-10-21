@@ -1,16 +1,41 @@
 package com.soaesps.core.graph;
 
 import java.io.Serializable;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class NetGraph<T extends Serializable, T2 extends Number> {
+public class NetGraph<T extends Serializable, T2 extends Number> implements NetGraphI<T, T2> {
     private ConcurrentHashMap<T, NetVertex<T, T2>> vertices = new ConcurrentHashMap<>();
 
     public NetGraph() {}
+
+    @Override
+    public void addVertex(final NetVertex<T, T2> vertex) {
+        this.vertices.put(vertex.getVertexId(), vertex);
+    }
+
+    @Override
+    public void addEdge(final NetEdge<T, T2> edge) {
+        final NetVertex<T, T2> vertex1 = this.vertices.containsKey(edge.getVertex1().getVertexId()) ? this.vertices.get(edge.getVertex1().getVertexId()) : edge.getVertex1();
+        final NetVertex<T, T2> vertex2 = this.vertices.containsKey(edge.getVertex2().getVertexId()) ? this.vertices.get(edge.getVertex2().getVertexId()) : edge.getVertex2();
+        if (!vertex1.getVertices().containsKey(vertex2)) {
+            vertex1.getVertices().put(vertex2, edge.getDesc());
+        }
+        if (edge.getDesc().getType().equals(EdgeType.UNDIRECTED)) {
+            if (!vertex2.getVertices().containsKey(vertex1)) {
+                vertex2.getVertices().put(vertex1, edge.getDesc());
+            }
+        }
+    }
+
+    @Override
+    public LinkedHashSet<NetEdge<T, T2>> getPath(final NetVertex<T, T2> vertex1, final NetVertex<T, T2> vertex2) {
+        return null;
+    }
 
     public ConcurrentHashMap<T, NetVertex<T, T2>> getVertices() {
         return vertices;
@@ -18,10 +43,6 @@ public class NetGraph<T extends Serializable, T2 extends Number> {
 
     public void setVertices(final Map<T, NetVertex<T, T2>> vertices) {
         this.vertices.putAll(vertices);
-    }
-
-    public void addVertex(final NetVertex<T, T2> vertex) {
-        this.vertices.put(vertex.getVertexId(), vertex);
     }
 
     public void removeVertex(final T vertexId) {

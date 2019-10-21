@@ -9,12 +9,16 @@ public class NetVertex<T extends Serializable, T2 extends Number> implements Ser
 
     private Double probability;
 
-    //adjacent vertexes
+    //adjacent vertices
     private Map<NetVertex<T, T2>, NetEdge.NetEdgeDesc> vertices = new ConcurrentHashMap<>();
 
-    public NetVertex(final T vertexId, final Map<NetVertex<T, T2>, NetEdge.NetEdgeDesc<T2>> vertexes) {
+    public NetVertex(final T vertexId) {
         this.vertexId = vertexId;
-        this.vertices.putAll(vertexes);
+    }
+
+    public NetVertex(final T vertexId, final Map<NetVertex<T, T2>, NetEdge.NetEdgeDesc<T2>> vertices) {
+        this.vertexId = vertexId;
+        this.vertices.putAll(vertices);
         probability = 1.0 / vertices.size();
     }
 
@@ -30,8 +34,8 @@ public class NetVertex<T extends Serializable, T2 extends Number> implements Ser
         return vertices;
     }
 
-    public void setVertices(final Map<NetVertex<T, T2>, NetEdge.NetEdgeDesc<T2>> vertexes) {
-        this.vertices.putAll(vertexes);
+    public void setVertices(final Map<NetVertex<T, T2>, NetEdge.NetEdgeDesc<T2>> vertices) {
+        this.vertices.putAll(vertices);
         probability = 1.0 / vertices.size();
     }
 
