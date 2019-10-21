@@ -1,6 +1,7 @@
 package com.soaesps.core.graph;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -60,7 +61,7 @@ public class NetVertex<T extends Serializable, T2 extends Number> implements Ser
         if (!max.isPresent()) {
             return;
         }
-        final Map<T, Double> coeff = new ConcurrentHashMap<>();
+        final Map<T, Double> coeff = new HashMap<>();
         vertices.entrySet().stream().forEach(e -> {
             coeff.put(e.getKey().getVertexId(), max.get()/(Double) e.getValue().getDistance());
         });
