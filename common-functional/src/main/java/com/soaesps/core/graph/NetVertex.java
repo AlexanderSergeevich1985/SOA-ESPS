@@ -1,10 +1,9 @@
 package com.soaesps.core.graph;
 
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class NetVertex<T extends Serializable, T2 extends Number> implements Serializable {
@@ -15,7 +14,9 @@ public class NetVertex<T extends Serializable, T2 extends Number> implements Ser
     private Map<T, Double> probabilities = new ConcurrentHashMap<>();
 
     //adjacent vertices
-    private Map<NetVertex<T, T2>, NetEdge.NetEdgeDesc> vertices = new ConcurrentHashMap<>();
+    private Map<NetVertex<T, T2>, NetEdge.NetEdgeDesc<T2>> vertices = new ConcurrentHashMap<>();
+
+    private AtomicReference<PathDescI> pathDescI;
 
     public NetVertex(final T vertexId) {
         this.vertexId = vertexId;
@@ -27,6 +28,14 @@ public class NetVertex<T extends Serializable, T2 extends Number> implements Ser
         probability = 1.0 / vertices.size();
     }
 
+    public PathDescI getPathDescI() {
+        return pathDescI.get();
+    }
+
+    public void setPathDescI(final PathDescI expected, final PathDescI pathDescI) {
+        this.pathDescI.compareAndSet(expected, pathDescI);
+    }
+
     public void setVertexId(final T vertexId) {
         this.vertexId = vertexId;
     }
@@ -35,7 +44,7 @@ public class NetVertex<T extends Serializable, T2 extends Number> implements Ser
         return this.vertexId;
     }
 
-    public Map<NetVertex<T, T2>, NetEdge.NetEdgeDesc> getVertices() {
+    public Map<NetVertex<T, T2>, NetEdge.NetEdgeDesc<T2>> getVertices() {
         return vertices;
     }
 
@@ -83,10 +92,13 @@ public class NetVertex<T extends Serializable, T2 extends Number> implements Ser
 
     @Override
     public boolean equals(final Object obj) {
+        if (obj == null) {
+            return false;
+        }
         if (this == obj) {
             return true;
         }
-        else if (obj == null || !(obj instanceof NetEdge)) {
+        if (!(obj instanceof NetEdge)) {
             return false;
         }
 

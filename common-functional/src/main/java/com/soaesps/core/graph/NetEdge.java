@@ -47,10 +47,13 @@ public class NetEdge<T extends Serializable, T2 extends Number> {
 
     @Override
     public boolean equals(final Object obj) {
+        if (obj == null) {
+            return false;
+        }
         if (this == obj) {
             return true;
         }
-        else if (obj == null || !(obj instanceof NetEdge)) {
+        if (!(obj instanceof NetEdge)) {
             return false;
         }
         final NetEdge other = (NetEdge) obj;

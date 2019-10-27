@@ -3,7 +3,6 @@ package com.soaesps.core.graph;
 import java.io.Serializable;
 import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -11,7 +10,7 @@ import java.util.stream.Collectors;
 public class NetGraph<T extends Serializable, T2 extends Number> implements NetGraphI<T, T2> {
     private ConcurrentHashMap<T, NetVertex<T, T2>> vertices = new ConcurrentHashMap<>();
 
-    public NetGraph() {}
+    private PathFinder bfs;
 
     @Override
     public void addVertex(final NetVertex<T, T2> vertex) {
@@ -33,7 +32,22 @@ public class NetGraph<T extends Serializable, T2 extends Number> implements NetG
     }
 
     @Override
-    public LinkedHashSet<NetEdge<T, T2>> getPath(final NetVertex<T, T2> vertex1, final NetVertex<T, T2> vertex2) {
+    public LinkedHashSet<NetVertex<T,T2>> getPath(final int size, final NetVertex<T, T2> vertex1, final NetVertex<T, T2> vertex2) {
+        if (bfs == null) {
+            bfs = new PathFinder();
+        }
+        NetVertex<T, T2> vertex = bfs.BFS_Cycle(this.getVertices().size(), vertex1, vertex2);
+
+        LinkedHashSet<NetVertex<T, T2>> path = new LinkedHashSet<>();
+        if (vertex == null) {
+            return path;
+        }
+        NetVertex<T, T2> stop = vertex;
+        while (vertex1.equals(stop)) {
+            path.add(stop);
+            stop = stop.getVertices().keySet().stream().min(PathFinder.createComparator()).get();
+        }
+
         return null;
     }
 
@@ -53,16 +67,6 @@ public class NetGraph<T extends Serializable, T2 extends Number> implements NetG
         return vertices.values().stream()
                 .flatMap(v -> v.getVertices().entrySet().stream().map(e -> new NetEdge<T, T2>(v, e.getKey(), e.getValue())))
                 .collect(Collectors.toConcurrentMap(ed -> new EdgeKey<T>(ed.getVertex1().getVertexId(), ed.getVertex2().getVertexId()), Function.identity()));
-    }
-
-    public Callable<Double> getWalker() {
-        return new Callable<Double>() {
-            @Override
-            public Double call() throws Exception {
-
-                return null;
-            }
-        };
     }
 
     static public class EdgeKey<T extends Serializable> {
