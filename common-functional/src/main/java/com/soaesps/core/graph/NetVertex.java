@@ -32,6 +32,10 @@ public class NetVertex<T extends Serializable, T2 extends Number> implements Ser
         return pathDescI.get();
     }
 
+    public void setPathDescI(final PathDescI pathDescI) {
+        this.pathDescI.set(pathDescI);
+    }
+
     public void setPathDescI(final PathDescI expected, final PathDescI pathDescI) {
         this.pathDescI.compareAndSet(expected, pathDescI);
     }

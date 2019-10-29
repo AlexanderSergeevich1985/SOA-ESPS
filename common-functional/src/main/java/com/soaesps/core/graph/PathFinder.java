@@ -4,6 +4,7 @@ import java.io.Serializable;
 
 import java.util.Comparator;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -39,22 +40,43 @@ public class PathFinder {
         if (queue == null) {
             queue = new PriorityBlockingQueue<>(calcInitialSize(size), createComparator());
         }
-        this.isFound = new AtomicBoolean(false);
+        vertex1.setPathDescI(new PathDesc(0));
         queue.add(vertex1);
-        while (!queue.isEmpty() && !isFound.get()) {
-            NetVertex<T, T2> vertex = this.queue.poll();
+        while (!queue.isEmpty()) {
+            final NetVertex<T, T2> vertex = this.queue.poll();
             if (vertex.equals(vertex2)) {
                 return vertex;
             }
-            if (vertex.getPathDescI().getState().equals(PathDescI.VertexState.UNVISITED)) {
-                vertex.getPathDescI().setState(PathDescI.VertexState.VISITED);
+            vertex.getPathDescI().setState(PathDescI.VertexState.VISITED);
+            exploreVertex(vertex);
+            vertex.getVertices().keySet().forEach(this.queue::add);
+            vertex.getPathDescI().setState(PathDescI.VertexState.EVALUATED);
+        }
+
+        return null;
+    }
+
+    public <T extends Serializable, T2 extends Number> NetVertex<T, T2> BFSwithDFScycle(final int size, final NetVertex<T, T2> vertex1, final NetVertex<T, T2> vertex2) {
+        if (queue == null) {
+            queue = new PriorityBlockingQueue<>(calcInitialSize(size), createComparator());
+        }
+        this.isFound = new AtomicBoolean(false);
+        vertex1.setPathDescI(new PathDesc(0));
+        queue.add(vertex1);
+        while (!queue.isEmpty()) {
+            final NetVertex<T, T2> vertex = this.queue.poll();
+            if (vertex.equals(vertex2)) {
+                this.isFound.set(true);
+                return vertex;
             }
-            else if (!doDFS.get() || vertex.getPathDescI().isChangedAfterAdded() || !vertex.getPathDescI().getState().equals(PathDescI.VertexState.PREPROCESSED)) {
+            if (vertex.getPathDescI().getState().equals(PathDescI.VertexState.UNVISITED) || vertex.getPathDescI().isChangedAfterAdded()) {
+                vertex.getPathDescI().setState(PathDescI.VertexState.VISITED);
                 exploreVertex(vertex);
             }
-            for (final NetVertex<T, T2> v: vertex.getVertices().keySet()) {
-                this.queue.add(v);
-            }
+            final Set<NetVertex<T,T2>> neighbours = vertex.getVertices().keySet();
+            neighbours.forEach(this.queue::add);
+            neighbours.stream().map(DFStask::new).forEach(t -> this.forkJoinPool.invoke(t));
+
             vertex.getPathDescI().setState(PathDescI.VertexState.EVALUATED);
         }
 
@@ -76,9 +98,6 @@ public class PathFinder {
             final PathDescI pd = v.getPathDescI();
             pd.setCost(e.getDistance().doubleValue()+vertex.getPathDescI().getCost());
         });
-        if (doDFS.get()) {
-            neighbours.keySet().stream().map(DFStask::new).forEach(t -> this.forkJoinPool.invoke(t));
-        }
     }
 
     public class DFStask extends RecursiveAction {

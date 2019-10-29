@@ -6,11 +6,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class PathDesc implements PathDescI {
-    public AtomicBoolean isChangedAfterAdded;
+    private AtomicBoolean isChangedAfterAdded;
 
     private AtomicInteger state = new AtomicInteger(VertexState.UNVISITED.getValue());
 
-    public AtomicDouble cost = new AtomicDouble(Double.MAX_VALUE);
+    private AtomicDouble cost = new AtomicDouble(Double.MAX_VALUE);
+
+    public PathDesc() {}
+
+    public PathDesc(final double cost) {
+        this.cost.set(cost);
+    }
 
     @Override
     public Double getCost() {
