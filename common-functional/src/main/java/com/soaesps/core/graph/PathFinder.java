@@ -75,7 +75,7 @@ public class PathFinder {
             }
             final Set<NetVertex<T,T2>> neighbours = vertex.getVertices().keySet();
             neighbours.forEach(this.queue::add);
-            neighbours.stream().map(DFStask::new).forEach(t -> this.forkJoinPool.invoke(t));
+            neighbours.stream().map(DFSOnetask::new).forEach(t -> this.forkJoinPool.invoke(t));
 
             vertex.getPathDescI().setState(PathDescI.VertexState.EVALUATED);
         }
@@ -83,11 +83,20 @@ public class PathFinder {
         return null;
     }
 
+    public <T extends Serializable, T2 extends Number> void DFScycle(final int size, final NetVertex<T, T2> vertex1, final NetVertex<T, T2> vertex2) {
+        if (queue == null) {
+            queue = new PriorityBlockingQueue<>(calcInitialSize(size), createComparator());
+        }
+        this.isFound = new AtomicBoolean(false);
+        vertex1.setPathDescI(new PathDesc(0));
+        this.forkJoinPool.invoke(new DFStask<>(vertex1, vertex2));
+    }
+
     private int calcInitialSize(final int size) {
         return size > MAX_DEFAULT_QUEUE_SIZE ? MAX_DEFAULT_QUEUE_SIZE : size;
     }
 
-    private void exploreVertex(final NetVertex vertex) {
+    protected void exploreVertex(final NetVertex vertex) {
         final Map<NetVertex, NetEdge.NetEdgeDesc> neighbours = vertex.getVertices();
         neighbours.entrySet().stream().forEach(entry -> {
             final NetVertex v = entry.getKey();
@@ -100,10 +109,35 @@ public class PathFinder {
         });
     }
 
-    public class DFStask extends RecursiveAction {
+    public class DFStask<T extends Serializable, T2 extends Number> extends RecursiveAction {
+        private NetVertex<T,T2> vertex1;
+
+        private final NetVertex<T,T2> vertex2;
+
+        public DFStask(final NetVertex<T,T2> vertex1, final NetVertex<T,T2> vertex2) {
+            if (vertex1.equals(vertex2)) {
+                isFound.set(true);
+            }
+            this.vertex1 = vertex1;
+            this.vertex2 = vertex2;
+        }
+
+        @Override
+        protected void compute() {
+            if (isFound.get()) {
+                return;
+            }
+            exploreVertex(vertex1);
+            final Set<NetVertex<T,T2>> neighbours = vertex1.getVertices().keySet();
+            neighbours.stream().map(v -> new DFStask(vertex1, vertex2)).forEach(t -> forkJoinPool.invoke(t));
+            this.vertex1.getPathDescI().setState(PathDescI.VertexState.PREPROCESSED);
+        }
+    }
+
+    public class DFSOnetask extends RecursiveAction {
         private NetVertex vertex;
 
-        public DFStask(final NetVertex vertex) {
+        public DFSOnetask(final NetVertex vertex) {
             this.vertex = vertex;
         }
 
