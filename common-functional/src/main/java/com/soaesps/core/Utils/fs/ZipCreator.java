@@ -1,22 +1,26 @@
 package com.soaesps.core.Utils.fs;
 
+import com.soaesps.core.Utils.CryptoHelper;
+import net.lingala.zip4j.io.inputstream.ZipInputStream;
+import net.lingala.zip4j.model.LocalFileHeader;
 import net.lingala.zip4j.model.ZipParameters;
 import net.lingala.zip4j.model.enums.*;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
+import java.io.*;
+import java.nio.ByteBuffer;
+import java.util.IdentityHashMap;
 import java.util.Map;
 
 import net.lingala.zip4j.io.outputstream.ZipOutputStream;
 
 public class ZipCreator {
+    public static Integer DEFAULT_READ_BUF_SIZE = 1000;
+
     private ZipParameters zp;
 
     public ZipCreator() {}
 
-    public OutputStream cipher(final Map<String, Object> entries, final String password, final ZipParameters zp) throws IOException {
+    public OutputStream zipCipher(final Map<String, Object> entries, final String password, final ZipParameters zp) throws IOException {
         OutputStream os = new ByteArrayOutputStream();
         try (final ZipOutputStream zos = new ZipOutputStream(os, password.toCharArray())) {
             entries.entrySet().stream().forEach(e -> {
@@ -31,6 +35,24 @@ public class ZipCreator {
         }
 
         return os;
+    }
+
+    public Map<String, Object> unzipDecipher(final InputStream is, final String password, final ZipParameters zp) throws Exception {
+        final Map<String, Object> result = new IdentityHashMap<>();
+        final byte[] buffer = new byte[DEFAULT_READ_BUF_SIZE];
+        try (final ZipInputStream zis = new ZipInputStream(is, password.toCharArray())) {
+            LocalFileHeader lfh = null;
+            while ((lfh = zis.getNextEntry()) != null) {
+                final String fileName = lfh.getFileName();
+                final ByteBuffer bbuf = ByteBuffer.allocate(zis.available());
+                while (zis.read(buffer) != -1) {
+                    bbuf.put(bbuf);
+                }
+                result.put(fileName, CryptoHelper.deserializeObject(bbuf.array()));
+            }
+        }
+
+        return result;
     }
 
     public static byte[] serialize(final Object obj) throws IOException {
@@ -51,6 +73,14 @@ public class ZipCreator {
         zipParams.setEncryptFiles(true);
         zipParams.setEncryptionMethod(EncryptionMethod.AES);
         zipParams.setAesKeyStrength(AesKeyStrength.KEY_STRENGTH_256);
+    }
+
+    public ZipParameters getZipParameters() {
+        return zp;
+    }
+
+    public void setZipParameters(final ZipParameters zp) {
+        this.zp = zp;
     }
 
     public static class Builder {
