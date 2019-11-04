@@ -3,10 +3,43 @@ package com.soaesps.core.Utils.fs;
 import net.lingala.zip4j.model.ZipParameters;
 import net.lingala.zip4j.model.enums.*;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.util.Map;
+
+import net.lingala.zip4j.io.outputstream.ZipOutputStream;
+
 public class ZipCreator {
     private ZipParameters zp;
 
     public ZipCreator() {}
+
+    public OutputStream cipher(final Map<String, Object> entries, final String password, final ZipParameters zp) throws IOException {
+        OutputStream os = new ByteArrayOutputStream();
+        try (final ZipOutputStream zos = new ZipOutputStream(os, password.toCharArray())) {
+            entries.entrySet().stream().forEach(e -> {
+                try {
+                    zp.setFileNameInZip(e.getKey());
+                    zos.putNextEntry(zp);
+                    zos.write(serialize(e.getValue()));
+                    zos.closeEntry();
+                } catch (final IOException ex) {
+                }
+            });
+        }
+
+        return os;
+    }
+
+    public static byte[] serialize(final Object obj) throws IOException {
+        final ByteArrayOutputStream out = new ByteArrayOutputStream();
+        final ObjectOutputStream os = new ObjectOutputStream(out);
+        os.writeObject(obj);
+
+        return out.toByteArray();
+    }
 
     protected ZipCreator(final ZipParameters zp) {
         this.zp = zp;
