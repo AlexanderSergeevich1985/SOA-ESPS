@@ -1,11 +1,17 @@
 package com.soaesps.aggregator.domain;
 
 import com.soaesps.aggregator.client.IWorkerNode;
+import com.soaesps.core.DataModels.BaseEntity;
 
-public class RouterStats {
+import javax.persistence.Entity;
+
+@Entity
+public class RouterStats extends BaseEntity {
     private double score;
 
     private IWorkerNode workerNode;
+
+    public RouterStats() {}
 
     public double getCounter() {
         return score;
