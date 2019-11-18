@@ -1,14 +1,19 @@
 package com.soaesps.aggregator.domain;
 
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.redis.core.RedisHash;
+
 import javax.annotation.Nullable;
-import javax.persistence.Id;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.time.Instant;
 
+@RedisHash("registered_task")
 public class RegisteredTask {
     @Id
+    @javax.persistence.Id
     private Long taskId;
 
     @NotBlank
@@ -20,6 +25,13 @@ public class RegisteredTask {
     private String reservedNodeId;
 
     private Instant startTime;
+
+    private Instant endTime;
+
+    @Transient
+    private JobDesc jobDesc;
+
+    public RegisteredTask() {}
 
     @NotNull
     public Long getTaskId() {
@@ -55,5 +67,13 @@ public class RegisteredTask {
 
     public void setStartTime(@Nullable final Instant startTime) {
         this.startTime = startTime;
+    }
+
+    public JobDesc getJobDesc() {
+        return jobDesc;
+    }
+
+    public void setJobDesc(@NotNull final JobDesc jobDesc) {
+        this.jobDesc = jobDesc;
     }
 }
