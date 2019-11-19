@@ -1,5 +1,6 @@
 package com.soaesps.aggregator.domain;
 
+import com.soaesps.core.DataModels.executor.Payload;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.redis.core.RedisHash;
@@ -11,7 +12,7 @@ import javax.validation.constraints.Size;
 import java.time.Instant;
 
 @RedisHash("registered_task")
-public class RegisteredTask {
+public class RegisteredTask implements Payload {
     @Id
     @javax.persistence.Id
     private Long taskId;
@@ -75,5 +76,10 @@ public class RegisteredTask {
 
     public void setJobDesc(@NotNull final JobDesc jobDesc) {
         this.jobDesc = jobDesc;
+    }
+
+    @Override
+    public String getJobKey() {
+        return jobDesc.getJobKey();
     }
 }
