@@ -2,11 +2,100 @@
 		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>com.soaesps</groupId>
+	<groupId>com.nukefintech</groupId>
 	<artifactId>soaesps</artifactId>
 	<version>1.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
-	<name>soaesps</name>
+	<name>SOAESPS</name>
+
+	<properties>
+		<spring.version>5.0.1.Final</spring.version>
+		<spring.boot.version>2.2.2.RELEASE</spring.boot.version>
+		<spring.security.version>5.0.1.RELEASE</spring.security.version>
+		<spring.oauth2.version>2.2.0.RELEASE</spring.oauth2.version>
+		<spring.eureka.version>1.4.7.RELEASE</spring.eureka.version>
+		<spring.feign.version>1.4.7.RELEASE</spring.feign.version>
+		<spring.hystrix.stream.version>1.4.7.RELEASE</spring.hystrix.stream.version>
+		<spring.config.version>2.2.0.RELEASE</spring.config.version>
+		<spring.amqp.version>2.2.0.RELEASE</spring.amqp.version>
+		<hibernate.version>LATEST</hibernate.version>
+		<hibernate.ehcache.version>LATEST</hibernate.ehcache.version>
+		<hibernate.validator.version>LATEST</hibernate.validator.version>
+		<jackson.version>LATEST</jackson.version>
+		<guava.version>28.1-jre</guava.version>
+		<junit.version>LATEST</junit.version>
+	</properties>
+
+	<parent>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<groupId>org.springframework.boot</groupId>
+		<version>2.2.2.RELEASE</version>
+	</parent>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<!-- Import dependency management from Spring Boot -->
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-dependencies</artifactId>
+				<version>2.2.2.RELEASE</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+
+			<!-- spring section-->
+			<dependency>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-starter-test</artifactId>
+				<scope>test</scope>
+			</dependency>
+
+			<dependency>
+				<groupId>com.fasterxml.jackson.datatype</groupId>
+				<artifactId>jackson-datatype-hppc</artifactId>
+				<version>${jackson.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.fasterxml.jackson.datatype</groupId>
+				<artifactId>jackson-datatype-joda</artifactId>
+				<version>${jackson.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.fasterxml.jackson.datatype</groupId>
+				<artifactId>jackson-datatype-json-org</artifactId>
+				<version>${jackson.version}</version>
+			</dependency>
+
+			<!-- test section-->
+			<dependency>
+				<groupId>junit</groupId>
+				<artifactId>junit</artifactId>
+				<version>${junit.version}</version>
+				<scope>test</scope>
+			</dependency>
+
+			<!-- inner mutual dependencies-->
+			<dependency>
+				<groupId>com.nukefintech.soaesps</groupId>
+				<artifactId>common-functional</artifactId>
+				<version>1.0-SNAPSHOT</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.springframework.boot</groupId>
+					<artifactId>spring-boot-maven-plugin</artifactId>
+					<configuration>
+						<jvmArguments>-XX:MaxPermSize=1528M -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5010</jvmArguments>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
 
 	<modules>
 		<module>common-functional</module>
