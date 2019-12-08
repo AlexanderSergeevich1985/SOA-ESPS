@@ -7,10 +7,11 @@ spring:
        driver-class-name: org.postgresql.Driver
        username: #########
        password: #########
-       maxPoolSize: 4
+       hikari:
+         maximum-pool-size: 4
 
    jpa:
-      database-platform: org.hibernate.dialect.PostgreSQLDialect
+      database-platform: org.hibernate.dialect.PostgreSQL9Dialect
       hibernate:
           ddl-auto: validate
           naming:
