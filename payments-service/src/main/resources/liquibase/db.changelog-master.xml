@@ -1,0 +1,10 @@
+<databaseChangeLog
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.liquibase.org/xml/ns/dbchangelog">
+
+    <property name="endOfDays" value="to_date('01/01/9999', 'dd/mm/yyyy')" dbms="postgresql"/>
+    <property name="currentDate" value="sysdate" dbms="postgresql"/>
+
+    <include file="sql/payments_v.0.1/db.changelog-release.xml" relativeToChangelogFile="true"/>
+
+</databaseChangeLog>

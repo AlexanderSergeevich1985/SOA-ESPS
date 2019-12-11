@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.liquibase.org/xml/ns/dbchangelog">
+
+    <changeSet id="all_v.0.1" author="AleksSergeevich1985@gmail.com">
+        <sqlFile endDelimiter="\n/" path="liquibase/payments_v.0.1/sql/all.sql"/>
+    </changeSet>
+
+</databaseChangeLog>
