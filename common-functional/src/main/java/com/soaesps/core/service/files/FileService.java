@@ -1,11 +1,10 @@
 package com.soaesps.core.service.files;
 
+import org.apache.commons.fileupload.FileUploadBase;
 import org.apache.commons.io.IOUtils;
 
 import javax.annotation.Nonnull;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -14,6 +13,8 @@ import java.util.logging.Logger;
 
 public class FileService implements FileServiceI {
     static private final Logger logger;
+
+    static public final Integer MAX_LOADED_FILE_SIZE = 1024;
 
     static {
         logger = Logger.getLogger(FileService.class.getName());
@@ -62,5 +63,24 @@ public class FileService implements FileServiceI {
         }
 
         return null;
+    }
+
+    @Override
+    public ByteArrayOutputStream loadFileInMemory(@Nonnull final String file) throws Exception {
+        final Path path = Paths.get(file);
+        if (!Files.exists(path)) {
+            throw new FileNotFoundException();
+        }
+        Long fileSize = Files.size(path);
+        if (fileSize > MAX_LOADED_FILE_SIZE) {
+            throw new FileUploadBase.FileSizeLimitExceededException("File: ".concat(file), fileSize, MAX_LOADED_FILE_SIZE);
+        }
+        ByteArrayOutputStream baos = null;
+        try (final InputStream in = Files.newInputStream(path)) {
+            baos = new ByteArrayOutputStream(fileSize.intValue());
+            baos.write(IOUtils.toByteArray(in));
+        }
+
+        return baos;
     }
 }
