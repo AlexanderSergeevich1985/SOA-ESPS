@@ -21,7 +21,7 @@ public class ZipCreator {
     public ZipCreator() {}
 
     public OutputStream zipCipher(final Map<String, Object> entries, final String password, final ZipParameters zp) throws IOException {
-        OutputStream os = new ByteArrayOutputStream();
+        final OutputStream os = new ByteArrayOutputStream();
         try (final ZipOutputStream zos = new ZipOutputStream(os, password.toCharArray())) {
             entries.entrySet().stream().forEach(e -> {
                 try {
@@ -36,7 +36,7 @@ public class ZipCreator {
 
         return os;
     }
-
+    
     public Map<String, Object> unzipDecipher(final InputStream is, final String password, final ZipParameters zp) throws Exception {
         final Map<String, Object> result = new IdentityHashMap<>();
         final byte[] buffer = new byte[DEFAULT_READ_BUF_SIZE];

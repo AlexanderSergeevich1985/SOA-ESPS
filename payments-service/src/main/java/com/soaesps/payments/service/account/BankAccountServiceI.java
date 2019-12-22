@@ -11,4 +11,6 @@ public interface BankAccountServiceI {
     boolean modifyAccount(@Nonnull final BankAccount accountNew);
 
     boolean deleteAccount(@Nonnull final Integer accountId);
+
+    boolean archiveAccount(@Nonnull final Integer accountId) throws Exception;
 }

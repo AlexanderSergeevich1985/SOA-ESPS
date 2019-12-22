@@ -38,34 +38,6 @@ public class FileService implements FileServiceI {
     }
 
     @Override
-    public boolean createFileIfNotExist(@Nonnull final String file, @Nonnull final InputStream in) throws IOException {
-        final Path path = createFileIfNotExist(file);
-        if (path != null) {
-            try (final OutputStream out = Files.newOutputStream(path)) {
-                IOUtils.copy(in, out);
-
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    public Path createFileIfNotExist(@Nonnull final String file) throws IOException {
-        final Path path = Paths.get(file);
-        try {
-            if (!Files.exists(path)) {
-                Files.createDirectories(path.getParent());
-                return Files.createFile(path);
-            }
-        } catch (final IOException ioex) {
-            logger.log(Level.WARNING, "[FileService/createDirIfNotExist]: {}", ioex);
-        }
-
-        return null;
-    }
-
-    @Override
     public ByteArrayOutputStream loadFileInMemory(@Nonnull final String file) throws Exception {
         final Path path = Paths.get(file);
         if (!Files.exists(path)) {

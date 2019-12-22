@@ -1,11 +1,16 @@
 package com.soaesps.core.service.files;
 
+import org.apache.commons.io.IOUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Nonnull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
@@ -31,9 +36,30 @@ public interface FileServiceI {
         return clearedStr;
     }
 
-    boolean createDirIfNotExist(@Nonnull final String dir) throws IOException;
+    static boolean createFileIfNotExist(@Nonnull final String file, @Nonnull final InputStream in) throws IOException {
+        final Path path = createFileIfNotExist(file);
+        if (path != null) {
+            try (final OutputStream out = Files.newOutputStream(path)) {
+                IOUtils.copy(in, out);
 
-    boolean createFileIfNotExist(@Nonnull final String file, @Nonnull final InputStream in) throws IOException;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    static Path createFileIfNotExist(@Nonnull final String file) throws IOException {
+        final Path path = Paths.get(file);
+        if (!Files.exists(path)) {
+            Files.createDirectories(path.getParent());
+            return Files.createFile(path);
+        }
+
+        return path;
+    }
+
+    boolean createDirIfNotExist(@Nonnull final String dir) throws IOException;
 
     ByteArrayOutputStream loadFileInMemory(@Nonnull final String file) throws Exception;
 }

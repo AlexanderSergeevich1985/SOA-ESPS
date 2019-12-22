@@ -55,6 +55,15 @@ public class BankAccountService implements BankAccountServiceI {
         return false;
     }
 
+    @Override
+    public boolean archiveAccount(@Nonnull final Integer accountId) throws Exception {
+        final BankAccount account = serverBankAccountRepository.getOne(accountId);
+        final String name = archiveService.generateName(account.getServerBADesc().getOwnerId().toString());
+        final String archiveName = CryptoHelper.getObjectDigest(CryptoHelper.getUuuid().concat(".").concat(name));
+
+        return true;
+    }
+
     protected void copyBankAccount(@Nonnull final BankAccount accountNew, @Nonnull final BankAccount account) {
         account.setModificationTime(ZonedDateTime.now());
         account.setIndentation(accountNew.getIndentation());
