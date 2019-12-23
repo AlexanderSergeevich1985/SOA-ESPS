@@ -9,6 +9,7 @@ import javax.persistence.*;
 
 @Entity
 @Table(name = "server_bills")
+@Inheritance(strategy = InheritanceType.JOINED)
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class BankAccount extends BaseEntity {
     @Embedded
