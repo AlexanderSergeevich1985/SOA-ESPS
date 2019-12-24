@@ -2,18 +2,31 @@ package com.soaesps.payments.domain.transactions;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.PrimaryKeyJoinColumn;
+import javax.persistence.Id;
 import javax.persistence.Table;
 
 @Entity
 @Table(name = "account_history")
-@PrimaryKeyJoinColumn(name = "account_id")
-public class ExtHBankAccount extends BankAccount {
+public class AccountHistory {
+    @Id
+    @Column(name = "account_id", nullable = false)
+    private Integer accountId;
+
     @Column(name = "archive_path", length = 256)
     private String archivePath;
 
     @Column(name = "password", length = 256)
     private String password;
+
+    public AccountHistory() {}
+
+    public Integer getAccountId() {
+        return accountId;
+    }
+
+    public void setAccountId(final Integer accountId) {
+        this.accountId = accountId;
+    }
 
     public String getArchivePath() {
         return archivePath;

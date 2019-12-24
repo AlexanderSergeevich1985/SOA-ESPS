@@ -7,5 +7,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ServerBankAccountRepository extends JpaRepository<BankAccount, Integer> {
     //@Query("SELECT DISTINCT ")
-    //BankAccount findDistinctFirstByServerBillDesc_OwnerId(String name);
+    //BaseBankAccount findDistinctFirstByServerBillDesc_OwnerId(String name);
 }
