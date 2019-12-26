@@ -77,11 +77,26 @@ public class ArchiverService implements ArchiveServiceI {
         return true;
     }
 
+    @Override
     public void addToArchive(@Nonnull final String fileName, @Nonnull final InputStream in,
                                 @Nonnull final ZipOutputStream zos) throws IOException {
         final String validName = FileServiceI.validateFileName(fileName);
         final ZipEntry entry = new ZipEntry(fileName);
         zos.putNextEntry(entry);
         IOUtils.copy(in, zos);
+    }
+
+    @Override
+    public boolean addToArchive(@Nonnull final String fileName, @Nonnull final String archiveName, @Nonnull final InputStream in) throws IOException {
+        final Path path = Paths.get(archiveName);
+        if (!Files.exists(path)) {
+            return false;
+        }
+
+        try (final ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(path))) {
+            addToArchive(fileName, archiveName, in);
+        }
+
+        return false;
     }
 }

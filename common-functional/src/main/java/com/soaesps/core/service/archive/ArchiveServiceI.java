@@ -21,5 +21,7 @@ public interface ArchiveServiceI {
 
     void addToArchive(@Nonnull final String fileName, @Nonnull final InputStream in, @Nonnull final ZipOutputStream zos) throws IOException;
 
+    boolean addToArchive(@Nonnull final String fileName, @Nonnull final String archiveName, @Nonnull final InputStream in) throws IOException;
+
     boolean archiveFiles(@Nonnull final String archiveName, @Nonnull final Map<String, InputStream> files) throws IOException;
 }
