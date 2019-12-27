@@ -77,9 +77,13 @@ public class BankAccountService implements BankAccountServiceI {
             serverBankAccountRepository.save(account);
         } else {
             final AccountHistory history = account.getHistory();
-            final String archivePath = ACCOUNT_ARCHIVE_PATH.concat(history.getArchivePath());
-            final String accountStr = mapper.writeValueAsString(account);\
-            //archiveService.addToArchive(archivePath, IOUtils.toInputStream(accountStr), );
+            final String oldArchivePath = ACCOUNT_ARCHIVE_PATH.concat(history.getArchivePath());
+            final String accountStr = mapper.writeValueAsString(account);
+            final String name = archiveService.generateName(account.getServerBADesc().getOwnerId().toString());
+            final String newArchiveName = CryptoHelper.getObjectDigest(CryptoHelper.getUuuid().concat(".").concat(name));
+            final String newArchivePath = ACCOUNT_ARCHIVE_PATH.concat(newArchiveName);
+            ArchiveServiceI.mergeFileWithArchive(newArchivePath, accountStr, oldArchivePath);
+            history.setArchivePath(newArchivePath);
         }
 
         return true;
