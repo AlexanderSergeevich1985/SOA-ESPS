@@ -1,54 +1,64 @@
 package com.soaesps.core.DataModels;
 
-import javax.annotation.Nonnull;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.soaesps.core.Utils.convertor.hibernate.TimestampConverter;
+import org.hibernate.annotations.GenericGenerator;
+
 import javax.persistence.*;
-import java.sql.Timestamp;
+import java.time.ZonedDateTime;
 
 /**
  * Common 'id' part of all entities.
  */
-@Entity
 @MappedSuperclass
 public abstract class BaseEntity {
     public static final String ID_PROPERTY = "id";
     public static final String CREATION_TIME = "creationTime";
     public static final String MODIFICATION_TIME = "modificationTime";
 
-    @Id
+    /*@Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id", nullable = false, updatable = false)
-    private Long id;
+    private Long id;*/
+    @Id
+    @GenericGenerator(name="kaugen" , strategy="increment")
+    @GeneratedValue(generator="kaugen")
+    @Column(name = "id", nullable = false)
+    private Integer id;
 
     @Column(name = "creation_time", nullable = false, updatable = false)
-    private Timestamp creationTime;
+    @Convert(converter = TimestampConverter.class)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd@HH:mm:ss.SSSZ")
+    private ZonedDateTime creationTime;
 
-    @Column(name = "modification_time", nullable = false)
-    private Timestamp modificationTime;
+    @JsonIgnore
+    @Column(name = "modification_time")
+    @Convert(converter = TimestampConverter.class)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd@HH:mm:ss.SSSZ")
+    private ZonedDateTime modificationTime;
 
-    @Nonnull
-    public Long getId() {
+    public Integer getId() {
         return id;
     }
 
-    public void setId(@Nonnull Long id) {
+    public void setId(final Integer id) {
         this.id = id;
     }
 
-    @Nonnull
-    public Timestamp getCreationTime() {
+    public ZonedDateTime getCreationTime() {
         return creationTime;
     }
 
-    public void setCreationTime(@Nonnull Timestamp creationTime) {
+    public void setCreationTime(final ZonedDateTime creationTime) {
         this.creationTime = creationTime;
     }
 
-    @Nonnull
-    public Timestamp getModificationTime() {
+    public ZonedDateTime getModificationTime() {
         return modificationTime;
     }
 
-    public void setModificationTime(@Nonnull Timestamp modificationTime) {
+    public void setModificationTime(final ZonedDateTime modificationTime) {
         this.modificationTime = modificationTime;
     }
 }

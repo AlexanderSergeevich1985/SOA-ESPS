@@ -1,6 +1,8 @@
 package com.soaesps.payments.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.soaesps.payments.config.DatabaseConfig;
 import com.soaesps.payments.domain.transactions.BankAccount;
 import com.soaesps.payments.domain.transactions.ServerBADesc;
@@ -26,6 +28,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
+import java.time.ZonedDateTime;
 import java.util.UUID;
 
 import static org.mockito.MockitoAnnotations.initMocks;
@@ -36,7 +39,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 @ContextConfiguration(classes = {DatabaseConfig.class}, loader = AnnotationConfigContextLoader.class)
 @WebAppConfiguration
 public class BankAccountControllerTest {
-    private ObjectMapper mapper = new ObjectMapper();
+    static private ObjectMapper mapper = new ObjectMapper();
+
+    static {
+        mapper.registerModule(new JavaTimeModule());
+        mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+    }
 
     @Mock
     private BankAccountService bankAccountService;
@@ -107,7 +115,7 @@ public class BankAccountControllerTest {
 
     static protected String asJsonString(final Object obj) {
         try {
-            return new ObjectMapper().writeValueAsString(obj);
+            return mapper.writeValueAsString(obj);
         } catch (final Exception ex) {
             throw new RuntimeException(ex);
         }
@@ -116,7 +124,7 @@ public class BankAccountControllerTest {
     protected BankAccount getTestAccount() {
         final BankAccount account = new BankAccount();
         account.setIndentation("test");
-        //account.setCreationTime(ZonedDateTime.now());
+        account.setCreationTime(ZonedDateTime.now());
         final ServerBADesc desc = new ServerBADesc();
         desc.setUuid(UUID.randomUUID());
         desc.setOwnerId(1L);
