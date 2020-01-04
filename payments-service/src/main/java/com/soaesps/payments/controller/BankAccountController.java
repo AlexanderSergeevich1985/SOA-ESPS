@@ -4,6 +4,7 @@ import com.soaesps.payments.domain.transactions.BankAccount;
 import com.soaesps.payments.service.account.BankAccountService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,7 +16,7 @@ public class BankAccountController {
     @Autowired
     private BankAccountService bankAccountService;
 
-    @PostMapping(path = "/register")
+    @PostMapping(path = "/register", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> registerBankAccount(@Valid @RequestBody BankAccount account) {
         final BankAccount newAccount = this.bankAccountService.registerAccount(account);
         if (newAccount != null) {
@@ -36,7 +37,7 @@ public class BankAccountController {
     }
 
     @DeleteMapping(path = "/delete")
-    public ResponseEntity<?> deleteBankAccount(@Valid Integer accountId) {
+    public ResponseEntity<?> deleteBankAccount(@Valid @RequestParam("accountId") Integer accountId) {
         if (this.bankAccountService.deleteAccount(accountId)) {
             return ResponseEntity.status(HttpStatus.OK).build();
         }
@@ -44,8 +45,8 @@ public class BankAccountController {
         return ResponseEntity.badRequest().body("Invalid data request");
     }
 
-    @DeleteMapping(path = "/archive")
-    public ResponseEntity<?> archiveBankAccount(@Valid Integer accountId) throws Exception {
+    @PostMapping(path = "/archive")
+    public ResponseEntity<?> archiveBankAccount(@Valid @RequestParam("accountId") Integer accountId) throws Exception {
         if (this.bankAccountService.archiveAccount(accountId)) {
             return ResponseEntity.status(HttpStatus.OK).build();
         }

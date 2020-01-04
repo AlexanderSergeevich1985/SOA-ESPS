@@ -55,12 +55,51 @@ public class BankAccountControllerTest {
 
     @Test
     public void registerBankAccount() throws Exception {
-        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.post("/bankaccount/register");
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.post("/bank_account/register");
         final String bodyContent = asJsonString(getTestAccount());
         final BankAccount account = mapper.readValue(bodyContent, BankAccount.class);
         Mockito.doReturn(account).when(bankAccountService).registerAccount(Mockito.any());
         this.mockMvc.perform(builder
                 .content(bodyContent)
+                .contentType(MediaType.APPLICATION_JSON_VALUE))
+                .andDo(print())
+                .andExpect(MockMvcResultMatchers.status().isOk());
+    }
+
+    @Test
+    public void modifyBankAccount() throws Exception {
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.put("/bank_account/modify");
+        final String bodyContent = asJsonString(getTestAccount());
+        final BankAccount account = mapper.readValue(bodyContent, BankAccount.class);
+        Mockito.doReturn(account).when(bankAccountService).modifyAccount(Mockito.any());
+        this.mockMvc.perform(builder
+                .content(bodyContent)
+                .contentType(MediaType.APPLICATION_JSON_VALUE))
+                .andDo(print())
+                .andExpect(MockMvcResultMatchers.status().isOk());
+    }
+
+    @Test
+    public void deleteBankAccount() throws Exception {
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.delete("/bank_account/delete");
+        final String bodyContent = asJsonString(getTestAccount());
+        final BankAccount account = mapper.readValue(bodyContent, BankAccount.class);
+        Mockito.doReturn(true).when(bankAccountService).deleteAccount(Mockito.any());
+        this.mockMvc.perform(builder
+                .param("accountId","1")
+                .contentType(MediaType.APPLICATION_JSON_VALUE))
+                .andDo(print())
+                .andExpect(MockMvcResultMatchers.status().isOk());
+    }
+
+    @Test
+    public void archiveBankAccount() throws Exception {
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.post("/bank_account/archive");
+        final String bodyContent = asJsonString(getTestAccount());
+        final BankAccount account = mapper.readValue(bodyContent, BankAccount.class);
+        Mockito.doReturn(true).when(bankAccountService).archiveAccount(Mockito.any());
+        this.mockMvc.perform(builder
+                .param("accountId","1")
                 .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andDo(print())
                 .andExpect(MockMvcResultMatchers.status().isOk());
