@@ -67,6 +67,10 @@ services:
       AGG_REDIS_PASSWORD: $AGG_REDIS_PASSWORD
     container_name: redis
     image: redis:latest
+    command: ["redis-server", "--appendonly", "yes"]
+    hostname: redis
+    networks:
+      - redis-net
     ports:
       - 6379:6379
     volumes:
