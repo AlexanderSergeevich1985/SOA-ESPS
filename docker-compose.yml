@@ -1,0 +1,78 @@
+version: '3.1'
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    restart: always
+    ports:
+      - 15672:15672
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
+
+  config:
+    environment:
+      CONFIG_SERVICE_PASSWORD: $CONFIG_SERVICE_PASSWORD
+    image: config-server:latest
+    restart: always
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
+
+  auth-service:
+    environment:
+      CONFIG_SERVICE_PASSWORD: $CONFIG_SERVICE_PASSWORD
+      PROFILE_SERVICE_PASSWORD: $PROFILE_SERVICE_PASSWORD
+      AUTH_MONGODB_PASSWORD: $AUTH_MONGODB_PASSWORD
+    image: $REGISTRY/SOA_ESPS/AUTH-SERVICE
+    deploy:
+      restart_policy:
+        condition: on-failure
+    depends_on:
+      config:
+        condition: service_healthy
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
+
+  auth-mongodb:
+    environment:
+      AUTH_MONGODB_PASSWORD: $AUTH_MONGODB_PASSWORD
+    image: $REGISTRY/SOA_ESPS/AUTH-MONGODB
+    restart: always
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
+
+  aggregator:
+    environment:
+      CONFIG_SERVICE_PASSWORD: $CONFIG_SERVICE_PASSWORD
+    image: $REGISTRY/SOA_ESPS/AGGREGATOR
+    deploy:
+      restart_policy:
+        condition: on-failure
+    depends_on:
+      config:
+        condition: service_healthy
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
+
+  aggregator-redis:
+    environment:
+      AGG_REDIS_PASSWORD: $AGG_REDIS_PASSWORD
+    container_name: redis
+    image: redis:latest
+    ports:
+      - 6379:6379
+    volumes:
+      - ../data/redis:/data
+    restart: always
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
