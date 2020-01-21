@@ -12,7 +12,7 @@ import java.util.stream.Stream;
 public class NTPService {
     private CacheI<String, NodeTimeDesc> cache;
 
-    private Instant medianTime;
+    private Long medianDiffTime;
 
     public NTPService() {}
 
@@ -25,7 +25,17 @@ public class NTPService {
         if (timeDesc == null) {
             return null;
         }
-        return medianTime.minusNanos(timeDesc.getDelay().getNano()).atZone(zoneId);
+
+        return getAvgTime().plusNanos(timeDesc.getDelay().getNano()).atZone(zoneId);
+    }
+
+    public Long getNodeDiffTimeEval(final String nodeId) {
+        final NodeTimeDesc timeDesc = cache.get(nodeId);
+        if (timeDesc == null) {
+            return null;
+        }
+
+        return timeDesc.getDiffNodeServerTime();
     }
 
     public void calcMedianTime() {
@@ -34,7 +44,19 @@ public class NTPService {
                 .filter(Objects::nonNull)
                 .mapToLong(NodeTimeDesc::getDiffNodeServerTime)
                 .average();
-        this.medianTime = Instant.now().plusNanos((long) avgDiff.getAsDouble());
+        this.medianDiffTime = (long) avgDiff.getAsDouble();
+    }
+
+    public Instant getAvgTime() {
+        return Instant.now().plusNanos(medianDiffTime);
+    }
+
+    public Long getMedianDiffTime() {
+        return medianDiffTime;
+    }
+
+    public void setMedianDiffTime(final Long medianDiffTime) {
+        this.medianDiffTime = medianDiffTime;
     }
 
     public CacheI<String, NodeTimeDesc> getCache() {
@@ -43,14 +65,6 @@ public class NTPService {
 
     public void setCache(final CacheI<String, NodeTimeDesc> cache) {
         this.cache = cache;
-    }
-
-    public ZonedDateTime getMedianTime(final ZoneId zoneId) {
-        return medianTime.atZone(zoneId);
-    }
-
-    public void setMedianTime(final Instant medianTime) {
-        this.medianTime = medianTime;
     }
 
     public boolean updateTime(final String nodeId, final Long diffTime) {
