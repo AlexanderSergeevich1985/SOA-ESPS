@@ -1,0 +1,12 @@
+spring:
+  profiles:
+    active: DEV#LOCAL
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    listener:
+      direct:
+        consumers-per-queue: 2
