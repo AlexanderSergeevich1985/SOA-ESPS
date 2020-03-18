@@ -45,7 +45,8 @@ public class EmailSender implements SenderI {
         this.templateEngine = templateEngine;
     }
 
-    private void send(final MimeMessage message) {
+    @Override
+    public void send(final MimeMessage message) {
         final MimeMessage mimeMessage = javaMailSender.createMimeMessage();
         try {
             javaMailSender.send(mimeMessage);

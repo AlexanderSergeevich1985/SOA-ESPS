@@ -1,5 +1,7 @@
 package com.soaesps.notifications.service;
 
-public interface SenderI {
+import javax.mail.internet.MimeMessage;
 
+public interface SenderI {
+    void send(final MimeMessage message);
 }
