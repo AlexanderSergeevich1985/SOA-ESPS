@@ -10,13 +10,11 @@ import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.amqp.inbound.AmqpInboundChannelAdapter;
 import org.springframework.integration.amqp.outbound.AmqpOutboundEndpoint;
-import org.springframework.integration.annotation.BridgeFrom;
-import org.springframework.integration.annotation.InboundChannelAdapter;
-import org.springframework.integration.annotation.Poller;
-import org.springframework.integration.annotation.ServiceActivator;
+import org.springframework.integration.annotation.*;
 import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.channel.NullChannel;
 import org.springframework.integration.channel.PublishSubscribeChannel;
@@ -24,13 +22,50 @@ import org.springframework.integration.config.EnableIntegration;
 import org.springframework.messaging.MessageChannel;
 
 @Configuration
+@ComponentScan("com.soaesps.notifications.integration")
 @EnableIntegration
+@IntegrationComponentScan("com.soaesps.notifications.integration")
 public class IntegrationConfiguration {
     private String host = "localhost";
 
     private String DEFAULT_MESSAGE_QUEUE_NAME = "message_queue";
 
     private String DEFAULT_EXCHANGER_NAME = "message_queue";
+
+    @Bean(IntegrationConstant.GATEWAY_CHANNEL)
+    public MessageChannel gatewayChannel() {
+        return new DirectChannel();
+    }
+
+    @Bean(IntegrationConstant.FILTER_CHANNEL)
+    public MessageChannel filterChannel() {
+        return new DirectChannel();
+    }
+
+    @Bean(IntegrationConstant.DISCARD_FILTER_CHANNEL)
+    public MessageChannel discardFilterChannel() {
+        return new DirectChannel();
+    }
+
+    @Bean(IntegrationConstant.TRANSFORMER_CHANNEL)
+    public MessageChannel transformerChannel() {
+        return new DirectChannel();
+    }
+
+    @Bean(IntegrationConstant.SIMPLE_ROUTER_CHANNEL)
+    public MessageChannel simpleRouterChannel() {
+        return new DirectChannel();
+    }
+
+    @Bean(IntegrationConstant.AGG_ROUTER_CHANNEL)
+    public MessageChannel aggRouterChannel() {
+        return new DirectChannel();
+    }
+
+    @Bean(IntegrationConstant.MESSAGE_ACTIVATOR_CHANNEL)
+    public MessageChannel activatorChannel() {
+        return new DirectChannel();
+    }
 
     @Bean
     public MessageChannel amqpInputChannel() {

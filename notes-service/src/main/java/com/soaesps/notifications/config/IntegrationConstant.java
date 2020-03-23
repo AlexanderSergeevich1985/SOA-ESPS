@@ -12,4 +12,6 @@ public class IntegrationConstant {
     public static final String AGG_ROUTER_CHANNEL = "router.channel";
 
     public static final String SIMPLE_ROUTER_CHANNEL = "router.channel";
+
+    public static final String MESSAGE_ACTIVATOR_CHANNEL = "message.activator.channel";
 }
