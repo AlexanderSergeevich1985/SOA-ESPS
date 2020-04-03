@@ -5,8 +5,8 @@ import java.util.Comparator;
 import java.util.PriorityQueue;
 import java.util.concurrent.RecursiveAction;
 
-public class TransBatch<T extends Number> {
-    private TransPersister<T> persister;
+public class TransBatch<ID extends Comparable<ID>, T extends Number> {
+    private TransPersister<ID, T> persister;
 
     private PriorityQueue<Transaction<T>> queue;
 
@@ -16,11 +16,11 @@ public class TransBatch<T extends Number> {
         this.queue = new PriorityQueue<>(getComparator());
     }
 
-    public TransPersister<T> getPersister() {
+    public TransPersister<ID, T> getPersister() {
         return persister;
     }
 
-    public void setPersister(final TransPersister<T> persister) {
+    public void setPersister(final TransPersister<ID, T> persister) {
         this.persister = persister;
     }
 
@@ -47,7 +47,7 @@ public class TransBatch<T extends Number> {
                 if (newValue.compareTo(new BigDecimal(0.0)) == -1) {
                     return;
                 }
-                persister.save(transaction.getDesc());
+                persister.save(transaction);
                 value = newValue;
             }
         }

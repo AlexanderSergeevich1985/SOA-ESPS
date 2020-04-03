@@ -3,7 +3,7 @@ package com.soaesps.core.Utils.transaction;
 
 import java.time.ZonedDateTime;
 
-public class Transaction<T extends Number> {
+public class Transaction<T> {
     private TransDesc.Type type;
 
     private T value;

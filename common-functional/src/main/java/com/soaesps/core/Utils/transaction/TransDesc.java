@@ -1,6 +1,6 @@
 package com.soaesps.core.Utils.transaction;
 
-public interface TransDesc<T extends Number> {
+public interface TransDesc<T> {
     T getValue();
 
     enum Type {
