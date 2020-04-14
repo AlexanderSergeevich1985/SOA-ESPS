@@ -1,11 +1,16 @@
 package com.soaesps.profile.service;
 
 import com.soaesps.core.DataModels.security.UserProfile;
+import com.soaesps.profile.component.InServiceRouter;
+import com.soaesps.profile.config.HibernateConfiguration;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -14,9 +19,13 @@ import org.springframework.test.context.junit4.SpringRunner;
 import java.time.ZonedDateTime;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = {ProfileServiceImpl.class})
+@SpringBootTest(classes = {HibernateConfiguration.class, ProfileServiceImpl.class})
 public class ProfileServiceTests {
+    @Mock
+    private InServiceRouter inServiceRouter;
+
 	@Autowired
+    @InjectMocks
 	private ProfileServiceImpl profileService;
 
 	@Before
@@ -25,10 +34,7 @@ public class ProfileServiceTests {
 	}
 
 	@Test
-	public void contextLoads() {}
-
-	@Test
-	public void getUserProfile(final long id) {
+	public void getUserProfile() {
 		Assert.assertTrue(profileService.createProfile(getTestProfile()));
 		Assert.assertNotNull(profileService.getUserProfile(getTestId()));
 		Assert.assertNotNull(profileService.getUserProfile(getTestName()));
