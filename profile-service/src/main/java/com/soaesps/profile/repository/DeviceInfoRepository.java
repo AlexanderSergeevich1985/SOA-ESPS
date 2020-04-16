@@ -9,5 +9,5 @@ import java.util.Optional;
 
 @Repository
 public interface DeviceInfoRepository extends JpaRepository<DeviceInfo, Long> {
-    Optional<DeviceInfo> findByDeviceUUID(final String name);
+    //Optional<DeviceInfo> findByDeviceUUID(final String name);
 }

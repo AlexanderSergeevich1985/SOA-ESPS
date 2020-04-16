@@ -1,8 +1,9 @@
-package com.soaesps.core.DataModels.security;
+package com.soaesps.core.DataModels.user;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.soaesps.core.DataModels.BaseEntity;
 import com.soaesps.core.DataModels.device.DeviceInfo;
+import com.soaesps.core.DataModels.security.BaseUserDetails;
 import org.hibernate.annotations.BatchSize;
 
 import javax.annotation.Nullable;
@@ -24,7 +25,7 @@ public class UserProfile extends BaseEntity {
 
     @ManyToMany(fetch = FetchType.LAZY, cascade = { CascadeType.ALL })
     @JoinTable(
-            name = "USERS_DEVICE",
+            name = "USER_DEVICES",
             joinColumns = { @JoinColumn(name = "user_profile_id") },
             inverseJoinColumns = { @JoinColumn(name = "device_id") }
     )

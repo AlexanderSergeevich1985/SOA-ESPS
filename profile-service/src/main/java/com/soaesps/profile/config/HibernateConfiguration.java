@@ -39,7 +39,7 @@ public class HibernateConfiguration {
     public SessionFactory sessionFactory(final DataSource restDataSource) {
         final LocalSessionFactoryBean sessionFactory = new LocalSessionFactoryBean();
         sessionFactory.setDataSource(restDataSource);
-        sessionFactory.setPackagesToScan("com.soaesps.payments.DataModels", "com.soaesps.payments.DataModels.Transactions");
+        sessionFactory.setPackagesToScan("com.soaesps.core.DataModels", "com.soaesps.payments.DataModels.Transactions");
         sessionFactory.setHibernateProperties(hibernateProperties());
 
         return sessionFactory.getObject();
@@ -60,7 +60,7 @@ public class HibernateConfiguration {
     public LocalContainerEntityManagerFactoryBean entityManagerFactory(final DataSource restDataSource) {
         final LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
         em.setDataSource(restDataSource);
-        em.setPackagesToScan("com.soaesps.payments", "com.soaesps.payments.DataModels", "com.soaesps.payments.DataModels.Transactions");
+        em.setPackagesToScan("com.soaesps.core.DataModels.device", "com.soaesps.core.DataModels.user");
 
         final JpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
         em.setJpaVendorAdapter(vendorAdapter);

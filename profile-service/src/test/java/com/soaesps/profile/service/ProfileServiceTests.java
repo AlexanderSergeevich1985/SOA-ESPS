@@ -1,6 +1,6 @@
 package com.soaesps.profile.service;
 
-import com.soaesps.core.DataModels.security.UserProfile;
+import com.soaesps.core.DataModels.user.UserProfile;
 import com.soaesps.profile.component.InServiceRouter;
 import com.soaesps.profile.config.HibernateConfiguration;
 

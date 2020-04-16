@@ -1,4 +1,4 @@
-package com.soaesps.core.DataModels.security;
+package com.soaesps.core.DataModels.user;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.soaesps.core.DataModels.BaseEntity;

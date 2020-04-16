@@ -1,7 +1,7 @@
 package com.soaesps.profile.service;
 
 import com.soaesps.core.DataModels.device.DeviceInfo;
-import com.soaesps.core.DataModels.security.UserProfile;
+import com.soaesps.core.DataModels.user.UserProfile;
 import com.soaesps.profile.component.InServiceRouter;
 import com.soaesps.profile.repository.UserProfilesRepository;
 
@@ -44,7 +44,7 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     public UserProfile getUserProfile(final String name) {
-        Optional<UserProfile> result = this.repository.findByName(name);
+        Optional<UserProfile> result = this.repository.findByUserName(name);
         if(!result.isPresent()) {
             return null;
         }
@@ -61,14 +61,14 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     public List<DeviceInfo> getUserDevice(final String name) {
-        Optional<UserProfile> result = this.repository.findByName(name);
+        Optional<UserProfile> result = this.repository.findByUserName(name);
 
         return result.isPresent() ? result.get().getDevices() : null;
     }
 
     @Override
     public boolean createProfile(@NotNull final UserProfile profile) {
-        Optional<UserProfile> result = this.repository.findByName(profile.getUserName());
+        Optional<UserProfile> result = this.repository.findByUserName(profile.getUserName());
         if(!result.isPresent()) {
             return false;
         }
@@ -89,7 +89,7 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     public boolean updateProfile(@NotNull UserProfile profile) {
-        Optional<UserProfile> result = this.repository.findByName(profile.getUserName());
+        Optional<UserProfile> result = this.repository.findByUserName(profile.getUserName());
         if(!result.isPresent()) {
             return false;
         }
@@ -109,7 +109,7 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     public boolean updateProfile(final String name, @NotNull UserProfile profile) {
-        Optional<UserProfile> result = this.repository.findByName(name);
+        Optional<UserProfile> result = this.repository.findByUserName(name);
         if(!result.isPresent()) {
             return false;
         }
