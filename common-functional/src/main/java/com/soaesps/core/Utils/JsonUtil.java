@@ -50,6 +50,7 @@ public class JsonUtil {
                 logger.log(Level.INFO, "[JsonUtil/toJsonNode]: {}", ex);
             }
         }
+
         return null;
     }
 
