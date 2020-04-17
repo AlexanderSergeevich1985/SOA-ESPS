@@ -8,6 +8,7 @@ import javax.annotation.Nullable;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 import javax.validation.constraints.Size;
 import java.security.Principal;
 
@@ -29,6 +30,7 @@ public class DeviceInfo extends BaseEntity implements Principal {
     @Column(name="device_key_hash", length = 500)
     private String deviceKeyHash;
 
+    @Transient
     transient private int hashCode = -1;
 
     protected DeviceInfo() {}
