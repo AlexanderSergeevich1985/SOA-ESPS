@@ -19,6 +19,7 @@
 package com.soaesps.core.DataModels.security;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.soaesps.core.DataModels.BaseOnlyIdEntity;
 import com.soaesps.core.Utils.DateTimeHelper;
 import org.codehaus.jackson.annotate.JsonCreator;
 import org.codehaus.jackson.annotate.JsonValue;
@@ -34,7 +35,7 @@ import java.util.Date;
 @Entity
 @Table(name = "ISSUED_REFRESH_TOKENS")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-public class BaseOAuth2RefreshToken implements Serializable, OAuth2RefreshToken {
+public class BaseOAuth2RefreshToken extends BaseOnlyIdEntity implements Serializable, OAuth2RefreshToken {
     @Transient
     private static final long DEFAULT_EXP_PERIOD_SECONDS = 1 * 60 * 60;
 

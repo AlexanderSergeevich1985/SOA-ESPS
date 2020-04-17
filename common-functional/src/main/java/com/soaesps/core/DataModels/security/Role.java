@@ -1,6 +1,7 @@
 package com.soaesps.core.DataModels.security;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.soaesps.core.DataModels.BaseEntity;
 import org.springframework.security.core.GrantedAuthority;
 
 import javax.annotation.Nonnull;
@@ -13,7 +14,7 @@ import java.util.List;
 @Entity
 @Table(name = "USER_ROLES")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-public class Role implements GrantedAuthority {
+public class Role extends BaseEntity implements GrantedAuthority {
     @Column(name = "role_name", length = 100, nullable = false)
     private String roleName;
 

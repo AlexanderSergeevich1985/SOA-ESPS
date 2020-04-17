@@ -1,7 +1,7 @@
 package com.soaesps.profile.controller;
 
 import com.soaesps.core.DataModels.device.DeviceInfo;
-import com.soaesps.core.DataModels.security.UserProfile;
+import com.soaesps.core.DataModels.user.UserProfile;
 import com.soaesps.profile.service.ProfileService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;

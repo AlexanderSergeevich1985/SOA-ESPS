@@ -1,6 +1,8 @@
 package com.soaesps.core.DataModels.security;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.soaesps.core.DataModels.BaseEntity;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Cache;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -22,10 +24,12 @@ public class BaseUserDetails extends BaseEntity implements UserDetails {
             joinColumns = { @JoinColumn(name = "user_profile_id") },
             inverseJoinColumns = { @JoinColumn(name = "role_id") }
     )
+    @BatchSize(size = 20)
     private List<Role> authorities;
 
     @Column(nullable = false)
     @Size(min = 8, max = 40)
+    @JsonProperty("password")
     private String password;
 
     @Column(nullable = false)

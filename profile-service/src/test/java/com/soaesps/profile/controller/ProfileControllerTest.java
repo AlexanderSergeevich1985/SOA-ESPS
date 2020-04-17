@@ -1,7 +1,7 @@
 package com.soaesps.profile.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.soaesps.core.DataModels.security.UserProfile;
+import com.soaesps.core.DataModels.user.UserProfile;
 import com.soaesps.profile.ProfileApplication;
 import com.soaesps.profile.service.ProfileService;
 import com.sun.security.auth.UserPrincipal;
