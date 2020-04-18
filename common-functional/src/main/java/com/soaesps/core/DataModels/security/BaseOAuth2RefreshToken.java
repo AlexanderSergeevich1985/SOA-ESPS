@@ -21,6 +21,7 @@ package com.soaesps.core.DataModels.security;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.soaesps.core.DataModels.BaseOnlyIdEntity;
 import com.soaesps.core.Utils.DateTimeHelper;
+import com.soaesps.core.Utils.HashGeneratorHelper;
 import org.codehaus.jackson.annotate.JsonCreator;
 import org.codehaus.jackson.annotate.JsonValue;
 import org.springframework.security.oauth2.common.OAuth2RefreshToken;
@@ -59,8 +60,8 @@ public class BaseOAuth2RefreshToken extends BaseOnlyIdEntity implements Serializ
 
     @JsonCreator
     public BaseOAuth2RefreshToken(final String value, final long interval) {
-        this.value = value;
         this.expiration = Date.from(DateTimeHelper.calcExpirationDate(Duration.ofSeconds(interval)));
+        this.value = HashGeneratorHelper.mixTwoString(value, this.expiration.toString());
     }
 
     @Override
