@@ -17,7 +17,12 @@ import java.util.Date;
 import java.util.Optional;
 
 public interface AccessTokenFactory {
-    BaseOAuth2AccessToken createAccessToken(final UserDetails userDetails) throws IOException, NoSuchAlgorithmException;
+    BaseOAuth2AccessToken createAccessToken(final UserDetails userDetails) throws IOException;
+
+    static AccessTokenFactory getInstance(final OAuth2TokenRepository tokenRepository,
+                                   final String secret, final long validityPeriod) {
+        return new AccessTokenFactoryImpl(tokenRepository, secret, validityPeriod);
+    }
 
     class AccessTokenFactoryImpl implements AccessTokenFactory {
         private final String secret;
@@ -26,21 +31,27 @@ public interface AccessTokenFactory {
 
         private OAuth2TokenRepository tokenRepository;
 
-        public AccessTokenFactoryImpl(final String secret, final long validityPeriod) {
+        public AccessTokenFactoryImpl(final OAuth2TokenRepository tokenRepository,
+                                      final String secret, final long validityPeriod) {
+            this.tokenRepository = tokenRepository;
             this.secret = secret;
             this.validityPeriod = validityPeriod;
         }
 
         public BaseOAuth2AccessToken createAccessToken(final UserDetails userDetails)
-                throws IOException, NoSuchAlgorithmException {
+                throws IOException  {
             final BaseOAuth2AccessToken accessToken =
                     new BaseOAuth2AccessToken(secret, validityPeriod);
 
             final BaseOAuth2RefreshToken refreshToken =
                     new BaseOAuth2RefreshToken(secret, 10 * validityPeriod);
-            refreshToken.setValue(CryptoHelper.getObjectDigest(refreshToken));
-            accessToken.setRefreshToken(refreshToken);
-            accessToken.setValue(CryptoHelper.getObjectDigest(accessToken));
+            try {
+                refreshToken.setValue(CryptoHelper.getObjectDigest(refreshToken));
+                accessToken.setRefreshToken(refreshToken);
+                accessToken.setValue(CryptoHelper.getObjectDigest(accessToken));
+            } catch (final NoSuchAlgorithmException ex) {
+                return null;
+            }
             tokenRepository.save(accessToken);
 
             return accessToken;

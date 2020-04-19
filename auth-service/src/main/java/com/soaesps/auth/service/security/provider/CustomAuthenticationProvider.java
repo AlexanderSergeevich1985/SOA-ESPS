@@ -1,4 +1,4 @@
-package com.soaesps.auth.service.security;
+package com.soaesps.auth.service.security.provider;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;

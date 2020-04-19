@@ -1,5 +1,10 @@
 package com.soaesps.auth.config;
 
+import com.soaesps.auth.repository.OAuth2TokenRepository;
+import com.soaesps.auth.service.security.AccessTokenFactory;
+import com.soaesps.auth.service.security.handler.CustomAuthenticationFailureHandler;
+import com.soaesps.auth.service.security.handler.CustomAuthenticationSuccessHandler;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -19,7 +24,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 @ComponentScan("com.soaesps.auth")
-public class SecurityConfiguration extends WebSecurityConfigurerAdapter {@Autowired
+public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
+    @Autowired
+    private OAuth2TokenRepository tokenRepository;
+
+    @Autowired
     @Qualifier("baseUserDetailsServiceImpl")
     private UserDetailsService userDetailsService;
 
@@ -27,14 +36,27 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {@Autowi
     @Qualifier("customAuthenticationProvider")
     private AuthenticationProvider provider;
 
+    @Autowired
+    private CustomAuthenticationFailureHandler failureHandler;
+
+    @Autowired
+    private CustomAuthenticationSuccessHandler successHandler;
+
     @Bean("passwordEncoder")
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    @Bean
+    public AccessTokenFactory tokenProvider() {
+        return AccessTokenFactory.getInstance(tokenRepository, "secret", 10000);
+    }
+
     @Override
     protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
-        auth.authenticationProvider(provider).userDetailsService(userDetailsService).passwordEncoder(passwordEncoder());
+        auth.authenticationProvider(provider)
+                .userDetailsService(userDetailsService)
+                .passwordEncoder(passwordEncoder());
     }
 
     @Override
@@ -46,6 +68,8 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {@Autowi
                 .loginPage("/login") //login page path
                 .loginProcessingUrl("/login_security_check") //login checking path
                 .failureUrl("/login?error") //path for login failure
+                .failureHandler(failureHandler)
+                .successHandler(successHandler)
                 .permitAll()
                 .and()
                 .logout()

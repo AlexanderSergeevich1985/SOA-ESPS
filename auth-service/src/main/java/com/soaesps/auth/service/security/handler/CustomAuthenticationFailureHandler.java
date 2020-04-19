@@ -17,7 +17,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.LocalDateTime;
 
-@Component
+@Component("failureHandler")
 public class CustomAuthenticationFailureHandler implements AuthenticationFailureHandler {
     public final ErrorResponse errorResponse = new ErrorResponse();
 

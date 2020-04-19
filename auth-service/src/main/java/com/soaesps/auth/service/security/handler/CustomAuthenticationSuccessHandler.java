@@ -20,10 +20,11 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 
-@Component
+@Component("successHandler")
 public class CustomAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
     @Autowired
     private ObjectMapper mapper;
@@ -33,7 +34,7 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
 
     @Override
     public void onAuthenticationSuccess(final HttpServletRequest request, final HttpServletResponse response,
-                                        final Authentication authentication) throws IOException, ServletException {
+                                        final Authentication authentication) throws IOException {
         final UserDetails userDetails = (UserDetails) authentication.getPrincipal();
 
         final BaseOAuth2AccessToken accessToken = tokenProvider.createAccessToken(userDetails);
