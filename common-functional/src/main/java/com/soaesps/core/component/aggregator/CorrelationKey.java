@@ -5,6 +5,10 @@ import java.util.function.Predicate;
 public class CorrelationKey {
     private String correlationId;
 
+    public CorrelationKey(final String correlationId) {
+        this.correlationId = correlationId;
+    }
+
     public String getCorrelationId() {
         return correlationId;
     }
@@ -29,6 +33,10 @@ public class CorrelationKey {
         final CorrelationKey key = (CorrelationKey) other;
 
         return this.correlationId.equals(key.correlationId);
+    }
+
+    public static CorrelationKey build(final String key) {
+        return new CorrelationKey(key);
     }
 
     private static final Predicate<Object> isInstanceOfTheClass =
