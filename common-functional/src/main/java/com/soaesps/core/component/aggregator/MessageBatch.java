@@ -3,6 +3,7 @@ package com.soaesps.core.component.aggregator;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 public class MessageBatch<ID extends Serializable> {
@@ -11,6 +12,14 @@ public class MessageBatch<ID extends Serializable> {
     private Integer batchSize;
 
     protected ConcurrentSkipListSet<ID> keys;
+
+    public MessageBatch() {
+        this.keys = new ConcurrentSkipListSet<>();
+    }
+
+    public MessageBatch(final Comparator<ID> comparator) {
+        this.keys = new ConcurrentSkipListSet<>(comparator);
+    }
 
     public LocalDateTime getTimestamp() {
         return timestamp;
