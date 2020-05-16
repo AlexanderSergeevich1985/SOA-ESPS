@@ -1,5 +1,8 @@
 package com.soaesps.notifications.config;
 
+import com.soaesps.core.Utils.CryptoHelper;
+import com.soaesps.core.component.aggregator.CorrelationStrategyI;
+import com.soaesps.core.component.aggregator.ReleaseStrategyI;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -8,10 +11,14 @@ import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.mongodb.MongoDbFactory;
+import org.springframework.expression.common.LiteralExpression;
 import org.springframework.integration.amqp.inbound.AmqpInboundChannelAdapter;
 import org.springframework.integration.amqp.outbound.AmqpOutboundEndpoint;
 import org.springframework.integration.annotation.*;
@@ -19,7 +26,14 @@ import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.channel.NullChannel;
 import org.springframework.integration.channel.PublishSubscribeChannel;
 import org.springframework.integration.config.EnableIntegration;
+import org.springframework.integration.mongodb.inbound.MongoDbMessageSource;
+import org.springframework.integration.mongodb.store.MongoDbMessageStore;
+import org.springframework.integration.store.MessageGroupStore;
+import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
+
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 
 @Configuration
 @ComponentScan("com.soaesps.notifications.integration")
@@ -84,6 +98,27 @@ public class IntegrationConfiguration {
     }
 
     @Bean
+    public MessageGroupStore messageStore(final MongoDbFactory mongoDbFactory) {
+        return new MongoDbMessageStore(mongoDbFactory);
+    }
+
+    @Bean
+    public ReleaseStrategyI releaseStrategy() {
+        return new ReleaseStrategyI.LimitReleaseStrategy();
+    }
+
+    @Bean
+    public CorrelationStrategyI correlationStrategy() {
+        return new CorrelationStrategyI.CorrelationKeyStrategy((object) -> {
+            try {
+                final Message message = (Message) object;
+
+                return CryptoHelper.getObjectDigest(message.getHeaders());
+            } catch (final IOException | NoSuchAlgorithmException ex) {}
+        });
+    }
+    
+    @Bean
     public RabbitTemplate rabbitTemplate() {
         return new RabbitTemplate(rabbitConnectionFactory());
     }
@@ -138,7 +173,7 @@ public class IntegrationConfiguration {
 
     @Bean
     @ServiceActivator(inputChannel = "amqpOutboundChannel")
-    public AmqpOutboundEndpoint amqpOutbound() { //MessageHandler
+    public AmqpOutboundEndpoint amqpOutbound() { //MessageHandlers
         final AmqpOutboundEndpoint endpoint = new AmqpOutboundEndpoint(rabbitTemplate());
         endpoint.setExchangeName(DEFAULT_EXCHANGER_NAME);
         endpoint.setExpectReply(true);

@@ -7,10 +7,10 @@ import java.security.NoSuchAlgorithmException;
 import java.util.function.Function;
 
 @FunctionalInterface
-public interface CorrelationStrategy {
+public interface CorrelationStrategyI {
     Object getCorrelationKey(final Object message);
 
-    class CorrelationKeyStrategy implements CorrelationStrategy {
+    class CorrelationKeyStrategy implements CorrelationStrategyI {
         private final Function<Object, String> extractor;
 
         public CorrelationKeyStrategy(final Function<Object, String> extractor) {
