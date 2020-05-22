@@ -196,6 +196,10 @@ public class DateTimeHelper {
         return LocalDateTime.now(Clock.systemUTC()).plus(interval).toInstant(ZoneOffset.UTC);
     }
 
+    public static boolean isElapsed(final LocalDateTime start, final TemporalAmount interval) {
+        return start.plus(interval).toInstant(ZoneOffset.UTC).isBefore(Instant.now());
+    }
+
     @Nullable
     public static String zdtToString(@Nullable final ZonedDateTime zdt, @Nullable final String pattern) {
         if(zdt == null) return null;
