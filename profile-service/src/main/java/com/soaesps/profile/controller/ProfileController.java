@@ -23,7 +23,7 @@ public class ProfileController {
     }
 
     @PreAuthorize("#oauth2.hasScope('user_'.concat(#id).concat('_view')) or #oauth2.clientHasRole('admin')")
-    @GetMapping("/{id}")
+    @GetMapping("/{id}/profile")
     public UserProfile getUserProfile(@PathVariable("id") long id) {
         return profileService.getUserProfile(id);
     }

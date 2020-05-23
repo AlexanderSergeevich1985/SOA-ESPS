@@ -2,6 +2,19 @@ spring:
   profiles:
     active: DEV#LOCAL
 
+
+  cloud:
+      config:
+  #      uri: http://localhost:8888/
+        label: master
+        discovery:
+          enabled: true
+          service-id: config-server
+      bus:
+        trace:
+          enabled: true
+        enabled: true
+
   hibernate:
     connection:
       driverClassName: org.postgresql.Driver
@@ -28,3 +41,6 @@ spring:
     listener:
       direct:
         consumers-per-queue: 2
+    connection-timeout: 2s
+    template:
+      reply-timeout: 10ms

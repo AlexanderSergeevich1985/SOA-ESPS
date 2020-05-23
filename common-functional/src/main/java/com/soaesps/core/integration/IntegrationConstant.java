@@ -18,6 +18,7 @@ public class IntegrationConstant {
     public enum Exchanges {
         AUTH_OUEUE("soa-esps-authenticate", ""),
         USER_DETAILS_OUEUE("soa-esps-authenticate", ""),
+        USER_PROFILE_OUEUE("soa-esps-profile", ""),
         TOKEN_OUEUE("soa-esps-authenticate", "");
 
         private String exchangeName;
@@ -31,6 +32,30 @@ public class IntegrationConstant {
 
         public String getExchangeName() {
             return exchangeName;
+        }
+
+        public String getRouteKey() {
+            return routeKey;
+        }
+    }
+
+    public enum Topics {
+        AUTH_OUEUE("soa-esps-authenticate", ""),
+        USER_DETAILS_OUEUE("soa-esps-authenticate", ""),
+        USER_PROFILE_OUEUE("soa-esps-profile", ""),
+        TOKEN_OUEUE("soa-esps-authenticate", "");
+
+        private String topicName;
+
+        private String routeKey;
+
+        Topics(final String topicName, final String routeKey) {
+            this.topicName = topicName;
+            this.routeKey = routeKey;
+        }
+
+        public String getTopicName() {
+            return topicName;
         }
 
         public String getRouteKey() {
