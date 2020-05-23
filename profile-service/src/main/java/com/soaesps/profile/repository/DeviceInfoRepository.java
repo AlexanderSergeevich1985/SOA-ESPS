@@ -8,6 +8,6 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface DeviceInfoRepository extends JpaRepository<DeviceInfo, Long> {
+public interface DeviceInfoRepository extends JpaRepository<DeviceInfo, Integer> {
     //Optional<DeviceInfo> findByDeviceUUID(final String name);
 }
