@@ -1,14 +1,16 @@
 package com.soaesps.core.stateflow;
 
+import com.soaesps.core.Utils.DataStructure.QueueI;
+
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Set;
 
 public class DataPortionState {
     private LocalDateTime lastGlobalFixedStateTime;
 
     private State lastGlobalFixedState;
 
-    private List<PortionStateTransition> batchOfUpdates;
+    private Set<PortionStateTransition> batchOfUpdates;
 
     public LocalDateTime getLastGlobalFixedStateTime() {
         return lastGlobalFixedStateTime;
@@ -26,11 +28,11 @@ public class DataPortionState {
         this.lastGlobalFixedState = lastGlobalFixedState;
     }
 
-    public List<PortionStateTransition> getBatchOfUpdates() {
+    public Set<PortionStateTransition> getBatchOfUpdates() {
         return batchOfUpdates;
     }
 
-    public void setBatchOfUpdates(final List<PortionStateTransition> batchOfUpdates) {
+    public void setBatchOfUpdates(final Set<PortionStateTransition> batchOfUpdates) {
         this.batchOfUpdates = batchOfUpdates;
     }
 }
