@@ -7,6 +7,7 @@ import javax.annotation.Nullable;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 @Entity
 @Table(name = "REF_NODE_STATISTIC")
@@ -30,6 +31,9 @@ public class NodeStatistic extends BaseEntity implements Comparable<NodeStatisti
 
     @Column(name = "failure_probability", nullable = true, precision = 5, scale = 4)
     private Double failureProbability;
+
+    @Transient
+    private Long delay;
 
     protected NodeStatistic() {}
 
@@ -72,5 +76,13 @@ public class NodeStatistic extends BaseEntity implements Comparable<NodeStatisti
     @Override
     public int compareTo(final NodeStatistic nodeStatistic) {
         return performanceIndex.compareTo(nodeStatistic.getPerformanceIndex());
+    }
+
+    public Long getDelay() {
+        return delay;
+    }
+
+    public void setDelay(final Long delay) {
+        this.delay = delay;
     }
 }
