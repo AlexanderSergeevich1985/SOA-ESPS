@@ -38,7 +38,11 @@ abstract public class StateSyncService {
 
     private Long timeToWait;
 
-    private ScheduledFuture<?> future;
+    private ScheduledFuture<?> scheduledFuture;
+
+    private Future<Boolean> isUpdated;
+
+    private ExecutorService singleExecutor = Executors.newSingleThreadExecutor();
 
     private ScheduledExecutorService pool = Executors
             .newScheduledThreadPool(Math.round(PROC_LOAD_FACTOR * Runtime.getRuntime().availableProcessors()));
@@ -49,10 +53,10 @@ abstract public class StateSyncService {
     }
 
     public void start() {
-        future = pool
+        this.transitionStatesQueueRef = new AtomicReference<>(transitionQueue);
+        scheduledFuture = pool
                 .scheduleAtFixedRate(this::stateSyncTask,
                         DEFAULT_INITIAL_DELAY, DEFAULT_PERIOD, TimeUnit.MILLISECONDS);
-        this.transitionStatesQueueRef = new AtomicReference<>(transitionQueue);
     }
 
     public void stateSyncTask() {
@@ -68,12 +72,13 @@ abstract public class StateSyncService {
         }
         dataPortionState.setLastGlobalFixedState(this.dataPortionState);
         dataPortionState.setBatchOfUpdates(transitions);
+        this.isUpdated = singleExecutor.submit(() -> sendAndSave(dataPortionState));
     }
 
     public boolean sendAndSave(final DataPortionState dataPortionState) {
         final Set<State> newFixedStates = this.sender.send(url, dataPortionState);
         if (newFixedStates != null && saveNewFixedState(newFixedStates)) {
-            this.dataPortionState =newFixedStates
+            this.dataPortionState = newFixedStates
                     .stream()
                     .filter(s -> s.getUuid().equals(dataPortionState.getUuid()))
                     .findFirst()
@@ -84,6 +89,8 @@ abstract public class StateSyncService {
 
         return false;
     }
+
+    abstract public boolean preCalculateState(final DataPortionState dataPortionState);
 
     abstract public boolean saveNewFixedState(final Set<State> newFixedStates);
 
