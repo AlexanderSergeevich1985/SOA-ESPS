@@ -1,16 +1,31 @@
 package com.soaesps.core.stateflow;
 
-import com.soaesps.core.Utils.DataStructure.QueueI;
-
 import java.time.LocalDateTime;
 import java.util.Set;
+import java.util.UUID;
 
 public class DataPortionState {
+    private UUID uuid;
+
+    private final Long iteration;
+
     private LocalDateTime lastGlobalFixedStateTime;
 
     private State lastGlobalFixedState;
 
     private Set<PortionStateTransition> batchOfUpdates;
+
+    public DataPortionState(final Long iteration) {
+        this.iteration = iteration;
+    }
+
+    public UUID getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(final UUID uuid) {
+        this.uuid = uuid;
+    }
 
     public LocalDateTime getLastGlobalFixedStateTime() {
         return lastGlobalFixedStateTime;

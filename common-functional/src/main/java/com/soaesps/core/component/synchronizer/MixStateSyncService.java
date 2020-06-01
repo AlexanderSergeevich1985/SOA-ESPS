@@ -48,10 +48,11 @@ abstract public class MixStateSyncService<NodeKey extends Serializable> {
     public void stateSyncTask() {
         final Long iteration = this.currentIteration.addAndGet(1);
         final SyncIteration<NodeKey> syncIteration = iterationQueue.pull();
-        final Set<State> fixedStates = mixStatesForIteration(iteration, syncIteration.getStatesForIteration());
+        final Set<State> fixedStates = fixStatesForIteration(iteration, syncIteration.getStatesForIteration());
+        sendFixedStatesAllNodes(fixedStates);
     }
 
-    abstract public Set<State> mixStatesForIteration(final Long iteration, final Map<NodeKey, Set<DataPortionState>> statesForIteration);
+    abstract public Set<State> fixStatesForIteration(final Long iteration, final Map<NodeKey, Set<DataPortionState>> statesForIteration);
 
     public void sendFixedStatesAllNodes(final Set<State> fixedStates) {
         Map.Entry<NodeStatistic, NodeKey> entry = nodesStatistic.pollFirstEntry();

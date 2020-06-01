@@ -6,12 +6,13 @@ import com.soaesps.core.stateflow.DataPortionState;
 import com.soaesps.core.stateflow.PortionStateTransition;
 import com.soaesps.core.stateflow.State;
 
+import java.io.Serializable;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 abstract public class StateSyncService {
@@ -21,9 +22,13 @@ abstract public class StateSyncService {
 
     public static Float PROC_LOAD_FACTOR = 0.7f;
 
+    private AtomicLong currentIteration = new AtomicLong(0L);
+
+    private AtomicInteger counter = new AtomicInteger(0);
+
     private AtomicReference<QueueI<PortionStateTransition>> transitionStatesQueueRef;
 
-    private DataPortionState dataPortionState;
+    private State dataPortionState;
 
     private QueueI<PortionStateTransition> transitionQueue;
 
@@ -47,25 +52,40 @@ abstract public class StateSyncService {
         future = pool
                 .scheduleAtFixedRate(this::stateSyncTask,
                         DEFAULT_INITIAL_DELAY, DEFAULT_PERIOD, TimeUnit.MILLISECONDS);
-        this.dataPortionState = new DataPortionState();
         this.transitionStatesQueueRef = new AtomicReference<>(transitionQueue);
     }
 
     public void stateSyncTask() {
+        int counter = this.counter.getAndSet(0);
+        final Long iteration = this.currentIteration.getAndAdd(1);
+        final DataPortionState dataPortionState = new DataPortionState(iteration);
         final Set<PortionStateTransition> transitions = new HashSet<>();
         PortionStateTransition stateTransition = transitionQueue.pull();
-        while (stateTransition != null) {
+        while (counter > 0 || stateTransition != null) {
             transitions.add(stateTransition);
             stateTransition = transitionQueue.pull();
+            --counter;
         }
+        dataPortionState.setLastGlobalFixedState(this.dataPortionState);
         dataPortionState.setBatchOfUpdates(transitions);
-        final State newFixedState = this.sender.send(url, dataPortionState);
-        if (newFixedState != null && saveNewFixedState(newFixedState)) {
-            dataPortionState.setLastGlobalFixedState(newFixedState);
-        }
     }
 
-    abstract public boolean saveNewFixedState(final State newFixedState);
+    public boolean sendAndSave(final DataPortionState dataPortionState) {
+        final Set<State> newFixedStates = this.sender.send(url, dataPortionState);
+        if (newFixedStates != null && saveNewFixedState(newFixedStates)) {
+            this.dataPortionState =newFixedStates
+                    .stream()
+                    .filter(s -> s.getUuid().equals(dataPortionState.getUuid()))
+                    .findFirst()
+                    .orElse(this.dataPortionState);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    abstract public boolean saveNewFixedState(final Set<State> newFixedStates);
 
     public void stop() {
         transitionStatesQueueRef.set(null);
@@ -82,6 +102,14 @@ abstract public class StateSyncService {
 
     protected long timeToWait() {
         return transitionQueue.getSize() * timeToWait;
+    }
+
+    public State getDataPortionState() {
+        return dataPortionState;
+    }
+
+    public void setDataPortionState(final State dataPortionState) {
+        this.dataPortionState = dataPortionState;
     }
 
     public AtomicReference<QueueI<PortionStateTransition>> getTransitionStatesQueueRef() {
