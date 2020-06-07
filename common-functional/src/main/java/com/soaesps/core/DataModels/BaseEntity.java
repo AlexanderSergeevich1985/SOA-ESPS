@@ -22,7 +22,7 @@ public abstract class BaseEntity {
     @Column(name = "id", nullable = false, updatable = false)
     private Long id;*/
     @Id
-    @GenericGenerator(name="kaugen" , strategy="increment")
+    @GenericGenerator(name="kaugen", strategy="increment")
     @GeneratedValue(generator="kaugen")
     @Column(name = "id", nullable = false)
     private Integer id;

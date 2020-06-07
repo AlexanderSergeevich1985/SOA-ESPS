@@ -2,6 +2,7 @@ package com.soaesps.core.DataModels.security;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.soaesps.core.DataModels.BaseEntity;
+import com.soaesps.core.Utils.CryptoHelper;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Cache;
@@ -11,12 +12,18 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.persistence.*;
 import javax.validation.constraints.Size;
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 @Entity
 @Table(name = "T_USER_DETAILS")
 @Cacheable
-@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE, region = "STATIC_DATA")
+@Cache(usage = CacheConcurrencyStrategy.TRANSACTIONAL, region = "STATIC_DATA")
+@NamedQueries({
+        @NamedQuery(name = "UserDetails.FindByUserName",
+                query="SELECT ud FROM BaseUserDetails ud WHERE ud.userName = :userName")
+})
 public class BaseUserDetails extends BaseEntity implements UserDetails {
     @ManyToMany(fetch = FetchType.LAZY, cascade = { CascadeType.ALL })
     @JoinTable(
@@ -47,6 +54,9 @@ public class BaseUserDetails extends BaseEntity implements UserDetails {
 
     @Column(name = "is_enabled", nullable = false)
     private boolean enabled;
+
+    @Transient
+    private String objectDigest;
 
     public BaseUserDetails() {}
 
@@ -114,5 +124,13 @@ public class BaseUserDetails extends BaseEntity implements UserDetails {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public String getObjectDigest() throws IOException, NoSuchAlgorithmException {
+        if (objectDigest == null || getObjectDigest().isEmpty()) {
+            objectDigest = CryptoHelper.getObjectDigest(this);
+        }
+
+        return objectDigest;
     }
 }
