@@ -17,6 +17,14 @@ public class DefaultExceptionHandler {
         logger.setLevel(Level.INFO);
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public void processValidationError(final IllegalArgumentException ex) {
+        if(logger.isLoggable(Level.INFO)) {
+            logger.log(Level.INFO, "Returning HTTP 400 Bad Request", ex);
+        }
+    }
+
     @ExceptionHandler(value = Exception.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public void handleException(final Exception ex) {

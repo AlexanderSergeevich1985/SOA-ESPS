@@ -2,6 +2,7 @@ package com.soaesps.auth.service.security.provider;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -13,7 +14,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component("customAuthenticationProvider")
-public class CustomAuthenticationProvider implements org.springframework.security.authentication.AuthenticationProvider {
+public class CustomAuthenticationProvider implements AuthenticationProvider {
     @Autowired
     @Qualifier("passwordEncoder")
     private PasswordEncoder passwordEncoder;

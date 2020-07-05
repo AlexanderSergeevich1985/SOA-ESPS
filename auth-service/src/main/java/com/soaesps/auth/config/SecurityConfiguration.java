@@ -2,7 +2,6 @@ package com.soaesps.auth.config;
 
 import com.soaesps.auth.repository.OAuth2TokenRepository;
 import com.soaesps.auth.service.security.AccessTokenFactory;
-import com.soaesps.auth.service.security.handler.CustomAuthenticationFailureHandler;
 import com.soaesps.auth.service.security.handler.CustomAuthenticationSuccessHandler;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,11 +18,12 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 
 @Configuration
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
-@ComponentScan("com.soaesps.auth")
+@ComponentScan({"com.soaesps.auth", "com.soaesps.core.security"})
 public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Autowired
     private OAuth2TokenRepository tokenRepository;
@@ -37,7 +37,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
     private AuthenticationProvider provider;
 
     @Autowired
-    private CustomAuthenticationFailureHandler failureHandler;
+    private AuthenticationFailureHandler failureHandler;
 
     @Autowired
     private CustomAuthenticationSuccessHandler successHandler;
@@ -61,11 +61,15 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     @Override
     public void configure(HttpSecurity http) throws Exception {
-        http.authorizeRequests()
-                .antMatchers("/").permitAll()
-                .anyRequest().authenticated().and()
+        http.csrf().disable()
+                .authorizeRequests()
+                .antMatchers("/accounts/**").permitAll()
+                .anyRequest().authenticated()
+                .and()
                 .formLogin()
                 .loginPage("/login") //login page path
+                .usernameParameter("username")
+                .passwordParameter("password")
                 .loginProcessingUrl("/login_security_check") //login checking path
                 .failureUrl("/login?error") //path for login failure
                 .failureHandler(failureHandler)

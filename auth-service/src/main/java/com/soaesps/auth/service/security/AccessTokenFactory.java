@@ -8,11 +8,14 @@ import com.soaesps.core.Utils.CryptoHelper;
 import com.soaesps.core.Utils.DateTimeHelper;
 
 import com.soaesps.core.Utils.HashGeneratorHelper;
+import org.apache.commons.math3.random.RandomGenerator;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import javax.xml.bind.DatatypeConverter;
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
+import java.security.*;
 import java.time.ZoneOffset;
+import java.util.Base64;
 import java.util.Date;
 import java.util.Optional;
 
@@ -25,6 +28,17 @@ public interface AccessTokenFactory {
     }
 
     class AccessTokenFactoryImpl implements AccessTokenFactory {
+        public static Integer DEFAULT_RAND_MAX_SEED = 100;
+
+        public static Integer DEFAULT_RAND_STRING_SIZE = 20;
+
+        private static final RandomGenerator rng = HashGeneratorHelper
+                .getRandomGenerator(Math.toIntExact(System.currentTimeMillis() % DEFAULT_RAND_MAX_SEED));
+
+        private PublicKey publicKey;
+
+        private PrivateKey privateKey;
+
         private final String secret;
 
         private final long validityPeriod;
@@ -40,11 +54,14 @@ public interface AccessTokenFactory {
 
         public BaseOAuth2AccessToken createAccessToken(final UserDetails userDetails)
                 throws IOException  {
+            final String secretStr = genSecretStr();
             final BaseOAuth2AccessToken accessToken =
-                    new BaseOAuth2AccessToken(secret, validityPeriod);
+                    new BaseOAuth2AccessToken(secretStr, validityPeriod);
+            accessToken.getAdditionalInformation().put("pubKey",
+                    Base64.getEncoder().encodeToString(publicKey.getEncoded()));
 
             final BaseOAuth2RefreshToken refreshToken =
-                    new BaseOAuth2RefreshToken(secret, 10 * validityPeriod);
+                    new BaseOAuth2RefreshToken(secretStr, 10 * validityPeriod);
             try {
                 refreshToken.setValue(CryptoHelper.getObjectDigest(refreshToken));
                 accessToken.setRefreshToken(refreshToken);
@@ -101,6 +118,20 @@ public interface AccessTokenFactory {
 
         protected boolean isExist(final BaseOAuth2RefreshToken refreshToken) {
             return tokenRepository.findByRefreshToken(refreshToken).isPresent();
+        }
+
+        public String genSecretStr() throws IOException {
+            final Long creationTime = System.currentTimeMillis();
+            try {
+                final String randStr = HashGeneratorHelper.getRandSequence(rng, DEFAULT_RAND_STRING_SIZE);
+                final String mixStr = HashGeneratorHelper.mixTwoString(secret, randStr);
+                final byte[] sign = CryptoHelper.signMessage(mixStr.concat(":" + creationTime), privateKey);
+
+                return DatatypeConverter.printHexBinary(sign).concat(":").concat(randStr).concat(":" + creationTime);
+
+            } catch (final NoSuchAlgorithmException | InvalidKeyException | SignatureException ex) {
+                throw new IOException(ex);
+            }
         }
     }
 }
