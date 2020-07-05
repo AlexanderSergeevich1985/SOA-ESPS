@@ -54,7 +54,7 @@ public interface AccessTokenFactory {
 
         public BaseOAuth2AccessToken createAccessToken(final UserDetails userDetails)
                 throws IOException  {
-            final String secretStr = genSecretStr();
+            final String secretStr = (publicKey != null && privateKey != null) ? genSecretStr() : secret;
             final BaseOAuth2AccessToken accessToken =
                     new BaseOAuth2AccessToken(secretStr, validityPeriod);
             accessToken.getAdditionalInformation().put("pubKey",
@@ -132,6 +132,22 @@ public interface AccessTokenFactory {
             } catch (final NoSuchAlgorithmException | InvalidKeyException | SignatureException ex) {
                 throw new IOException(ex);
             }
+        }
+
+        public PublicKey getPublicKey() {
+            return publicKey;
+        }
+
+        public void setPublicKey(final PublicKey publicKey) {
+            this.publicKey = publicKey;
+        }
+
+        public PrivateKey getPrivateKey() {
+            return privateKey;
+        }
+
+        public void setPrivateKey(final PrivateKey privateKey) {
+            this.privateKey = privateKey;
         }
     }
 }

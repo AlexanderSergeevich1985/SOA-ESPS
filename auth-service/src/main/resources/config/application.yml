@@ -1,0 +1,30 @@
+spring:
+  profiles:
+    active: DEV#LOCAL
+
+  hibernate:
+    connection:
+      driverClassName: org.postgresql.Driver
+      url: jdbc:postgresql://localhost:5432/soa_esps
+      username: ########
+      password: ########
+      maxPoolSize: 4
+
+      dialect: org.hibernate.dialect.PostgreSQLDialect
+      show_sql: false
+      generate-ddl: false
+      ddl-auto: validate
+      naming-strategy: org.hibernate.cfg.EJB3NamingStrategy
+      properties:
+        cache.use_second_level_cache: true
+        cache.use_query_cache: false
+        cache.region.factory_class: org.hibernate.cache.ehcache.SingletonEhCacheRegionFactory
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: ########
+    password: ########
+    listener:
+      direct:
+        consumers-per-queue: 2
