@@ -42,13 +42,17 @@ public class DateTimeHelper {
             this.start = Instant.now();
         }
 
-        public void stop() {
+        public StopWatch stop() {
             this.stop = Instant.now();
+
+            return this;
         }
 
-        public void reset() {
+        public StopWatch reset() {
             this.start = Instant.now();
             this.stop = null;
+
+            return this;
         }
 
         public Long getTimeMeasurement(@Nonnull final TimeUnit units) {
