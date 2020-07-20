@@ -1,6 +1,8 @@
 package com.soaesps.core.component.synchronizer;
 
+import com.soaesps.core.BaseOperation.Statistics.LightDeviationCalculator;
 import com.soaesps.core.Utils.DataStructure.QueueI;
+import com.soaesps.core.Utils.DateTimeHelper;
 import com.soaesps.core.component.router.TransportI;
 import com.soaesps.core.stateflow.DataPortionState;
 import com.soaesps.core.stateflow.PortionStateTransition;
@@ -38,6 +40,10 @@ abstract public class StateSyncService {
 
     private Long timeToWait;
 
+    private LightDeviationCalculator calculator = new LightDeviationCalculator(0, 0, 10);
+
+    public DateTimeHelper.StopWatch watch = new DateTimeHelper.StopWatch();
+
     private ScheduledFuture<?> scheduledFuture;
 
     private Future<Boolean> isUpdated;
@@ -60,23 +66,31 @@ abstract public class StateSyncService {
     }
 
     public void stateSyncTask() {
-        int counter = this.counter.getAndSet(0);
-        final Long iteration = this.currentIteration.getAndAdd(1);
-        final DataPortionState dataPortionState = new DataPortionState(iteration);
-        final Set<PortionStateTransition> transitions = new HashSet<>();
-        PortionStateTransition stateTransition = transitionQueue.pull();
-        while (counter > 0 || stateTransition != null) {
-            transitions.add(stateTransition);
-            stateTransition = transitionQueue.pull();
-            --counter;
+        try {
+            watch.reset().start();
+            if (!isUpdated.isDone() && !isUpdated.isCancelled()) {
+            }
+            int counter = this.counter.getAndSet(0);
+            final Long iteration = this.currentIteration.getAndAdd(1);
+            final DataPortionState dataPortionState = new DataPortionState(iteration);
+            final Set<PortionStateTransition> transitions = new HashSet<>();
+            PortionStateTransition stateTransition = transitionQueue.pull();
+            while (counter > 0 || stateTransition != null) {
+                transitions.add(stateTransition);
+                stateTransition = transitionQueue.pull();
+                --counter;
+            }
+            dataPortionState.setLastGlobalFixedState(this.dataPortionState);
+            dataPortionState.setBatchOfUpdates(transitions);
+            this.isUpdated = singleExecutor.submit(() -> sendAndSave(dataPortionState));
+            calculator.update(watch.stop().getTimeMeasurement(TimeUnit.MILLISECONDS));
+        } catch (final Exception ex) {// InterruptedException | ExecutionException
+
         }
-        dataPortionState.setLastGlobalFixedState(this.dataPortionState);
-        dataPortionState.setBatchOfUpdates(transitions);
-        this.isUpdated = singleExecutor.submit(() -> sendAndSave(dataPortionState));
     }
 
     public boolean sendAndSave(final DataPortionState dataPortionState) {
-        final Set<State> newFixedStates = this.sender.send(url, dataPortionState);
+        final Set<State> newFixedStates = this.sender.sendAndGet(url, dataPortionState);
         if (newFixedStates != null && saveNewFixedState(newFixedStates)) {
             this.dataPortionState = newFixedStates
                     .stream()

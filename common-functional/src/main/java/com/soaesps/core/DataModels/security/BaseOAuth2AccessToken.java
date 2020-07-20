@@ -64,7 +64,7 @@ public class BaseOAuth2AccessToken extends BaseEntity implements OAuth2AccessTok
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, optional = false)
     @PrimaryKeyJoinColumn
-    private OAuth2RefreshToken refreshToken;
+    private BaseOAuth2RefreshToken refreshToken;
 
     @ElementCollection
     private Set<String> scope;
@@ -83,7 +83,7 @@ public class BaseOAuth2AccessToken extends BaseEntity implements OAuth2AccessTok
         this.value = HashGeneratorHelper.mixTwoString(value, this.expiration.toString());
     }
 
-    public BaseOAuth2AccessToken(final OAuth2AccessToken accessToken) {
+    public BaseOAuth2AccessToken(final BaseOAuth2AccessToken accessToken) {
         this();
         this.setValue(accessToken.getValue());
         this.setAdditionalInformation(accessToken.getAdditionalInformation());
@@ -110,11 +110,11 @@ public class BaseOAuth2AccessToken extends BaseEntity implements OAuth2AccessTok
     }
 
     @Nonnull
-    public OAuth2RefreshToken getRefreshToken() {
+    public BaseOAuth2RefreshToken getRefreshToken() {
         return this.refreshToken;
     }
 
-    public void setRefreshToken(@Nonnull OAuth2RefreshToken refreshToken) {
+    public void setRefreshToken(@Nonnull BaseOAuth2RefreshToken refreshToken) {
         this.refreshToken = refreshToken;
     }
 

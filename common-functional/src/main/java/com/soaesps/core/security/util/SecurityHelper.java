@@ -1,5 +1,7 @@
 package com.soaesps.core.security.util;
 
+import com.soaesps.core.DataModels.security.AuthAudit;
+import com.soaesps.core.Utils.DateTimeHelper;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -12,6 +14,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class SecurityHelper {
+    private SecurityHelper() {}
+
     public static String getCurrentLogin() {
         final Authentication authentication = getUserAuthentication();
         String login = null;
@@ -50,5 +54,13 @@ public class SecurityHelper {
         final Collection<String> userRoles = getCurrentUserRoles();
 
         return Stream.of(roles).anyMatch(userRoles::contains);
+    }
+
+    public static AuthAudit initAuthAudit() {
+        final AuthAudit authAudit = new AuthAudit();
+        authAudit.setActionDate(DateTimeHelper.getLocalCurrentTime());
+        authAudit.setLogonName(getCurrentLogin());
+
+        return authAudit;
     }
 }

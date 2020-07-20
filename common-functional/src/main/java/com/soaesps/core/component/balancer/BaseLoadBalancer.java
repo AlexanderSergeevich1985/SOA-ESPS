@@ -72,12 +72,12 @@ public class BaseLoadBalancer {
         return payloads.push(payload);
     }
 
-    public Boolean startOneJob() {
+    public Payload startOneJob() {
         final NodeWrapper nw = nodes.pollLast();
         if (nw == null) {
             final UsedNodeWrapper unw = usedNodes.pollLast();
             if (unw == null) {
-                return false;
+                return null;
             }
 
             return isPayloaded(nw, true);
@@ -87,11 +87,11 @@ public class BaseLoadBalancer {
         }
     }
 
-    protected boolean isPayloaded(final NodeWrapper nw, final boolean isUsed) {
+    protected Payload isPayloaded(final NodeWrapper nw, final boolean isUsed) {
         for (int i = 0; i < payloads.getSize(); ++i) {
             final Payload payload = payloads.pull();
             if (payload == null) {
-                return false;
+                return null;
             }
             if (nw.jobs.containsKey(payload.getJobKey())) {
                 if (payloader.load(payload, nw.getExecutorNode())) {
@@ -100,12 +100,13 @@ public class BaseLoadBalancer {
                     unw.setUsedJobDesc(ujd);
                     usedNodes.add(unw);
 
-                    return true;
+                    return payload;
                 }
             }
             payloads.push(payload);
         }
-        return false;
+
+        return null;
     }
 
     public NodeWrapper updateNodeStatistic(final String nodeKey, final String jobKey, final Long newValue) {
