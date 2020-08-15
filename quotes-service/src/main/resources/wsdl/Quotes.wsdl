@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+<wsdl:definitions name="Quotes" targetNamespace="http://nukefintech.com/types/market" xmlns:tns="http://nukefintech.com/types/market"
+                  xmlns:types="http://nukefintech.com/types/market" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+
+    <wsdl:types>
+        <xsd:schema targetNamespace="http://nukefintech.com/types/market" xmlns:xsd="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified"
+                    attributeFormDefault="unqualified" version="1.0">
+
+            <xsd:element name="Quotes">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="symbol" type="xsd:decimal"/>
+                        <xsd:element name="openPrice" type="xsd:decimal"/>
+                        <xsd:element name="highPrice" type="xsd:decimal"/>
+                        <xsd:element name="lowPrice" type="xsd:decimal"/>
+                        <xsd:element name="closePrice" type="xsd:decimal"/>
+                        <xsd:element name="adjClose" type="xsd:decimal"/>
+                        <xsd:element name="vol" type="xsd:long" />
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="Symbols">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="symbols" type="xsd:string" />
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+        </xsd:schema>
+    </wsdl:types>
+
+    <wsdl:message name="QuotesRequest">
+        <wsdl:part name="symbols" element="types:Symbols" />
+    </wsdl:message>
+
+    <wsdl:message name="QuotesResponse">
+        <wsdl:part name="Quotes" element="types:Quotes" />
+    </wsdl:message>
+
+    <wsdl:portType name="QuotesPortType">
+        <wsdl:operation name="getQuotes">
+            <wsdl:input message="tns:QuotesRequest" />
+            <wsdl:output message="tns:QuotesResponse" />
+        </wsdl:operation>
+    </wsdl:portType>
+
+    <wsdl:binding name="QuotesSoapBinding" type="tns:QuotesPortType">
+        <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+        <wsdl:operation name="getQuotes">
+            <soap:operation soapAction="http://nukefintech.com/services/quotes/getQuotes"/>
+            <wsdl:input>
+                <soap:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+    </wsdl:binding>
+
+    <wsdl:service name="QuotesService">
+        <wsdl:documentation>Quotes service</wsdl:documentation>
+        <wsdl:port name="QuotesPort" binding="tns:QuotesSoapBinding">
+            <soap:address location="http://localhost:9000/nukefintech/ws/quotes" />
+        </wsdl:port>
+    </wsdl:service>
+
+</wsdl:definitions>
