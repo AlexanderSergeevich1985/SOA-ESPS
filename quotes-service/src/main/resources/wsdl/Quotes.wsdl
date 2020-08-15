@@ -61,7 +61,7 @@
     <wsdl:service name="QuotesService">
         <wsdl:documentation>Quotes service</wsdl:documentation>
         <wsdl:port name="QuotesPort" binding="tns:QuotesSoapBinding">
-            <soap:address location="http://localhost:9000/nukefintech/ws/quotes" />
+            <soap:address location="http://localhost:8080/nukefintech/ws/quotes" />
         </wsdl:port>
     </wsdl:service>
 

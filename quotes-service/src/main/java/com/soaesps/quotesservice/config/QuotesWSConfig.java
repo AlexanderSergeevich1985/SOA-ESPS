@@ -21,7 +21,7 @@ public class QuotesWSConfig {
         final MessageDispatcherServlet servlet = new MessageDispatcherServlet();
         servlet.setApplicationContext(applicationContext);
 
-        return new ServletRegistrationBean<>(servlet, "/codenotfound/ws/*");
+        return new ServletRegistrationBean<>(servlet, "/nukefintech/ws/*");
     }
 
     @Bean(name = "quotes")
