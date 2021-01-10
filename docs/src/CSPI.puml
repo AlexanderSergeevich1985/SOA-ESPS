@@ -1,0 +1,46 @@
+@startuml
+
+agent client as "Client"
+node gateway as "API Gateway"
+node auth as "Authentication and \nauthorization service"
+node config as "Configuration service"
+node register as "Registration and \ndiscovery service"
+database crepo [
+Configuration \n   repository
+]
+node distrib [
+<color:blue>    Data packet distribution service</color>
+----
+----
+<color:green>Load balancer and fault prevention</color>
+]
+node process1 as "Data process \nservice 1"
+node processN as "Data process \nservice N"
+node aggregation [
+Output grouped message \n     aggregation service
+]
+
+client --> gateway
+gateway --> auth
+gateway --> config
+gateway --> register
+auth --> config
+auth --> register
+config <--> crepo
+gateway --> distrib
+client --> distrib
+distrib --> auth
+distrib --> config
+distrib --> register
+distrib --> process1
+process1 --> config
+process1 --> register
+distrib --> processN
+processN --> config
+processN --> register
+process1 --> aggregation
+processN --> aggregation
+aggregation --> distrib
+aggregation --> config
+aggregation --> register
+@enduml
