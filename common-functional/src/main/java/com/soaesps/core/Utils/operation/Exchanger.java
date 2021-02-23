@@ -12,7 +12,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class Exchanger<T extends Serializable> {
-    private QueueI<ExchangeTask> values;
+    private QueueI<ExchangeTask> tasks;
 
     private AtomicReference<T> ref;
 
@@ -20,8 +20,12 @@ public class Exchanger<T extends Serializable> {
 
     private Function<T, T> writer;
 
-    public Exchanger() {
-        this.values = new LimitedQueue<>();
+    CompletableFuture<Boolean> worker;
+
+    public Exchanger(Supplier<T> loader, Function<T, T> writer) {
+        this.loader = loader;
+        this.writer = writer;
+        this.tasks = new LimitedQueue<>();
         ref = new AtomicReference<>();
     }
 
@@ -41,10 +45,35 @@ public class Exchanger<T extends Serializable> {
         ref.set(loader.get());
     }
 
-    public boolean save(T updated) {
-        ExchangeTask task = new ExchangeTask(updated, null);
+    public void process() {
+        while (tasks.getSize() > 0) {
+            ExchangeTask task = tasks.pull();
+            task.exec();
+        }
+    }
 
-        return values.push(task);
+    public boolean save(T update) {
+        ExchangeTask task = new ExchangeTask(update, new ExchangeSupplier(update));
+        boolean result = tasks.push(task);
+        start();
+
+        return result;
+    }
+
+    protected void start() {
+        if (worker == null || worker.isDone()) {
+            worker = CompletableFuture.supplyAsync(() -> {
+                try {
+                    if (tasks.getSize() > 0) {
+                        process();
+                    }
+                } catch (Exception ex) {
+                    return false;
+                }
+
+                return true;
+            });
+        }
     }
 
     protected boolean update(T update) {
@@ -102,7 +131,9 @@ public class Exchanger<T extends Serializable> {
         }
 
         @Override
-        public void setRawResult(T v) {}
+        public void setRawResult(T v) {
+            this.value = v;
+        }
 
         @Override
         public final boolean exec() {
