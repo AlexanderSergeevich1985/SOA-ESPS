@@ -1,12 +1,9 @@
 package com.soaesps.core.Utils.operation;
 
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-
 public interface ExchangerI<T> {
     T getValue();
 
-    default T getValue(Consumer<T> handler) {
+    default T getValue(HandlerI handler) {
         T value = getValue();
         if (value == null) {
             addToProcessQueue(handler);
@@ -15,22 +12,9 @@ public interface ExchangerI<T> {
         return value;
     }
 
-    default T getValue(Supplier<T> handler) {
-        T value = getValue();
-        if (value == null) {
-            addToProcessQueue(handler);
-        }
+    void addToProcessQueue(HandlerI handler);
 
-        return value;
-    }
-
-    void addToProcessQueue(Consumer<T> handler);
-
-    void addToProcessQueue(Supplier<T> handler);
-
-    Supplier<T> getNextSupplier();
-
-    Consumer<T> getNextConsumer();
+    HandlerI<T> getNextHandler();
 
     boolean hasNextHandler();
 
@@ -42,14 +26,9 @@ public interface ExchangerI<T> {
     }
 
     default void executeNextHandler() {
-        Supplier<T> supplier = getNextSupplier();
-        if (supplier != null) {
-            save(supplier.get());
-        } else {
-            Consumer<T> consumer = getNextConsumer();
-            if (consumer != null) {
-                consumer.accept(getValue());
-            }
+        HandlerI<T> handler = getNextHandler();
+        if (handler != null) {
+            handler.process(this);
         }
     }
 
