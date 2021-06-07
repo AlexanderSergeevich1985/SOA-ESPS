@@ -2,8 +2,8 @@ package com.soaesps.core.stateflow;
 
 import java.io.Serializable;
 
-public interface FieldUpdaterI extends Serializable {
-    void update(Object obj, Object update);
+public interface FieldUpdaterI<T> extends Serializable {
+    T update(T obj);
 
     FieldUpdaterI getUpdater(Class clazz);
 }

@@ -10,12 +10,13 @@ import javax.persistence.Entity;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import javax.validation.constraints.Size;
+import java.io.Serializable;
 import java.security.Principal;
 
 @Entity
 @Table(name = "DEVICES_INFO")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-public class DeviceInfo extends BaseEntity implements Principal {
+public class DeviceInfo extends BaseEntity implements Principal, Serializable {
     @Column(name = "device_uuid", nullable = false)
     private String deviceUUID;
 
