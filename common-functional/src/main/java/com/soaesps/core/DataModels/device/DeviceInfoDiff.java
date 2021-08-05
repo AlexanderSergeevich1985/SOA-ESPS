@@ -2,6 +2,7 @@ package com.soaesps.core.DataModels.device;
 
 import com.soaesps.core.stateflow.FieldUpdaterI;
 import com.soaesps.core.stateflow.ObjStateDiff;
+import com.soaesps.core.stateflow.UpdateI;
 
 import java.util.Set;
 
@@ -59,7 +60,7 @@ public class DeviceInfoDiff extends ObjStateDiff<DeviceInfo> {
     }
 
     @Override
-    public void setUpdate(String key, Object value) {
+    public void setUpdate(String key, UpdateI value) {
         super.getUpdates().put(key, null);
         DeviceInfo updated = this.getObject();
         switch (key) {

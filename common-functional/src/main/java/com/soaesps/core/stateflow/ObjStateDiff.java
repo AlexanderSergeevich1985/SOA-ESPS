@@ -36,7 +36,7 @@ abstract public class ObjStateDiff<T extends Serializable> implements FieldUpdat
         return updates;
     }
 
-    public void setUpdate(String key, Object value) {
+    public <U extends UpdateI> void setUpdate(String key, U value) {
         updates.put(key, value);
     }
 
@@ -48,8 +48,8 @@ abstract public class ObjStateDiff<T extends Serializable> implements FieldUpdat
         this.object = object;
     }
 
-    public FieldUpdaterI getFieldUpdater(String fieldName, Class fieldClass) {
-        FieldUpdaterI updater = updaters.get(fieldName);
+    public <U> FieldUpdaterI<U> getFieldUpdater(String fieldName, Class<U> fieldClass) {
+        FieldUpdaterI<U> updater = updaters.get(fieldName);
         if (updater == null) {
             updater = getUpdater(fieldClass);
             updaters.put(fieldName, updater);
