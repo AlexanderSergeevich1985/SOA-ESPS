@@ -1,0 +1,75 @@
+@startuml
+
+skinparam defaultTextAlignment center
+skinparam sequenceMessageAlign center
+skinparam sequenceReferenceAlign center
+
+skinparam noteTextAlignment center
+skinparam backgroundColor WhiteSmoke
+
+skinparam note {
+    TextAlignment center
+    FontSize 12
+}
+
+skinparam activity {
+    StartColor GreenYellow
+    EndColor Red
+    BackgroundColor AliceBlue
+    'BorderColor SkyBlue
+    BorderColor DarkGrey
+    FontSize 24
+    FontColor Black
+}
+
+
+title Диаграмма состояний и переходов состояния механизма георепликации
+
+scale 750 width
+
+state Closed {
+  Closed: <b>                                                                                     </b>Узел участвует в работе механизма синхронизации. \n               Проводится анализ недавних сбоев. В случае выявления аномально частых сбоев в работе узла, узел переходит в состояние <<Открытый>>.
+  note bottom of AheadState : <b>  </b>Для синхронизации работы с сервером координации синхронизации \nузел производит сдвиг момента времени окончания текущей итерации \nи момента времени отправки сообщения синхронизации в соответствии \nс вычисленной оценкой.
+
+  state "Режим работы с опережением" as AheadState ##[bold]orange {
+    AheadState -down-> AheadState : P<sub>AsToAs</sub>
+    AheadState -up-> NormalState : P<sub>AsToNs</sub>
+    AheadState : <b>     </b>Узел производит с опережением отправку \nсообщений для синхронизации состояния реплик
+  }
+
+  note top of NormalState : <b>  </b> Ведется сбор статистки о фактическом времени доставки сообщений синхронизации от данного узла\nсинхронизации и анализ собранных данных. Производится вычисление вероятностей перехода в возможные\nсостояния. Если результаты анализа данных показывают что наиболее вероятен переход в состояние\nотличное от нормального режима работы, то производится опережающая коррекция работы узла.
+
+  state "Нормальный режим работы" as NormalState ##[bold]green {
+    NormalState -down-> NormalState : P<sub>NsToNs</sub>
+    NormalState -down-> AheadState : P<sub>NsToAs</sub>
+    NormalState -down-> DelayState : P<sub>NsToDs</sub>
+    NormalState : <b>     </b>Узел периодически без задержек и опережения производит \nотправку сообщений для синхронизации состояния реплик
+  }
+
+  note bottom of DelayState : <b>  </b>Для синхронизации работы с сервером координации синхронизации \nузел не отправляет сообщение синхронизации в текущей итераций, \nпроизводя компоновку сообщения текущей итерации с сообщением \nследующей итерации. При этом производится сдвиг времени начала \nследующей итерации и времени отправки сообщения в соответствии \nс вычисленной оценкой.
+
+  state "Режим работы с задержкой" as DelayState ##[bold]red {
+    DelayState -down-> DelayState : P<sub>DsToDs</sub>
+    DelayState  -up-> NormalState : P<sub>DsToNs</sub>
+    DelayState : <b>     </b>Узел производит с задержкой отправку \nсообщений для синхронизации состояния реплик
+  }
+
+  Closed -down-> Open : P<sub>ClToOp</sub>
+
+}
+
+state Open {
+  Open : <b>     </b>Узел не доступен после срабатывания защиты от\nсбоев. Запрос к узлу немедленно завершается ошибкой.
+
+  Open -down-> Open : P<sub>OpToOp</sub>
+  Open -right-> HOS : P<sub>OpToHO</sub>
+}
+
+state "Half-Open" as HOS {
+  HOS : <b>     </b>Узел доступен после выполнения про-\nцедуры восстановления его состояния. \nЕсли ограниченное число итераций за-\nвершается успешно, то узел переходит \nв закрытое состояние.
+
+  HOS -down-> HOS : P<sub>HOToHO</sub>
+  HOS -down-> Closed : P<sub>HOToCl</sub>
+}
+
+@enduml
