@@ -21,7 +21,7 @@
         <spring.ws.version>LATEST</spring.ws.version>
         <data.jpa.version>LATEST</data.jpa.version>
         <jmh.version>1.21</jmh.version>
-        <zip4j.version>2.2.3</zip4j.version>
+        <zip4j.version>2.9.1</zip4j.version>
     </properties>
 
     <dependencies>
