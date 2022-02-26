@@ -21,14 +21,19 @@ public class ZipCreator {
 
     public ZipCreator() {}
 
-    public OutputStream zipCipher(final Map<String, Object> entries, final String password, final ZipParameters zp) throws IOException {
-        final OutputStream os = new ByteArrayOutputStream();
-        try (final ZipOutputStream zos = new ZipOutputStream(os, password.toCharArray())) {
+    public ByteArrayOutputStream zipCipher(final Map<String, Object> entries, final String password) throws IOException {
+        return zipCipher(entries, password, this.zp);
+    }
+
+    public ByteArrayOutputStream zipCipher(final Map<String, Object> entries, final String password, final ZipParameters zp) throws IOException {
+        final ByteArrayOutputStream os = new ByteArrayOutputStream();
+        try (final ZipOutputStream zos = password != null ? new ZipOutputStream(os, password.toCharArray()) : new ZipOutputStream(os)) {
             entries.entrySet().stream().forEach(e -> {
                 try {
                     zp.setFileNameInZip(e.getKey());
                     zos.putNextEntry(zp);
-                    zos.write(serialize(e.getValue()));
+                    Object value = e.getValue();
+                    zos.write(serialize(value));
                     zos.closeEntry();
                 } catch (final IOException ex) {
                 }
@@ -37,11 +42,44 @@ public class ZipCreator {
 
         return os;
     }
+
+    public void zipCipherToFile(final Map<String, Object> entries, final String password, final String fileName) throws IOException {
+        zipCipherToFile(entries, password, this.zp, fileName);
+    }
+
+    public void zipCipherToFile(final Map<String, Object> entries, final String password, final ZipParameters zp,
+                                final String fileName) throws IOException {
+        try (final FileOutputStream fos = new FileOutputStream(fileName); final ZipOutputStream zos = password != null ?
+                new ZipOutputStream(fos, password.toCharArray()): new ZipOutputStream(fos)) {
+            entries.entrySet().stream().forEach(e -> {
+                try {
+                    zp.setFileNameInZip(e.getKey());
+                    zos.putNextEntry(zp);
+                    Object value = e.getValue();
+                    zos.write(serialize(value));
+                    zos.closeEntry();
+                } catch (final IOException ex) {
+                }
+            });
+        }
+    }
+
+    @Override
+    public String toString() {
+        return super.toString();
+    }
+
+    public static void addFileToZip(ZipOutputStream zos, ZipParameters zp, Object file) throws IOException {
+        //zp.setFileNameInZip(e.getKey());
+        zos.putNextEntry(zp);
+        zos.write(serialize(file));
+        zos.closeEntry();
+    }
     
     public Map<String, Object> unzipDecipher(final InputStream is, final String password, final ZipParameters zp) throws Exception {
         final Map<String, Object> result = new IdentityHashMap<>();
         final byte[] buffer = new byte[DEFAULT_READ_BUF_SIZE];
-        try (final ZipInputStream zis = new ZipInputStream(is, password.toCharArray())) {
+        try (final ZipInputStream zis = password != null ? new ZipInputStream(is, password.toCharArray()) : new ZipInputStream(is)) {
             LocalFileHeader lfh = null;
             while ((lfh = zis.getNextEntry()) != null) {
                 final String fileName = lfh.getFileName();
@@ -57,6 +95,9 @@ public class ZipCreator {
     }
 
     public static byte[] serialize(final Object obj) throws IOException {
+        if (obj instanceof byte[]) {
+            return (byte[])obj;
+        }
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
         final ObjectOutputStream os = new ObjectOutputStream(out);
         os.writeObject(obj);
@@ -70,7 +111,7 @@ public class ZipCreator {
 
     protected static void setDefaults(final ZipParameters zipParams) {
         zipParams.setCompressionMethod(CompressionMethod.DEFLATE);
-        zipParams.setCompressionLevel(CompressionLevel.MAXIMUM);
+        zipParams.setCompressionLevel(CompressionLevel.NORMAL);
         zipParams.setEncryptFiles(true);
         zipParams.setEncryptionMethod(EncryptionMethod.AES);
         zipParams.setAesKeyStrength(AesKeyStrength.KEY_STRENGTH_256);

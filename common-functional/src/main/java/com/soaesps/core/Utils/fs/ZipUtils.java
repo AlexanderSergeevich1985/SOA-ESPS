@@ -1,13 +1,15 @@
 package com.soaesps.core.Utils.fs;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import com.soaesps.core.service.files.FileService;
+
+import java.io.*;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import static com.soaesps.core.service.files.FileService.MAX_CHANGE_BUFFER_SIZE;
+import static com.soaesps.core.service.files.FileService.checkDir;
+import static com.soaesps.core.service.files.FileService.checkFile;
 
 public class ZipUtils {
     public static void zipToFile(String zipName, String fileName, byte[] data) throws IOException {
@@ -27,6 +29,8 @@ public class ZipUtils {
              ZipOutputStream zos = new ZipOutputStream(fos)) {
             File file = new File(dirName);
             dirToZipFile(file, dirName, zos);
+            zos.finish();
+            fos.flush();
         }
     }
 
@@ -87,5 +91,23 @@ public class ZipUtils {
             zos.write(bytes, 0, length);
         }
         zos.closeEntry();
+    }
+
+    public static void unzip(String zipName, String destDirName) throws IOException {
+        try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipName))) {
+            ZipEntry zipEntry = null;
+            byte[] buffer = new byte[MAX_CHANGE_BUFFER_SIZE];
+            File destDir = checkDir(destDirName);
+            while ((zipEntry = zis.getNextEntry()) != null) {
+                File newFile = checkFile(destDir, zipEntry.getName());
+                if (zipEntry.isDirectory()) {
+                    checkDir(newFile);
+                } else {
+                    checkDir(newFile.getParentFile());
+                    FileService.saveFile(newFile, zis, buffer);
+                }
+            }
+            zis.closeEntry();
+        }
     }
 }
