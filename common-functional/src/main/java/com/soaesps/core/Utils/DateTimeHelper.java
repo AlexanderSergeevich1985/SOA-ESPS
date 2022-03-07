@@ -25,12 +25,19 @@ import java.time.format.DateTimeParseException;
 import java.time.temporal.TemporalAmount;
 import java.time.temporal.TemporalUnit;
 import java.util.Date;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class DateTimeHelper {
+    public static final String DEFAULT_SERVER_DATE_FORMAT = "dd/MM/yyyy HH:mm:ss Z";
+
     private static final String DEFAULT_DATE_FORMAT = "dd/MM/yyyy HH:mm:ss Z";
+
+    private DateTimeHelper() {
+        throw new UnsupportedOperationException();
+    }
 
     public static class StopWatch {
         private Instant start;
@@ -152,8 +159,29 @@ public class DateTimeHelper {
         return LocalDateTime.now();
     }
 
+    @Nonnull
     public static LocalDateTime getLocalDateTime(@Nonnull String ldt, @Nonnull String pattern) {
         return LocalDateTime.parse(ldt, DateTimeFormatter.ofPattern(pattern));
+    }
+
+    @Nonnull
+    public static LocalDateTime getLocalDateTime(@Nonnull String ldt, @Nonnull DateTimeFormatter pattern) {
+        return LocalDateTime.parse(ldt, pattern);
+    }
+
+    @Nonnull
+    public static DateTimeFormatter getDateTimeFormatter(@Nonnull String pattern, @Nullable Locale locale) {
+        return locale != null ? DateTimeFormatter.ofPattern(DEFAULT_DATE_FORMAT, locale) : DateTimeFormatter
+                .ofPattern(DEFAULT_DATE_FORMAT);
+    }
+
+    @Nullable
+    public static String ldtToString(@Nullable final LocalDateTime zdt, @Nullable final DateTimeFormatter pattern) {
+        if(zdt == null) return null;
+        if(pattern == null)
+            return zdt.format(DateTimeFormatter.ofPattern(DEFAULT_DATE_FORMAT));
+        else
+            return zdt.format(pattern);
     }
 
     @Nullable
@@ -214,9 +242,22 @@ public class DateTimeHelper {
     }
 
     @Nullable
-    public static ZonedDateTime stringToZDT(@Nullable final String zdt) throws DateTimeParseException {
+    public static String zdtToString(@Nullable final ZonedDateTime zdt, @Nullable DateTimeFormatter pattern) {
+        if (zdt == null) {
+            return null;
+        }
+        if (pattern == null) {
+            return zdt.format(DateTimeFormatter.ofPattern(DEFAULT_DATE_FORMAT));
+        } else {
+            return zdt.format(pattern);
+        }
+    }
+
+    @Nullable
+    public static ZonedDateTime stringToZDT(@Nullable final String zdt, @Nonnull DateTimeFormatter pattern) throws DateTimeParseException {
         if(zdt == null || zdt.isEmpty()) return null;
-        return ZonedDateTime.parse(zdt);
+
+        return ZonedDateTime.parse(zdt, pattern);
     }
 
     public static Timestamp zdtToTimestamp(@Nonnull final ZonedDateTime zdt) throws IllegalArgumentException {
