@@ -184,6 +184,16 @@ public class DateTimeHelper {
             return zdt.format(pattern);
     }
 
+    @Nonnull
+    public static LocalDateTime dateToLocalDateTime(@Nonnull Date date, @Nullable ZoneId zoneId) {
+        return LocalDateTime.ofInstant(date.toInstant(), zoneId != null ? zoneId : ZoneId.systemDefault());
+    }
+
+    @Nonnull
+    public static Date localDateTimeToDate(@Nonnull LocalDateTime localDateTime, @Nullable ZoneId zoneId) {
+        return Date.from(localDateTime.atZone(zoneId != null ? zoneId : ZoneId.systemDefault()).toInstant());
+    }
+
     @Nullable
     public static ZonedDateTime getCurrentTimeWithTimeZone(final String zoneId) {
         if(zoneId == null || zoneId.isEmpty()) return null;
@@ -242,7 +252,7 @@ public class DateTimeHelper {
     }
 
     @Nullable
-    public static String zdtToString(@Nullable final ZonedDateTime zdt, @Nullable DateTimeFormatter pattern) {
+    public static String zdtToPtrString(@Nullable final ZonedDateTime zdt, @Nullable DateTimeFormatter pattern) {
         if (zdt == null) {
             return null;
         }
