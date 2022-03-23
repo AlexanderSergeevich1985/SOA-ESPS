@@ -5,7 +5,7 @@ import org.hibernate.annotations.GenericGenerator;
 import javax.persistence.*;
 
 @Entity
-@Table(name = "REF_NODE_STATISTIC")
+@Table(name = "executor_node")
 public class ExecutorNode {
     @Id
     @GenericGenerator(name = "kaugen", strategy = "increment")
@@ -13,12 +13,11 @@ public class ExecutorNode {
     @Column(name = "id", nullable = false)
     private Integer id;
 
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "executorNode")
+    private NodeStatistic statistic;
+
     @Embedded
     private ExecutorNodeDesc nodeDesc;
-
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "node_id")
-    private NodeStatistic statistic;
 
     public Integer getId() {
         return id;

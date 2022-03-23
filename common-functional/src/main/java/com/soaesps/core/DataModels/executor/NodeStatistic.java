@@ -1,17 +1,18 @@
 package com.soaesps.core.DataModels.executor;
 
-import com.soaesps.core.DataModels.BaseEntity;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import com.soaesps.core.Utils.convertor.hibernate.TimestampConverter;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import javax.persistence.*;
+import java.time.ZonedDateTime;
 
 @Entity
-@Table(name = "REF_NODE_STATISTIC")
-public class NodeStatistic extends BaseEntity implements Comparable<NodeStatistic> {
+@Table(name = "node_statistic")
+public class NodeStatistic implements Comparable<NodeStatistic> {
     public static final String NODE_ID = "nodeId";
 
     public static final String PERFORMANCE_INDEX = "performanceIndex";
@@ -20,8 +21,24 @@ public class NodeStatistic extends BaseEntity implements Comparable<NodeStatisti
 
     public static final String FAILURE_PROBABILITY = "failureProbability";
 
+    @Id
     @Column(name = "node_id", nullable = false)
     private Long nodeId;
+
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @PrimaryKeyJoinColumn(name = "id", referencedColumnName = "node_id")
+    private ExecutorNode executorNode;
+
+    @Column(name = "creation_time", nullable = false, updatable = false)
+    @Convert(converter = TimestampConverter.class)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd@HH:mm:ss.SSSZ")
+    private ZonedDateTime creationTime;
+
+    @JsonIgnore
+    @Column(name = "modification_time")
+    @Convert(converter = TimestampConverter.class)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd@HH:mm:ss.SSSZ")
+    private ZonedDateTime modificationTime;
 
     @Column(name = "performance_index", nullable = true)
     private Double performanceIndex;
