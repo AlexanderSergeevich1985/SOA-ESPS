@@ -11,15 +11,15 @@ public class ExecutorNodeDesc {
     @Column(name = "ip_address")
     private String ipAddress;
 
-    @Column(name = "descriptor")
-    private String descriptor;
+    @Column(name = "description")
+    private String description;
 
-    public String getDescriptor() {
-        return descriptor;
+    public String getDescription() {
+        return description;
     }
 
-    public void setDescriptor(final String descriptor) {
-        this.descriptor = descriptor;
+    public void setDescription(final String description) {
+        this.description = description;
     }
 
     public String getIpAddress() {
@@ -32,7 +32,7 @@ public class ExecutorNodeDesc {
 
     @Override
     public int hashCode() {
-        return (descriptor != null || ipAddress != null) ? descriptor.hashCode()/(1 + ipAddress.hashCode()) + ipAddress.hashCode()/(1 + descriptor.hashCode()) : this.hashCode();
+        return (description != null || ipAddress != null) ? description.hashCode()/(1 + ipAddress.hashCode()) + ipAddress.hashCode()/(1 + description.hashCode()) : this.hashCode();
     }
 
     @Override
@@ -41,13 +41,13 @@ public class ExecutorNodeDesc {
             return false;
         }
         final ExecutorNodeDesc en = (ExecutorNodeDesc) other;
-        if (ipAddress == null || ipAddress.isEmpty() || descriptor == null || descriptor.isEmpty()) {
+        if (ipAddress == null || ipAddress.isEmpty() || description == null || description.isEmpty()) {
             return false;
         }
-        if (en.getIpAddress() == null || en.getIpAddress().isEmpty() || en.getDescriptor() == null || en.getDescriptor().isEmpty()) {
+        if (en.getIpAddress() == null || en.getIpAddress().isEmpty() || en.getDescription() == null || en.getDescription().isEmpty()) {
             return false;
         }
-        if (!ipAddress.equals(en.getIpAddress()) || !descriptor.equals(en.getDescriptor())) {
+        if (!ipAddress.equals(en.getIpAddress()) || !description.equals(en.getDescription())) {
             return false;
         }
 
