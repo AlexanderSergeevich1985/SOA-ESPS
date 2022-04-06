@@ -25,8 +25,8 @@ import com.soaesps.core.Utils.HashGeneratorHelper;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.codehaus.jackson.annotate.JsonValue;
 
+import org.springframework.security.core.token.Token;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
-import org.springframework.security.oauth2.common.OAuth2RefreshToken;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -39,7 +39,7 @@ import java.util.*;
 @Entity
 @Table(name = "ISSUED_ACCESS_TOKENS")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-public class BaseOAuth2AccessToken extends BaseEntity implements OAuth2AccessToken, Serializable {
+public class BaseOAuth2AccessToken extends BaseEntity implements OAuth2AccessToken, Token, Serializable {
     @Transient
     private int counter; // this need for checking number of requests during current session
 
@@ -74,7 +74,7 @@ public class BaseOAuth2AccessToken extends BaseEntity implements OAuth2AccessTok
 
     protected BaseOAuth2AccessToken() {
         this.tokenType = "Bearer".toLowerCase();
-        this.additionalInformation = Collections.emptyMap();
+        this.additionalInformation = new IdentityHashMap<>();
     }
 
     public BaseOAuth2AccessToken(final String value, final long interval) {
@@ -198,5 +198,17 @@ public class BaseOAuth2AccessToken extends BaseEntity implements OAuth2AccessTok
 
     public void setAnswear(@Nullable final String answear) {
         this.answear = answear;
+    }
+
+    public String getKey() {
+        return getValue();
+    }
+
+    public long getKeyCreationTime() {
+        return this.getCreationTime().toInstant().toEpochMilli();
+    }
+
+    public String getExtendedInformation() {
+        return additionalInformation == null || additionalInformation.isEmpty() ? "" : additionalInformation.get("extended.info").toString();
     }
 }

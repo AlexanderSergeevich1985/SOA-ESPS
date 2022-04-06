@@ -1,8 +1,22 @@
 package com.soaesps.core.Utils;
 
+import com.soaesps.core.patterns.Patterns;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+
 import javax.servlet.http.HttpServletRequest;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.OK;
 
 public class HttpUtils {
+    private HttpUtils() {
+        throw new UnsupportedOperationException();
+    }
+
     private static final String[] IP_HEADER_CANDIDATES = {
             "X-Forwarded-For",
             "Proxy-Client-IP",
@@ -14,12 +28,20 @@ public class HttpUtils {
             "HTTP_FORWARDED_FOR",
             "HTTP_FORWARDED",
             "HTTP_VIA",
-            "REMOTE_ADDR"};
+            "REMOTE_ADDR"
+    };
 
     public static String getClientIpAddress(final HttpServletRequest request) {
         for (final String header: IP_HEADER_CANDIDATES) {
-            final String ip = request.getHeader(header);
-            if (ip != null && !ip.isEmpty() && !"unknown".equalsIgnoreCase(ip)) {
+            final String ipList = request.getHeader(header);
+            if (ipList == null || ipList.isEmpty() || "unknown".equalsIgnoreCase(ipList)) {
+                continue;
+            }
+            String ip = ipList.split(",")[0];
+            if (ip.length() != 15) {
+                continue;
+            }
+            if (Patterns.IP_PATTERN.isMatches(ip)) {
                 return ip;
             }
         }

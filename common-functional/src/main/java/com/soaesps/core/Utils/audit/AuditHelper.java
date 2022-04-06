@@ -1,6 +1,32 @@
 package com.soaesps.core.Utils.audit;
 
+import com.soaesps.core.Utils.HttpUtils;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
+import javax.servlet.http.HttpServletRequest;
+
 public class AuditHelper {
+    public String getClientUserName() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null) {
+            return "";
+        }
+
+        return authentication.getName();
+    }
+
+    public static String getClientIpAddressIfServletRequestExist() {
+        if (RequestContextHolder.getRequestAttributes() == null) {
+            return "";
+        }
+        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+
+        return HttpUtils.getClientIpAddress(request);
+    }
+
     public static String getStringIP(final Long numericIP) {
         if (numericIP == null) {
             return null;

@@ -1,24 +1,23 @@
 package com.soaesps.core.patterns;
 
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.soaesps.core.patterns.Matchers.Regex.*;
+import static com.soaesps.core.patterns.Patterns.Regex.*;
 
-public enum Matchers {
-    IP_MATCHER(IP_REGEX),
-    EMAIL_MATCHER(EMAIL_REGEX),
-    URL_MATCHER(URL_REGEX),
-    CREDIT_CARD_MATCHER(CREDIT_CARD_REGEX);
+public enum Patterns {
+    IP_PATTERN(IP_REGEX),
+    EMAIL_PATTERN(EMAIL_REGEX),
+    URL_PATTERN(URL_REGEX),
+    CREDIT_CARD_PATTERN(CREDIT_CARD_REGEX);
 
-    private final Matcher matcher;
+    private final Pattern pattern;
 
-    Matchers(final String regex) {
-        this.matcher = Pattern.compile(regex).matcher("");
+    Patterns(final String regex) {
+        this.pattern = Pattern.compile(regex);
     }
 
     public boolean isMatches(final String data) {
-        return matcher.reset(data).matches();
+        return pattern.matcher(data).matches();
     }
 
     public static class Regex {

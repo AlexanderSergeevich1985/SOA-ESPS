@@ -1,6 +1,8 @@
 package com.soaesps.core.Utils;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -17,7 +19,14 @@ public class JsonUtil {
 
     private static final Logger logger = Logger.getLogger(JsonUtil.class.getName());
 
-    static public final ObjectMapper MAPPER = new ObjectMapper();
+    static public final ObjectMapper MAPPER;
+
+    static {
+        MAPPER = new ObjectMapper();
+        //MAPPER.setSerializationInclusion(JsonInclude.Include.ALWAYS);
+        MAPPER.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        MAPPER.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    }
 
     @Nullable
     static public <T> T fromString(final String string, final Class<T> clazz) {

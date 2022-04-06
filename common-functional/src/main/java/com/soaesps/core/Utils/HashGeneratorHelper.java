@@ -52,13 +52,17 @@ public class HashGeneratorHelper {
     }
 
     public static int getRandLimited(@Nonnull final RandomGenerator randGen, final int min, final int max) {
+        if (randGen == null || min >= max) {
+            throw new IllegalArgumentException("Incorrect input parameters provided.");
+        }
+
         return randGen.nextInt((max - min) + 1) + min;
     }
 
     public static String getRandString(@Nonnull final RandomGenerator randGen, final int size) {
         StringBuilder builder = new StringBuilder();
         for(int i = 0; i < size; ++i) {
-            char symbol = Character.forDigit(getRandLimited(randGen, 33, 126), 10);
+            char symbol = Character.forDigit(getRandLimited(randGen, Character.MIN_RADIX, Character.MAX_RADIX - 1), Character.MAX_RADIX);
             builder.append(symbol);
         }
 
