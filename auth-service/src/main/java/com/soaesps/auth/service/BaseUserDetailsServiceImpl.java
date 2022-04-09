@@ -68,6 +68,7 @@ public class BaseUserDetailsServiceImpl implements BaseUserDetailsService {
         return true;
     }
 
+    @Override
     public boolean deleteUserAccount(final String name) {
         if(name == null || name.isEmpty()) {
             return false;
@@ -81,6 +82,7 @@ public class BaseUserDetailsServiceImpl implements BaseUserDetailsService {
         return true;
     }
 
+    @Override
     public void createUser(UserDetails user) {
         baseUserDetailsChecker.check(user);
         Optional<BaseUserDetails> result = repository.findByUserName(user.getUsername());
@@ -90,6 +92,7 @@ public class BaseUserDetailsServiceImpl implements BaseUserDetailsService {
         repository.save(userDetailsToBaseUserDetails(user));
     }
 
+    @Override
     public void updateUser(UserDetails user) {
         baseUserDetailsChecker.check(user);
         Optional<BaseUserDetails> result = repository.findByUserName(user.getUsername());
@@ -108,7 +111,11 @@ public class BaseUserDetailsServiceImpl implements BaseUserDetailsService {
         repository.save(userDetails);
     }
 
+    @Override
     public void deleteUser(String username) {
+        if(username == null || username.isEmpty()) {
+            throw new IllegalArgumentException();
+        }
         Optional<BaseUserDetails> userDetails = repository.findByUserName(username);
         if (!userDetails.isPresent()) {
             throw new UsernameNotFoundException(ExceptionMsg.getUserNotFoundMsg(username));
@@ -117,12 +124,14 @@ public class BaseUserDetailsServiceImpl implements BaseUserDetailsService {
         repository.deleteById(userId);
     }
 
+    @Override
     public void changePassword(String oldPassword, String newPassword) {
         BaseUserDetails userDetails = loadCurrentUser();
         userDetails.setPassword(newPassword);
         repository.save(userDetails);
     }
 
+    @Override
     public boolean userExists(String username) {
         Optional<BaseUserDetails> userDetails = repository.findByUserName(username);
 

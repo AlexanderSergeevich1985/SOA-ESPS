@@ -9,7 +9,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import javax.servlet.http.HttpServletRequest;
 
 public class AuditHelper {
-    public String getClientUserName() {
+    public static String getClientUserName() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null) {
             return "";
