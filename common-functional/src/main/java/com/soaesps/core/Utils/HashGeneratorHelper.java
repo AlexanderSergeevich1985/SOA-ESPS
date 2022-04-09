@@ -76,6 +76,16 @@ public class HashGeneratorHelper {
         return new String(Hex.encodeHex(getHashWithSalt(randStr, "MD5", salt)));
     }
 
+    public static String getRandSequence(Integer randMaxSeed, Integer randStrSize) {
+        RandomGenerator randGen = HashGeneratorHelper.getRandomGenerator(Math.toIntExact(System
+                .currentTimeMillis() % randMaxSeed));
+        try {
+            return HashGeneratorHelper.getRandSequence(randGen, randStrSize);
+        } catch (NoSuchAlgorithmException ex) {
+            return getRandString(randGen, randStrSize);
+        }
+    }
+
     public static byte[] getSalt(@Nonnull final RandomGenerator randGen, final int size) {
         byte[] salt = new byte[size];
         randGen.nextBytes(salt);

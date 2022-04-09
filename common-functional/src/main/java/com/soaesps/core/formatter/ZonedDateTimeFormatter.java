@@ -26,6 +26,6 @@ public class ZonedDateTimeFormatter implements Formatter<ZonedDateTime> {
 
     @Override
     public String print(@Nonnull final ZonedDateTime object, @Nonnull final Locale locale) {
-        return DateTimeHelper.zdtToString(object, DateTimeHelper.getDateTimeFormatter(DEFAULT_SERVER_DATE_FORMAT, locale));
+        return DateTimeHelper.zdtToPtrString(object, DateTimeHelper.getDateTimeFormatter(DEFAULT_SERVER_DATE_FORMAT, locale));
     }
 }

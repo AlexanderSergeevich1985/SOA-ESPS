@@ -70,6 +70,9 @@ public class BaseOAuth2AccessToken extends BaseEntity implements OAuth2AccessTok
     private Set<String> scope;
 
     @Transient
+    private String key;
+
+    @Transient
     private Map<String, Object> additionalInformation;
 
     protected BaseOAuth2AccessToken() {
@@ -201,7 +204,11 @@ public class BaseOAuth2AccessToken extends BaseEntity implements OAuth2AccessTok
     }
 
     public String getKey() {
-        return getValue();
+        return key;
+    }
+
+    public void setKey(String key) {
+        this.key = key;
     }
 
     public long getKeyCreationTime() {

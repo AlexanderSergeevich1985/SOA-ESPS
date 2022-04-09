@@ -16,6 +16,7 @@ public class BaseUserDetailsServiceImpl implements BaseUserDetailsService {
     @Autowired
     private UserDetailsRepository repository;
 
+    @Override
     public UserDetails loadUserByUsername(final String userName) throws UsernameNotFoundException {
         final Optional<BaseUserDetails> result = this.repository.findByUserName(userName);
         if(result == null || !result.isPresent()) {
@@ -25,6 +26,7 @@ public class BaseUserDetailsServiceImpl implements BaseUserDetailsService {
         return result.get();
     }
 
+    @Override
     public boolean createUserAccount(final BaseUserDetails userDetails) {
         if(userDetails == null) {
             return false;
@@ -36,6 +38,7 @@ public class BaseUserDetailsServiceImpl implements BaseUserDetailsService {
         return true;
     }
 
+    @Override
     public boolean updateUserAccount(final String name, final BaseUserDetails userDetails) {
         if(name == null || name.isEmpty() || userDetails == null) {
             return false;
@@ -63,6 +66,42 @@ public class BaseUserDetailsServiceImpl implements BaseUserDetailsService {
 
         this.repository.delete(existing);
 
+        return true;
+    }
+
+    public void createUser(BaseUserDetails user) {
+        repository.save(user);
+    }
+
+    public void createUser(UserDetails user) {
+        //repository.save(user);
+    }
+
+    /**
+     * Update the specified user.
+     */
+    public void updateUser(UserDetails user) {
+        //repository.save(user);
+    }
+
+    /**
+     * Remove the user with the given login name from the system.
+     */
+    public void deleteUser(String username) {}
+
+    /**
+     * Modify the current user's password. This should change the user's password in the
+     * persistent user repository (datbase, LDAP etc).
+     *
+     * @param oldPassword current password (for re-authentication if required)
+     * @param newPassword the password to change to
+     */
+    public void changePassword(String oldPassword, String newPassword) {}
+
+    /**
+     * Check if a user with the supplied login name exists in the system.
+     */
+    public boolean userExists(String username) {
         return true;
     }
 }

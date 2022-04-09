@@ -18,6 +18,8 @@ SOFTWARE.
 */
 package com.soaesps.core.Utils;
 
+import org.apache.commons.math3.random.RandomGenerator;
+
 import javax.xml.bind.DatatypeConverter;
 import java.io.*;
 import java.math.BigInteger;
@@ -239,5 +241,21 @@ public class CryptoHelper {
             }
         }
         return key;
+    }
+
+    public String genSecretStr(PrivateKey privateKey, String secret, Integer randMaxSeed, Integer randStrSize) throws IOException {
+        final Long creationTime = System.currentTimeMillis();
+        RandomGenerator rng = HashGeneratorHelper.getRandomGenerator(Math
+                .toIntExact(creationTime % randMaxSeed));
+        try {
+            final String randStr = HashGeneratorHelper.getRandSequence(rng, randStrSize);
+            final String mixStr = HashGeneratorHelper.mixTwoString(secret, randStr);
+            final byte[] sign = CryptoHelper.signMessage(mixStr.concat(":" + creationTime), privateKey);
+
+            return DatatypeConverter.printHexBinary(sign).concat(":").concat(randStr).concat(":" + creationTime);
+
+        } catch (final NoSuchAlgorithmException | InvalidKeyException | SignatureException ex) {
+            throw new IOException(ex);
+        }
     }
 }
