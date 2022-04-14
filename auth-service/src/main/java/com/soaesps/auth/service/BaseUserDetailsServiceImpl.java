@@ -30,7 +30,7 @@ public class BaseUserDetailsServiceImpl implements BaseUserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(final String userName) throws UsernameNotFoundException {
-        final Optional<BaseUserDetails> result = this.repository.findByUserName(userName);
+        final Optional<BaseUserDetails> result = this.repository.findByUsername(userName);
         if(result == null || !result.isPresent()) {
             throw new UsernameNotFoundException(userName);
         }
@@ -39,15 +39,15 @@ public class BaseUserDetailsServiceImpl implements BaseUserDetailsService {
     }
 
     @Override
-    public boolean createUserAccount(final BaseUserDetails userDetails) {
-        if(userDetails == null) {
-            return false;
+    public Long createUserAccount(final BaseUserDetails userDetails) {
+        if (userDetails == null) {
+            throw new IllegalArgumentException();
         }
-        final Optional<BaseUserDetails> result = this.repository.findByUserName(userDetails.getUsername());
+        final Optional<BaseUserDetails> result = this.repository.findByUsername(userDetails.getUsername());
         Assert.isTrue(!result.isPresent(), "[BaseUserDetailsServiceImpl/createUserAccount]: profile already exists: " + userDetails.getUsername());
-        this.repository.save(userDetails);
+        BaseUserDetails bud = this.repository.save(userDetails);
 
-        return true;
+        return (long)bud.getId();
     }
 
     @Override
@@ -55,11 +55,11 @@ public class BaseUserDetailsServiceImpl implements BaseUserDetailsService {
         if(name == null || name.isEmpty() || userDetails == null) {
             return false;
         }
-        final Optional<BaseUserDetails> result = this.repository.findByUserName(name);
+        final Optional<BaseUserDetails> result = this.repository.findByUsername(name);
         Assert.isTrue(result.isPresent(), "[BaseUserDetailsServiceImpl/updateUserAccount]: profile doesn't exists: " + userDetails.getUsername());
         final BaseUserDetails existing = result.get();
 
-        existing.setUserName(userDetails.getUsername());
+        existing.setUsername(userDetails.getUsername());
         existing.setPassword(userDetails.getPassword());
         existing.setAuthorities(userDetails.getAuthorities());
 
@@ -73,7 +73,7 @@ public class BaseUserDetailsServiceImpl implements BaseUserDetailsService {
         if(name == null || name.isEmpty()) {
             return false;
         }
-        final Optional<BaseUserDetails> result = this.repository.findByUserName(name);
+        final Optional<BaseUserDetails> result = this.repository.findByUsername(name);
         Assert.isTrue(result.isPresent(), "[BaseUserDetailsServiceImpl/deleteUserAccount]: profile doesn't exists: " + name);
         final BaseUserDetails existing = result.get();
 
@@ -85,7 +85,7 @@ public class BaseUserDetailsServiceImpl implements BaseUserDetailsService {
     @Override
     public void createUser(UserDetails user) {
         baseUserDetailsChecker.check(user);
-        Optional<BaseUserDetails> result = repository.findByUserName(user.getUsername());
+        Optional<BaseUserDetails> result = repository.findByUsername(user.getUsername());
         if (result.isPresent()) {
             throw new UserAlreadyExistAuthException(ExceptionMsg.getUserAlreadyExistMsg(user.getUsername()));
         }
@@ -95,12 +95,12 @@ public class BaseUserDetailsServiceImpl implements BaseUserDetailsService {
     @Override
     public void updateUser(UserDetails user) {
         baseUserDetailsChecker.check(user);
-        Optional<BaseUserDetails> result = repository.findByUserName(user.getUsername());
+        Optional<BaseUserDetails> result = repository.findByUsername(user.getUsername());
         if (!result.isPresent()) {
             throw new UsernameNotFoundException(ExceptionMsg.getUserNotFoundMsg(user.getUsername()));
         }
         BaseUserDetails userDetails = result.get();
-        userDetails.setUserName(user.getUsername());
+        userDetails.setUsername(user.getUsername());
         userDetails.setPassword(user.getUsername());
         userDetails.setAuthorities(user.getAuthorities().stream().map(a -> (Role) a)
                 .collect(Collectors.toList()));
@@ -116,7 +116,7 @@ public class BaseUserDetailsServiceImpl implements BaseUserDetailsService {
         if(username == null || username.isEmpty()) {
             throw new IllegalArgumentException();
         }
-        Optional<BaseUserDetails> userDetails = repository.findByUserName(username);
+        Optional<BaseUserDetails> userDetails = repository.findByUsername(username);
         if (!userDetails.isPresent()) {
             throw new UsernameNotFoundException(ExceptionMsg.getUserNotFoundMsg(username));
         }
@@ -133,7 +133,7 @@ public class BaseUserDetailsServiceImpl implements BaseUserDetailsService {
 
     @Override
     public boolean userExists(String username) {
-        Optional<BaseUserDetails> userDetails = repository.findByUserName(username);
+        Optional<BaseUserDetails> userDetails = repository.findByUsername(username);
 
         return userDetails.isPresent();
     }
@@ -141,7 +141,7 @@ public class BaseUserDetailsServiceImpl implements BaseUserDetailsService {
     @Transactional(propagation = Propagation.MANDATORY)
     public BaseUserDetails loadCurrentUser() {
         String username = SecurityHelper.getCurrentLogin();
-        Optional<BaseUserDetails> userDetails = repository.findByUserName(username);
+        Optional<BaseUserDetails> userDetails = repository.findByUsername(username);
         if (!userDetails.isPresent()) {
             throw new UsernameNotFoundException(ExceptionMsg.getUserNotFoundMsg(username));
         }
@@ -154,7 +154,7 @@ public class BaseUserDetailsServiceImpl implements BaseUserDetailsService {
             return (BaseUserDetails) user;
         }
         BaseUserDetails bud = new BaseUserDetails();
-        bud.setUserName(user.getUsername());
+        bud.setUsername(user.getUsername());
         bud.setPassword(user.getPassword());
         bud.setCreationTime(DateTimeHelper.getCurrentTimeWithTimeZone("UTC"));
         bud.setModificationTime(bud.getCreationTime());

@@ -118,16 +118,14 @@ public class HttpUtils {
 
     public static <T> ResponseEntity<T> onOk(T value) {
         ResponseEntity.BodyBuilder builder = statusAndHeaders(HttpStatus.OK);
-        builder.body(value);
 
-        return builder.build();
+        return builder.body(value);
     }
 
     public static <T> ResponseEntity<T> onOk(T value, String... headers) {
         ResponseEntity.BodyBuilder builder = statusAndHeaders(HttpStatus.OK, headers);
-        builder.body(value);
 
-        return builder.build();
+        return builder.body(value);
     }
 
     public static <T> ResponseEntity<T> onError(ErrorMsg error, String... headers) {
@@ -138,19 +136,17 @@ public class HttpUtils {
         return builder.build();
     }
 
-    public static <T> ResponseEntity<T> onError(Exception ex, String... headers) {
+    public static ResponseEntity<String> onError(Exception ex, String... headers) {
         ResponseEntity.BodyBuilder builder = statusAndHeaders(HttpStatus.INTERNAL_SERVER_ERROR, headers);
         builder.header("x-error-code", ex.getClass().getName());
-        builder.body(ex.getLocalizedMessage());
 
-        return builder.build();
+        return builder.body(ex.getLocalizedMessage());
     }
 
     public static <T> ResponseEntity<T> headersAndBody(HttpStatus status, T value, String... headers) {
         ResponseEntity.BodyBuilder builder = statusAndHeaders(status, headers);
-        builder.body(value);
 
-        return builder.build();
+        return builder.body(value);
     }
 
     public static ResponseEntity.BodyBuilder statusAndHeaders(HttpStatus status, String... headers) {

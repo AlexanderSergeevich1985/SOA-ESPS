@@ -49,7 +49,7 @@ public class UserDetailsServiceTest {
     @Test
     public void C_loadUserByUsername_test() {
         Mockito.doReturn(Optional.of(getTestBaseUserDetails())).when(userDetailsRepository)
-                .findByUserName(Mockito.anyString());
+                .findByUsername(Mockito.anyString());
         UserDetails userDetails = baseUserDetailsService.loadUserByUsername("testUser");
         Assert.assertNotNull(userDetails);
     }
@@ -64,7 +64,7 @@ public class UserDetailsServiceTest {
     public void E_updateUserAccount_test() {
         BaseUserDetails bud = getTestBaseUserDetails();
         Mockito.doReturn(Optional.of(bud)).when(userDetailsRepository)
-                .findByUserName(Mockito.anyString());
+                .findByUsername(Mockito.anyString());
         bud.setPassword("newTestPassword");
         baseUserDetailsService.updateUserAccount("testUser", bud);
     }
@@ -72,27 +72,27 @@ public class UserDetailsServiceTest {
     @Test
     public void F_deleteUserAccount_test() {
         Mockito.doReturn(Optional.of(getTestBaseUserDetails())).when(userDetailsRepository)
-                .findByUserName(Mockito.anyString());
+                .findByUsername(Mockito.anyString());
         Assert.assertTrue(baseUserDetailsService.deleteUserAccount("testUser"));
     }
 
     @Test
     public void G_changePassword_test() {
         Mockito.doReturn(Optional.of(getTestBaseUserDetails())).when(userDetailsRepository)
-                .findByUserName(Mockito.any());
+                .findByUsername(Mockito.any());
         baseUserDetailsService.changePassword("password", "newTestPassword");
     }
 
     @Test
     public void H_changePassword_test() {
         Mockito.doReturn(Optional.of(getTestBaseUserDetails())).when(userDetailsRepository)
-                .findByUserName(Mockito.anyString());
+                .findByUsername(Mockito.anyString());
         Assert.assertTrue(baseUserDetailsService.userExists("testUser"));
     }
 
     private BaseUserDetails getTestBaseUserDetails() {
         BaseUserDetails bud = new BaseUserDetails();
-        bud.setUserName("testUser");
+        bud.setUsername("testUser");
         bud.setPassword("password");
 
         return bud;

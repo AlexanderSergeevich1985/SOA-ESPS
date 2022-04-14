@@ -1,5 +1,6 @@
 package com.soaesps.core.DataModels.security;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.soaesps.core.DataModels.BaseEntity;
 import com.soaesps.core.Utils.CryptoHelper;
@@ -17,13 +18,14 @@ import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 @Entity
-@Table(name = "T_USER_DETAILS")
+@Table(name = "t_user_details")//"T_USER_DETAILS"
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.TRANSACTIONAL, region = "STATIC_DATA")
 @NamedQueries({
         @NamedQuery(name = "UserDetails.FindByUserName",
-                query="SELECT ud FROM BaseUserDetails ud WHERE ud.userName = :userName")
+                query="SELECT ud FROM BaseUserDetails ud WHERE ud.username = :username")
 })
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class BaseUserDetails extends BaseEntity implements UserDetails {
     @ManyToMany(fetch = FetchType.LAZY, cascade = { CascadeType.ALL })
     @JoinTable(
@@ -39,21 +41,22 @@ public class BaseUserDetails extends BaseEntity implements UserDetails {
     @JsonProperty("password")
     private String password;
 
-    @Column(nullable = false)
+    @Column(name = "user_name", nullable = false)
     @Size(min = 8, max = 100)
-    private String userName;
+    @JsonProperty("username")
+    private String username;
 
     @Column(name = "is_account_expired", nullable = false)
-    private boolean accountNonExpired;
+    private boolean accountNonExpired = true;
 
     @Column(name = "is_locked", nullable = false)
-    private boolean accountNonLocked;
+    private boolean accountNonLocked = true;
 
     @Column(name = "is_credentials_expired", nullable = false)
-    private boolean credentialsNonExpired;
+    private boolean credentialsNonExpired = true;
 
     @Column(name = "is_enabled", nullable = false)
-    private boolean enabled;
+    private boolean enabled = true;
 
     @Transient
     private String objectDigest;
@@ -83,11 +86,11 @@ public class BaseUserDetails extends BaseEntity implements UserDetails {
     @Nonnull
     @Override
     public String getUsername() {
-        return userName;
+        return username;
     }
 
-    public void setUserName(@Nonnull String userName) {
-        this.userName = userName;
+    public void setUsername(@Nonnull String userName) {
+        this.username = userName;
     }
 
     @Override

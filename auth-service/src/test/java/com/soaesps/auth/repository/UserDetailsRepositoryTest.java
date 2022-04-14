@@ -47,7 +47,7 @@ public class UserDetailsRepositoryTest {
     @Test
     public void C_find_by_user_name() {
         BaseUserDetails testBud = getOneForTest();
-        Optional<BaseUserDetails> result = userDetailsRepository.findByUserName(testBud.getUsername());
+        Optional<BaseUserDetails> result = userDetailsRepository.findByUsername(testBud.getUsername());
         Assert.assertTrue(result.isPresent());
         BaseUserDetails bud = result.get();
         Assert.assertTrue(testBud.getUsername().equals(bud.getUsername()));
@@ -60,7 +60,7 @@ public class UserDetailsRepositoryTest {
     public void D_delete_one_by_name() {
         BaseUserDetails testBud = getOneForTest();
         Assert.assertNotNull(testBud);
-        Optional<BaseUserDetails> result = userDetailsRepository.findByUserName(testBud.getUsername());
+        Optional<BaseUserDetails> result = userDetailsRepository.findByUsername(testBud.getUsername());
         Assert.assertTrue(result.isPresent());
         userDetailsRepository.delete(result.get());
     }
@@ -68,7 +68,7 @@ public class UserDetailsRepositoryTest {
     private BaseUserDetails getOneForTest() {
         BaseUserDetails user = new BaseUserDetails();
         user.setCreationTime(ZonedDateTime.now());
-        user.setUserName("testUser");
+        user.setUsername("testUser");
         user.setPassword("password");
 
         return user;
