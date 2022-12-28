@@ -24,4 +24,14 @@ public class StatisticHelper {
     static public int getRandomInt(int numOfBits) {
         return getRandomInt(0.5, numOfBits);
     }
+
+    static public int getRandomInt(double[] probability) {
+        StringBuilder sb = new StringBuilder();
+        int maxOfBits = probability.length < 32 ? probability.length : 31;
+        for (int i = 0; i < maxOfBits; ++i) {
+            sb.append(itIsHappened(probability[i]) ? 1 : 0);
+        }
+
+        return Integer.parseInt(sb.toString(), 2);
+    }
 }
