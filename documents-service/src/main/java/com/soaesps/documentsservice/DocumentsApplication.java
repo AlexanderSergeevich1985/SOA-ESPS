@@ -4,16 +4,19 @@ import feign.RequestInterceptor;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
-import org.springframework.cloud.openfeign.EnableFeignClients; // FIXED: Modern OpenFeign import
+import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.web.reactive.function.client.ClientRequest;
+import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /**
@@ -34,23 +37,15 @@ public class DocumentsApplication {
     /**
      * Reactive security filter chain configuration.
      * Replaces the removed ResourceServerConfigurerAdapter.
-     * Uses SecurityWebFilterChain (not SecurityFilterChain) for WebFlux applications.
      */
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
         return http
-                // Disable CSRF for stateless REST API with JWT tokens
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
-
-                // Authorization rules
                 .authorizeExchange(exchanges -> exchanges
-                        // FIXED: .antMatchers() replaced with .pathMatchers() for WebFlux
                         .pathMatchers("/documents/**", "/actuator/health/**").permitAll()
                         .anyExchange().authenticated()
                 )
-
-                // Enable OAuth2 Resource Server with JWT validation
-                // Replaces @EnableResourceServer and ResourceServerConfigurerAdapter
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> {})
                 )
@@ -60,27 +55,31 @@ public class DocumentsApplication {
     /**
      * WebClient configuration for making HTTP requests to other microservices.
      * Replaces the removed OAuth2RestTemplate.
-     * Automatically propagates OAuth2 tokens from the security context.
      */
     @Bean
     public WebClient webClient() {
         return WebClient.builder()
-                // Automatically extracts and forwards the JWT token from SecurityContext
-                .filter((request, next) ->
-                        ReactiveSecurityContextHolder.getContext()
-                                .map(securityContext -> {
-                                    Authentication authentication = securityContext.getAuthentication();
-                                    if (authentication instanceof JwtAuthenticationToken jwtAuth) {
-                                        return request.headers(headers ->
-                                                headers.setBearerAuth(jwtAuth.getToken().getTokenValue())
-                                        );
-                                    }
-                                    return request;
-                                })
-                                .defaultIfEmpty(request)
-                                .flatMap(next::exchange)
-                )
+                .filter(bearerTokenFilter())
                 .build();
+    }
+
+    /**
+     * Exchange filter that automatically extracts the JWT from the reactive SecurityContext
+     * and attaches it as a Bearer token to outgoing requests.
+     */
+    private ExchangeFilterFunction bearerTokenFilter() {
+        return ExchangeFilterFunction.ofRequestProcessor(request ->
+                ReactiveSecurityContextHolder.getContext()
+                        .map(SecurityContext::getAuthentication)
+                        .filter(JwtAuthenticationToken.class::isInstance)
+                        .map(JwtAuthenticationToken.class::cast)
+                        // Build a MODIFIED copy of the immutable request with the Authorization header
+                        .map(jwtAuth -> ClientRequest.from(request)
+                                .headers(headers -> headers.setBearerAuth(jwtAuth.getToken().getTokenValue()))
+                                .build())
+                        // If there is no JWT in the context (internal call), send the request as-is
+                        .defaultIfEmpty(request)
+        );
     }
 
     /**
