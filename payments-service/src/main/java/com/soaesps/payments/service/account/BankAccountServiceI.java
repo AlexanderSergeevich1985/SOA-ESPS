@@ -2,7 +2,7 @@ package com.soaesps.payments.service.account;
 
 import com.soaesps.payments.domain.transactions.BankAccount;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
 
 public interface BankAccountServiceI {

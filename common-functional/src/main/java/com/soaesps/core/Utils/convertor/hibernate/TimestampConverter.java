@@ -1,7 +1,7 @@
 package com.soaesps.core.Utils.convertor.hibernate;
 
-import javax.persistence.AttributeConverter;
-import javax.persistence.Converter;
+import jakarta.persistence.AttributeConverter;
+import jakarta.persistence.Converter;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.ZoneId;

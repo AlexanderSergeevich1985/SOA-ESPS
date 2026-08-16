@@ -5,7 +5,7 @@ import com.soaesps.core.patterns.Patterns;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 public class HttpUtils {
     private HttpUtils() {

@@ -27,8 +27,8 @@ import java.time.temporal.TemporalUnit;
 import java.util.Date;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
 public class DateTimeHelper {
     public static final String DEFAULT_SERVER_DATE_FORMAT = "dd/MM/yyyy HH:mm:ss Z";

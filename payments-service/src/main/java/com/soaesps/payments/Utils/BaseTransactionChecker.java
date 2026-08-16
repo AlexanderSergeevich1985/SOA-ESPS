@@ -22,8 +22,8 @@ import com.soaesps.core.Utils.CryptoHelper;
 import com.soaesps.core.Utils.DateTimeHelper;
 import com.soaesps.payments.DataModels.Transactions.*;
 
-import javax.annotation.Nonnull;
-import javax.crypto.Cipher;
+import jakarta.annotation.Nonnull;
+import jakarta.crypto.Cipher;
 import java.math.BigDecimal;
 import java.security.PrivateKey;
 import java.security.Signature;

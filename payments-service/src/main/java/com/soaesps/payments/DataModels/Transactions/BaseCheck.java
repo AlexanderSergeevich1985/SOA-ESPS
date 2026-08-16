@@ -21,8 +21,8 @@ package com.soaesps.payments.DataModels.Transactions;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.soaesps.core.DataModels.BaseEntity;
 
-import javax.annotation.Nonnull;
-import javax.persistence.*;
+import jakarta.annotation.Nonnull;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "BASE_CHECK")

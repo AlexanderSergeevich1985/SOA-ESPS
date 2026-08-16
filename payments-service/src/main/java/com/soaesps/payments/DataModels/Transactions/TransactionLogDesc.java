@@ -20,10 +20,10 @@ package com.soaesps.payments.DataModels.Transactions;
 
 import org.hibernate.validator.constraints.Length;
 
-import javax.annotation.Nonnull;
-import javax.persistence.Column;
-import javax.persistence.Embeddable;
-import javax.persistence.Lob;
+import jakarta.annotation.Nonnull;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.Lob;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.sql.Timestamp;

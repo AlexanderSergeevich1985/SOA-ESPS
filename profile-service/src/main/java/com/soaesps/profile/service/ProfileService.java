@@ -3,7 +3,7 @@ package com.soaesps.profile.service;
 import com.soaesps.core.DataModels.device.DeviceInfo;
 import com.soaesps.core.DataModels.user.UserProfile;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public interface ProfileService {

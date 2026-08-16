@@ -5,9 +5,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import com.soaesps.core.Utils.convertor.hibernate.TimestampConverter;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import javax.persistence.*;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import jakarta.persistence.*;
 import java.time.ZonedDateTime;
 
 @Entity

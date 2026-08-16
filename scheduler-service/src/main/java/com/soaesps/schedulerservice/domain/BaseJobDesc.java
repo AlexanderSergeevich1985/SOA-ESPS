@@ -3,7 +3,7 @@ package com.soaesps.schedulerservice.domain;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.soaesps.core.Utils.convertor.hibernate.TimestampConverter;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 

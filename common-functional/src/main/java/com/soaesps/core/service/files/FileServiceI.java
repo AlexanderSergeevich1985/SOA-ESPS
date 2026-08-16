@@ -3,7 +3,7 @@ package com.soaesps.core.service.files;
 import org.apache.commons.io.IOUtils;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;

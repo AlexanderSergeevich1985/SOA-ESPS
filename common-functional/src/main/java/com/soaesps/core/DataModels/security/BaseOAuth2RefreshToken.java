@@ -19,16 +19,15 @@
 package com.soaesps.core.DataModels.security;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.soaesps.core.DataModels.BaseOnlyIdEntity;
 import com.soaesps.core.Utils.DateTimeHelper;
 import com.soaesps.core.Utils.HashGeneratorHelper;
-import org.codehaus.jackson.annotate.JsonCreator;
-import org.codehaus.jackson.annotate.JsonValue;
-import org.springframework.security.oauth2.common.OAuth2RefreshToken;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import javax.persistence.*;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import jakarta.persistence.*;
 import java.io.Serializable;
 import java.time.Duration;
 import java.util.Date;
@@ -36,7 +35,7 @@ import java.util.Date;
 @Entity
 @Table(name = "ISSUED_REFRESH_TOKENS")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-public class BaseOAuth2RefreshToken extends BaseOnlyIdEntity implements Serializable, OAuth2RefreshToken {
+public class BaseOAuth2RefreshToken extends BaseOnlyIdEntity implements Serializable {
     @Transient
     private static final long DEFAULT_EXP_PERIOD_SECONDS = 1 * 60 * 60;
 
@@ -64,7 +63,6 @@ public class BaseOAuth2RefreshToken extends BaseOnlyIdEntity implements Serializ
         this.value = HashGeneratorHelper.mixTwoString(value, this.expiration.toString());
     }
 
-    @Override
     @JsonValue
     @Nonnull
     public String getValue() {
@@ -75,7 +73,6 @@ public class BaseOAuth2RefreshToken extends BaseOnlyIdEntity implements Serializ
         this.value = value;
     }
 
-    @JsonValue
     @Nonnull
     public Date getExpiration() {
         return this.expiration;
@@ -85,7 +82,6 @@ public class BaseOAuth2RefreshToken extends BaseOnlyIdEntity implements Serializ
         this.expiration = expiration;
     }
 
-    @JsonValue
     @Nullable
     public int getCounter() {
         return counter;
@@ -99,7 +95,6 @@ public class BaseOAuth2RefreshToken extends BaseOnlyIdEntity implements Serializ
         ++counter;
     }
 
-    @JsonValue
     @Nullable
     public String getQuestion() {
         return this.question;
@@ -109,7 +104,6 @@ public class BaseOAuth2RefreshToken extends BaseOnlyIdEntity implements Serializ
         this.question = question;
     }
 
-    @JsonValue
     @Nullable
     public String getAnswear() {
         return answear;

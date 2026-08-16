@@ -20,7 +20,7 @@ package com.soaesps.core.Utils;
 
 import org.apache.commons.math3.random.RandomGenerator;
 
-import javax.xml.bind.DatatypeConverter;
+import jakarta.xml.bind.DatatypeConverter;
 import java.io.*;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;

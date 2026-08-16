@@ -6,8 +6,8 @@ import com.soaesps.core.exception.ValidatorException;
 import org.springframework.expression.ParseException;
 import org.springframework.format.Formatter;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.time.ZonedDateTime;
 import java.util.Locale;
 

@@ -3,7 +3,7 @@ package com.soaesps.notifications.component;
 import com.soaesps.notifications.domain.MessageType;
 import com.soaesps.notifications.domain.SimpleMessage;
 
-import javax.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeMessage;
 
 public interface MessageHandler<T, T1> {
     T handleMessage(T1 message);

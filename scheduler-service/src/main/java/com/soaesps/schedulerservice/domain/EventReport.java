@@ -1,6 +1,6 @@
 package com.soaesps.schedulerservice.domain;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity

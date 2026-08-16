@@ -3,10 +3,10 @@ package com.soaesps.core.DataModels.message;
 import com.soaesps.core.DataModels.BaseEntity;
 import com.soaesps.core.Utils.convertor.json.LogMsgConvertor;
 
-import javax.persistence.Column;
-import javax.persistence.Convert;
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import java.io.Serializable;
 
 @Entity

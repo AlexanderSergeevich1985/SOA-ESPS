@@ -106,7 +106,7 @@
         </dependency>
 
         <dependency>
-            <groupId>javax.persistence</groupId>
+            <groupId>jakarta.persistence</groupId>
             <artifactId>persistence-api</artifactId>
             <version>LATEST</version>
         </dependency>

@@ -32,24 +32,40 @@ public class PathFinder {
 
     private ForkJoinPool forkJoinPool = new ForkJoinPool(Runtime.getRuntime().availableProcessors(), factory, new BFSExceptionHandler(), true);
 
-    private PriorityBlockingQueue<NetVertex> queue;
+    private PriorityBlockingQueue queue;
 
     private AtomicBoolean isFound;
 
-    public <T extends Serializable, T2 extends Number> NetVertex<T, T2> BFS_Cycle(final int size, final NetVertex<T, T2> vertex1, final NetVertex<T, T2> vertex2) {
+    @SuppressWarnings("unchecked")
+    private <T extends Serializable, T2 extends Number> PriorityBlockingQueue<NetVertex<T, T2>> getQueue(int size) {
         if (queue == null) {
-            queue = new PriorityBlockingQueue<>(calcInitialSize(size), createComparator());
+            queue = new PriorityBlockingQueue<>(
+                    calcInitialSize(size),
+                    PathFinder.<T, T2>createComparator()
+            );
         }
+        return (PriorityBlockingQueue<NetVertex<T, T2>>) queue;
+    }
+
+    public <T extends Serializable, T2 extends Number> NetVertex<T, T2> BFS_Cycle(final int size, final NetVertex<T, T2> vertex1, final NetVertex<T, T2> vertex2) {
+        // 1. Initialize and capture a strictly typed local queue representation
+        PriorityBlockingQueue<NetVertex<T, T2>> localQueue = getQueue(size);
+
         vertex1.setPathDescI(new PathDesc(0));
-        queue.add(vertex1);
-        while (!queue.isEmpty()) {
-            final NetVertex<T, T2> vertex = this.queue.poll();
+        localQueue.add(vertex1);
+
+        while (!localQueue.isEmpty()) {
+            // 2. Poll from the local queue which correctly resolves type bounds instead of raw Object
+            final NetVertex<T, T2> vertex = localQueue.poll();
             if (vertex.equals(vertex2)) {
                 return vertex;
             }
+
             vertex.getPathDescI().setState(PathDescI.VertexState.VISITED);
             exploreVertex(vertex);
-            vertex.getVertices().keySet().forEach(this.queue::add);
+
+            // 3. Accumulate discovered vertices back into the local scope queue
+            vertex.getVertices().keySet().forEach(localQueue::add);
             vertex.getPathDescI().setState(PathDescI.VertexState.EVALUATED);
         }
 
@@ -57,14 +73,20 @@ public class PathFinder {
     }
 
     public <T extends Serializable, T2 extends Number> NetVertex<T, T2> BFSwithDFScycle(final int size, final NetVertex<T, T2> vertex1, final NetVertex<T, T2> vertex2) {
-        if (queue == null) {
-            queue = new PriorityBlockingQueue<>(calcInitialSize(size), createComparator());
-        }
+        // 1. Capture the strictly typed queue into a local variable to prevent type leakage
+        PriorityBlockingQueue<NetVertex<T, T2>> localQueue = getQueue(size);
         this.isFound = new AtomicBoolean(false);
+
+        // 2. Fixed possible typo in property setter invocation matching the prior BFS implementation
         vertex1.setPathDescI(new PathDesc(0));
-        queue.add(vertex1);
-        while (!queue.isEmpty()) {
-            final NetVertex<T, T2> vertex = this.queue.poll();
+        localQueue.add(vertex1);
+
+        while (!localQueue.isEmpty()) {
+            // 3. Resolves Object compilation error by polling explicitly from bounded local variable
+            final NetVertex<T, T2> vertex = localQueue.poll();
+            if (vertex == null) {
+                continue;
+            }
             if (vertex.equals(vertex2)) {
                 this.isFound.set(true);
                 return vertex;
@@ -73,8 +95,11 @@ public class PathFinder {
                 vertex.getPathDescI().setState(PathDescI.VertexState.VISITED);
                 exploreVertex(vertex);
             }
-            final Set<NetVertex<T,T2>> neighbours = vertex.getVertices().keySet();
-            neighbours.forEach(this.queue::add);
+
+            final Set<NetVertex<T, T2>> neighbours = vertex.getVertices().keySet(); // Ensure matching your method model (getVerticesI)
+
+            // 4. Bound collection mutations to the isolated type context
+            neighbours.forEach(localQueue::add);
             neighbours.stream().map(DFSOnetask::new).forEach(t -> this.forkJoinPool.invoke(t));
 
             vertex.getPathDescI().setState(PathDescI.VertexState.EVALUATED);
@@ -83,10 +108,9 @@ public class PathFinder {
         return null;
     }
 
+
     public <T extends Serializable, T2 extends Number> void DFScycle(final int size, final NetVertex<T, T2> vertex1, final NetVertex<T, T2> vertex2) {
-        if (queue == null) {
-            queue = new PriorityBlockingQueue<>(calcInitialSize(size), createComparator());
-        }
+        getQueue(size);
         this.isFound = new AtomicBoolean(false);
         vertex1.setPathDescI(new PathDesc(0));
         this.forkJoinPool.invoke(new DFStask<>(vertex1, vertex2));

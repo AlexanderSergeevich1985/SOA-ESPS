@@ -9,7 +9,7 @@ import java.util.Objects;
  * Created by sniper on 19.11.22.
  */
 public class Range<T> implements RangeI<T> {
-    private Comparator<T> comparator;
+    protected Comparator<T> comparator;
 
     protected Integer interval;
 

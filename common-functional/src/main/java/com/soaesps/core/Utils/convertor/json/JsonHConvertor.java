@@ -2,9 +2,9 @@ package com.soaesps.core.Utils.convertor.json;
 
 import com.soaesps.core.Utils.JsonUtil;
 
-import javax.annotation.Nullable;
-import javax.persistence.AttributeConverter;
-import javax.persistence.Converter;
+import jakarta.annotation.Nullable;
+import jakarta.persistence.AttributeConverter;
+import jakarta.persistence.Converter;
 import java.lang.reflect.ParameterizedType;
 
 public abstract class JsonHConvertor<T> implements AttributeConverter<T, String> {

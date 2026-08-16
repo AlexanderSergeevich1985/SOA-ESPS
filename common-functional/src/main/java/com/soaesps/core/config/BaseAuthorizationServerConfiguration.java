@@ -1,63 +1,93 @@
 package com.soaesps.core.config;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.oauth2.config.annotation.web.configuration.AuthorizationServerConfigurerAdapter;
-import org.springframework.security.oauth2.config.annotation.web.configuration.EnableAuthorizationServer;
-import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerEndpointsConfigurer;
-import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerSecurityConfigurer;
-import org.springframework.security.oauth2.provider.token.DefaultTokenServices;
-import org.springframework.security.oauth2.provider.token.TokenEnhancer;
-import org.springframework.security.oauth2.provider.token.TokenEnhancerChain;
-import org.springframework.security.oauth2.provider.token.TokenStore;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
+import org.springframework.http.MediaType;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
+import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
+import org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository;
+import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
+import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
+import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
+import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
+import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
+import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
+import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.time.Duration;
+import java.util.UUID;
 
-@EnableAuthorizationServer
-public abstract class BaseAuthorizationServerConfiguration extends AuthorizationServerConfigurerAdapter {
-    static final int ACCESS_TOKEN_VALIDITY_SECONDS = 1*60*60;
-    static final int REFRESH_TOKEN_VALIDITY_SECONDS = 6*60*60;
+@Configuration
+@EnableWebSecurity
+public class BaseAuthorizationServerConfiguration {
 
-    @Autowired
-    private ApplicationContext applicationContext;
+    private static final long ACCESS_TOKEN_VALIDITY_SECONDS = 1 * 60 * 60;
+    private static final long REFRESH_TOKEN_VALIDITY_SECONDS = 6 * 60 * 60;
 
-    @Autowired
-    private TokenStore tokenStore;
+    @Bean
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    public SecurityFilterChain authServerSecurityFilterChain(HttpSecurity http) throws Exception {
+        OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
+                OAuth2AuthorizationServerConfigurer.authorizationServer();
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
+        http
+                .securityMatcher(authorizationServerConfigurer.getEndpointsMatcher())
+                .with(authorizationServerConfigurer, (authorizationServer) ->
+                        authorizationServer
+                                .oidc(Customizer.withDefaults()) // Enables OpenID Connect 1.0
+                )
+                .authorizeHttpRequests((authorize) ->
+                        authorize.anyRequest().authenticated()
+                )
+                // Replaces formLogin/client form auth handling from old config
+                .exceptionHandling((exceptions) -> exceptions
+                        .defaultAuthenticationEntryPointFor(
+                                new LoginUrlAuthenticationEntryPoint("/login"),
+                                new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
+                        )
+                );
 
-    @Autowired
-    private UserDetailsService userDetailsService;
-
-    @Override
-    public void configure(AuthorizationServerSecurityConfigurer security) {
-        security.tokenKeyAccess("permitAll()")
-                .checkTokenAccess("isAuthenticated()")
-                .allowFormAuthenticationForClients();
+        return http.build();
     }
 
-    @Override
-    public void configure(AuthorizationServerEndpointsConfigurer endpoints) throws Exception {
-        Collection<TokenEnhancer> tokenEnhancers = applicationContext.getBeansOfType(TokenEnhancer.class).values();
-        TokenEnhancerChain tokenEnhancerChain = new TokenEnhancerChain();
-        tokenEnhancerChain.setTokenEnhancers(new ArrayList<>(tokenEnhancers));
+    @Bean
+    public TokenSettings tokenSettings() {
+        return TokenSettings.builder()
+                .accessTokenTimeToLive(Duration.ofSeconds(ACCESS_TOKEN_VALIDITY_SECONDS))
+                .refreshTokenTimeToLive(Duration.ofSeconds(REFRESH_TOKEN_VALIDITY_SECONDS))
+                .reuseRefreshTokens(true) // Replaces tokenService.setReuseRefreshToken(true)
+                .build();
+    }
 
-        DefaultTokenServices tokenService = new DefaultTokenServices();
-        tokenService.setReuseRefreshToken(true);
-        tokenService.setSupportRefreshToken(true);
-        tokenService.setClientDetailsService(endpoints.getClientDetailsService());
-        tokenService.setTokenStore(tokenStore);
-        tokenService.setTokenEnhancer(endpoints.getTokenEnhancer());
-        tokenService.setAccessTokenValiditySeconds(ACCESS_TOKEN_VALIDITY_SECONDS);
-        tokenService.setRefreshTokenValiditySeconds(REFRESH_TOKEN_VALIDITY_SECONDS);
+    @Bean
+    public AuthorizationServerSettings authorizationServerSettings() {
+        return AuthorizationServerSettings.builder().build();
+    }
 
-        endpoints
-                .authenticationManager(authenticationManager)
-                .userDetailsService(userDetailsService)
-                .tokenServices(tokenService);
+    // Default template for client repository (can be overridden in microservices)
+    @Bean
+    public RegisteredClientRepository registeredClientRepository(TokenSettings tokenSettings) {
+        RegisteredClient registeredClient = RegisteredClient.withId(UUID.randomUUID().toString())
+                .clientId("default-client")
+                .clientSecret("{noop}default-secret") // Secure delegation for testing
+                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
+                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
+                .redirectUri("http://127.0.0")
+                .scope("openid")
+                .tokenSettings(tokenSettings)
+                .clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).build())
+                .build();
+
+        return new InMemoryRegisteredClientRepository(registeredClient);
     }
 }

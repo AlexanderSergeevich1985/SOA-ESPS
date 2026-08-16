@@ -2,7 +2,7 @@ package com.soaesps.core.DataModels.security;
 
 import com.soaesps.core.DataModels.BaseEntity;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity

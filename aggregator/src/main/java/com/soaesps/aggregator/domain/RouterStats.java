@@ -3,7 +3,7 @@ package com.soaesps.aggregator.domain;
 import com.soaesps.aggregator.client.IWorkerNode;
 import com.soaesps.core.DataModels.BaseEntity;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 
 @Entity
 public class RouterStats extends BaseEntity {

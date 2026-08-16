@@ -3,8 +3,8 @@ package com.soaesps.core.component.curcuitBreaker;
 import com.soaesps.core.BaseOperation.Statistics.LightDeviationCalculator;
 import com.soaesps.core.DataModels.task.BaseJobDesc;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;

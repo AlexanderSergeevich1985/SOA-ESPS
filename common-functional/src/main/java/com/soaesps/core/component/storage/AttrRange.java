@@ -12,12 +12,35 @@ public class AttrRange extends Range<Attribute> {
 
     @Override
     public boolean valueInRange(Attribute attr, Boolean startIn, Boolean endIn) {
-        Number val = attr.getNumericValue();
+        if (attr == null) {
+            return false;
+        }
 
-        return start > val && val < end || startIn && sc == 0 || endIn && ec == 0;
+        int compStart = this.comparator.compare(attr, this.start);
+        int compEnd = this.comparator.compare(attr, this.end);
+
+        // Inside the range (strictly between start and end)
+        if (compStart > 0 && compEnd < 0) {
+            return true;
+        }
+        // Exactly at start and start is inclusive
+        if (Boolean.TRUE.equals(startIn) && compStart == 0) {
+            return true;
+        }
+        // Exactly at end and end is inclusive
+        if (Boolean.TRUE.equals(endIn) && compEnd == 0) {
+            return true;
+        }
+
+        return false;
     }
 
+    @Override
     public <T1 extends Number> long getIndexByValue(T1 value) {
-        return (long) value/interval;
+        if (value == null || this.interval == 0) {
+            return 0;
+        }
+        return value.longValue() / this.interval;
     }
+
 }

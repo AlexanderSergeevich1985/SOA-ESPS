@@ -18,7 +18,7 @@
  */
 package com.soaesps.core.BaseOperation.Statistics;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
 public class LightMeanCalculator {
     private double mean;

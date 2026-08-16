@@ -2,7 +2,7 @@ package com.soaesps.quotesservice.domain;
 
 import com.soaesps.core.DataModels.BaseEntity;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "SOA_ESPS.MARKET_CATALOG")

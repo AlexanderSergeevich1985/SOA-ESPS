@@ -10,7 +10,9 @@ import com.soaesps.core.security.service.BaseOAuth2UserService;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.security.oauth2.client.web.AuthorizationRequestRepository;
@@ -20,7 +22,21 @@ import org.springframework.security.web.authentication.AuthenticationFailureHand
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 
 @Configuration
-public class BaseAuthResServerConfig extends WebSecurityConfigurerAdapter {
+public class BaseAuthResServerConfig {
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+                .authorizeHttpRequests(authorize -> authorize
+                        .anyRequest().authenticated()
+                )
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(Customizer.withDefaults())
+                );
+
+        return http.build();
+    }
+
     @Bean
     public AuthenticationSuccessHandler authenticationSuccessHandler() {
         return new BaseAuthenticationSuccessHandler();
@@ -33,8 +49,8 @@ public class BaseAuthResServerConfig extends WebSecurityConfigurerAdapter {
 
     @Bean
     public OAuth2UserService<OAuth2UserRequest, OAuth2User> oAuth2UserService(final TransportI sender,
-                                                                        final CacheI<String, OAuth2User> oAuth2Cache,
-                                                                        final ObjectMapper mapper) {
+                                                                              final CacheI<String, OAuth2User> oAuth2Cache,
+                                                                              final ObjectMapper mapper) {
         return new BaseOAuth2UserService(sender, oAuth2Cache, mapper);
     }
 

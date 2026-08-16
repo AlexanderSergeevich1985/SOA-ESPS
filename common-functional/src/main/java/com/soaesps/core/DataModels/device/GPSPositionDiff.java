@@ -2,6 +2,8 @@ package com.soaesps.core.DataModels.device;
 
 import com.soaesps.core.stateflow.FieldUpdaterI;
 import com.soaesps.core.stateflow.ObjStateDiff;
+import com.soaesps.core.stateflow.UpdateI;
+import jakarta.annotation.Nonnull;
 
 import java.util.Set;
 
@@ -66,19 +68,40 @@ public class GPSPositionDiff extends ObjStateDiff<GPSPosition> {
     }
 
     @Override
-    public void setUpdate(String key, Object value) {
+    public <U extends UpdateI> void setUpdate(@Nonnull final String key, final U value) {
         GPSPosition updated = this.getObject();
+        if (updated == null || value == null) {
+            return;
+        }
+
+        // We delegate the generic type wrapper extraction or do safe type verification
+        Object rawValue = value;
+
         switch (key) {
             case "longitude":
-                updated.setLongitude((double) value);
+                if (rawValue instanceof Double) {
+                    updated.setLongitude((Double) rawValue);
+                } else if (rawValue instanceof Number) {
+                    updated.setLongitude(((Number) rawValue).doubleValue());
+                }
                 break;
             case "latitude":
-                updated.setLatitude((double) value);
+                if (rawValue instanceof Double) {
+                    updated.setLatitude((Double) rawValue);
+                } else if (rawValue instanceof Number) {
+                    updated.setLatitude(((Number) rawValue).doubleValue());
+                }
                 break;
             case "altitude":
-                updated.setAltitude((double) value);
+                if (rawValue instanceof Double) {
+                    updated.setAltitude((Double) rawValue);
+                } else if (rawValue instanceof Number) {
+                    updated.setAltitude(((Number) rawValue).doubleValue());
+                }
                 break;
             default:
+                // Fallback to push changes into the standard tracking map of the parent class
+                super.setUpdate(key, value);
                 break;
         }
     }

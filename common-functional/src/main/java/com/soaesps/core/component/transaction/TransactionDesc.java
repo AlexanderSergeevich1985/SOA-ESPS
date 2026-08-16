@@ -2,9 +2,9 @@ package com.soaesps.core.component.transaction;
 
 import com.soaesps.core.DataModels.BaseEntity;
 
-import javax.persistence.Column;
-import javax.persistence.MappedSuperclass;
-import javax.persistence.Transient;
+import jakarta.persistence.Column;
+import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.Transient;
 
 @MappedSuperclass
 public class TransactionDesc<T> extends BaseEntity {

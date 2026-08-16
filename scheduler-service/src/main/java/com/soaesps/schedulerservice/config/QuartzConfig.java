@@ -14,7 +14,7 @@ import org.springframework.scheduling.quartz.SpringBeanJobFactory;
 
 import org.quartz.Trigger;
 
-import javax.sql.DataSource;
+import jakarta.sql.DataSource;
 import java.util.Properties;
 
 @Configuration

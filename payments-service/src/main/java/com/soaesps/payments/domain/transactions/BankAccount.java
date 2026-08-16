@@ -1,6 +1,6 @@
 package com.soaesps.payments.domain.transactions;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "server_bills")

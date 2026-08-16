@@ -2,7 +2,7 @@ package com.soaesps.core.DataModels.executor;
 
 import org.hibernate.annotations.GenericGenerator;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "executor_node")

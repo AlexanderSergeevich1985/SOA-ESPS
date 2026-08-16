@@ -56,7 +56,7 @@ public class EmailConfiguration {
         mailProperties.put("mail.smtp.starttls.required", startlls_required);
         mailProperties.put("mail.smtp.socketFactory.port", socketPort);
         mailProperties.put("mail.smtp.debug", debug);
-        mailProperties.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+        mailProperties.put("mail.smtp.socketFactory.class", "jakarta.net.ssl.SSLSocketFactory");
         mailProperties.put("mail.smtp.socketFactory.fallback", fallback);
 
         mailSender.setJavaMailProperties(mailProperties);

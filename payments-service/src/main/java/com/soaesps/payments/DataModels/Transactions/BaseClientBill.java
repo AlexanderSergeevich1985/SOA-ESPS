@@ -21,12 +21,12 @@ package com.soaesps.payments.DataModels.Transactions;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.soaesps.core.DataModels.BaseEntity;
 
-import javax.annotation.Nonnull;
-import javax.persistence.Embedded;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Lob;
-import javax.persistence.Table;
+import jakarta.annotation.Nonnull;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Lob;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "CLIENT_BILLS")

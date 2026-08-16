@@ -2,10 +2,10 @@ package com.soaesps.core.DataModels.executor;
 
 import com.soaesps.core.DataModels.task.RegisteredJob;
 
-import javax.persistence.Entity;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
-import javax.persistence.Table;
+import jakarta.persistence.Entity;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "ref_node_job")

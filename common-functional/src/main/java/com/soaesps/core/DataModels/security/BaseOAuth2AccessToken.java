@@ -23,14 +23,11 @@ import com.soaesps.core.Utils.DateTimeHelper;
 import com.soaesps.core.Utils.HashGeneratorHelper;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import org.codehaus.jackson.annotate.JsonValue;
+import com.fasterxml.jackson.annotation.JsonValue;
 
-import org.springframework.security.core.token.Token;
-import org.springframework.security.oauth2.common.OAuth2AccessToken;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import javax.persistence.*;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import jakarta.persistence.*;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.ZoneOffset;
@@ -39,7 +36,7 @@ import java.util.*;
 @Entity
 @Table(name = "ISSUED_ACCESS_TOKENS")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-public class BaseOAuth2AccessToken extends BaseEntity implements OAuth2AccessToken, Token, Serializable {
+public class BaseOAuth2AccessToken extends BaseEntity implements Serializable {
     @Transient
     private int counter; // this need for checking number of requests during current session
 
@@ -169,7 +166,6 @@ public class BaseOAuth2AccessToken extends BaseEntity implements OAuth2AccessTok
         this.sessionUuid = sessionUuid;
     }
 
-    @JsonValue
     @Nullable
     public int getCounter() {
         return counter;
@@ -183,7 +179,6 @@ public class BaseOAuth2AccessToken extends BaseEntity implements OAuth2AccessTok
         ++counter;
     }
 
-    @JsonValue
     @Nullable
     public String getQuestion() {
         return this.question;
