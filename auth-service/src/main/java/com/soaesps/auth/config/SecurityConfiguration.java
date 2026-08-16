@@ -9,22 +9,27 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.core.annotation.Order;
 
 @Configuration
 @EnableWebSecurity
-@EnableGlobalMethodSecurity(prePostEnabled = true)
+@EnableMethodSecurity // Replaces deprecated @EnableGlobalMethodSecurity(prePostEnabled = true)
 @ComponentScan({"com.soaesps.auth", "com.soaesps.core.security"})
-public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
+@Import(com.soaesps.core.config.BaseAuthorizationServerConfiguration.class)
+public class SecurityConfiguration {
+
     @Autowired
     private OAuth2TokenRepository tokenRepository;
 
@@ -52,34 +57,55 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
         return AccessTokenFactory.getInstance(tokenRepository, "secret", 10000);
     }
 
-    @Override
-    protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
-        auth.authenticationProvider(provider)
-                .userDetailsService(userDetailsService)
-                .passwordEncoder(passwordEncoder());
+    /**
+     * Configures the security filter chain dedicated to human interactive users.
+     * Preserves all original custom endpoints, handlers, routing paths, and authentication structures.
+     * The primary technical mTLS chain is inherited automatically from BaseAuthorizationServerConfiguration.
+     */
+    @Bean
+    @Order(2) // Executes immediately after the high-priority technical OAuth2/mTLS filter chain
+    public SecurityFilterChain userSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(csrf -> csrf.disable()) // Replaces old .csrf().disable()
+                .authorizeHttpRequests(authorize -> authorize
+                        // Added /login/otp and verification endpoints to the open list
+                        .requestMatchers("/accounts/**", "/login/otp", "/login/otp/verify").permitAll()
+                        .anyRequest().authenticated()
+                )
+                // Strategy A for human actors: Extract Username from personal smartcard or client certificate CN field
+                .x509(x509 -> x509
+                        .subjectPrincipalRegex("CN=(.*?)(?:,|$)")
+                        .userDetailsService(userDetailsService)
+                )
+                // Strategy B for human actors: Legacy fallback form login with your original precise mappings
+                .formLogin(form -> form
+                        .loginPage("/login")
+                        .usernameParameter("username")
+                        .passwordParameter("password")
+                        .loginProcessingUrl("/login_security_check")
+                        .failureUrl("/login?error")
+                        .failureHandler(failureHandler)
+                        .successHandler(successHandler)
+                        .permitAll()
+                )
+                // Session destruction and invalidation behavior mapping the original configuration block
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/login?logout")
+                        .invalidateHttpSession(true)
+                        .permitAll()
+                )
+                // Wire up your custom internal identity validation logic provider
+                .authenticationProvider(provider);
+
+        return http.build();
     }
 
-    @Override
-    public void configure(HttpSecurity http) throws Exception {
-        http.csrf().disable()
-                .authorizeRequests()
-                .antMatchers("/accounts/**").permitAll()
-                .anyRequest().authenticated()
-                .and()
-                .formLogin()
-                .loginPage("/login") //login page path
-                .usernameParameter("username")
-                .passwordParameter("password")
-                .loginProcessingUrl("/login_security_check") //login checking path
-                .failureUrl("/login?error") //path for login failure
-                .failureHandler(failureHandler)
-                .successHandler(successHandler)
-                .permitAll()
-                .and()
-                .logout()
-                .logoutUrl("/logout")
-                .logoutSuccessUrl("/login?logout")
-                .invalidateHttpSession(true)
-                .permitAll();
+    /**
+     * Replaces the old programmatic AuthenticationManagerBuilder configure method with a direct Bean declaration.
+     */
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
     }
 }

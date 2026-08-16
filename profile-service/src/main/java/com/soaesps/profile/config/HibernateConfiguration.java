@@ -1,71 +1,75 @@
 package com.soaesps.profile.config;
 
 import com.soaesps.core.config.BaseHibernateConfiguration;
-
-import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-import org.springframework.orm.hibernate5.LocalSessionFactoryBean;
 import org.springframework.orm.jpa.JpaVendorAdapter;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
-import jakarta.sql.DataSource;
+import javax.sql.DataSource;
 import java.util.Properties;
 
+/**
+ * JPA/Hibernate configuration for the profile-service.
+ * In Spring Boot 3, native Hibernate SessionFactory support was removed.
+ * All database access should go through JPA EntityManager.
+ */
 @Configuration
 @Import({BaseHibernateConfiguration.class})
-//@EnableAutoConfiguration
 @EntityScan({"com.soaesps.core.DataModels"})
 @EnableJpaRepositories(basePackages = {"com.soaesps.profile.repository"})
 @EnableTransactionManagement
 public class HibernateConfiguration {
-    private static Logger log = LoggerFactory.getLogger(HibernateConfiguration.class);
 
-    @Autowired
-    private Environment env;
+    private static final Logger log = LoggerFactory.getLogger(HibernateConfiguration.class);
 
-    @Bean
-    public SessionFactory sessionFactory(final DataSource restDataSource) {
-        final LocalSessionFactoryBean sessionFactory = new LocalSessionFactoryBean();
-        sessionFactory.setDataSource(restDataSource);
-        sessionFactory.setPackagesToScan("com.soaesps.core.DataModels", "com.soaesps.payments.DataModels.Transactions");
-        sessionFactory.setHibernateProperties(hibernateProperties());
+    private final Environment env;
 
-        return sessionFactory.getObject();
+    public HibernateConfiguration(Environment env) {
+        this.env = env;
     }
 
-    private Properties hibernateProperties() {
-        final Properties props = new Properties();
-        props.setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQL9Dialect");
-        props.setProperty("hibernate.temp.use_jdbc_metadata_defaults", "false");
-        props.setProperty("hibernate.show_sql", "true");
-        //props.setProperty("hibernate.hbm2ddl.auto", env.getProperty("hibernate.hbm2ddl.auto"));
-        props.setProperty("hibernate.globally_quoted_identifiers", "true");
-
-        return props;
-    }
-
+    /**
+     * JPA EntityManagerFactory configuration.
+     * This is the standard way to configure Hibernate in Spring Boot 3.
+     */
     @Bean
-    public LocalContainerEntityManagerFactoryBean entityManagerFactory(final DataSource restDataSource) {
+    public LocalContainerEntityManagerFactoryBean entityManagerFactory(final DataSource dataSource) {
         final LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
-        em.setDataSource(restDataSource);
-        em.setPackagesToScan("com.soaesps.core.DataModels.device", "com.soaesps.core.DataModels.user");
+        em.setDataSource(dataSource);
+        // Scan all required packages for JPA entities
+        em.setPackagesToScan(
+                "com.soaesps.core.DataModels",
+                "com.soaesps.core.DataModels.device",
+                "com.soaesps.core.DataModels.user",
+                "com.soaesps.payments.DataModels.Transactions"
+        );
 
         final JpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
         em.setJpaVendorAdapter(vendorAdapter);
         em.setJpaProperties(hibernateProperties());
 
         return em;
+    }
+
+    private Properties hibernateProperties() {
+        final Properties props = new Properties();
+
+        props.setProperty("hibernate.show_sql", "true");
+        props.setProperty("hibernate.format_sql", "true");
+        props.setProperty("hibernate.globally_quoted_identifiers", "true");
+
+        // DDL auto-generation (optional, for development only)
+        // props.setProperty("hibernate.hbm2ddl.auto", env.getProperty("hibernate.hbm2ddl.auto", "validate"));
+
+        return props;
     }
 }

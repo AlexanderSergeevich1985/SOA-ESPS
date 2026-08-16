@@ -25,6 +25,13 @@ spring:
          cache.use_query_cache: false
          cache.region.factory_class: org.hibernate.cache.ehcache.SingletonEhCacheRegionFactory
 
+   security:
+      oauth2:
+         resourceserver:
+            jwt:
+               issuer-uri: http://localhost:8081/auth-service
+               jwk-set-uri: http://localhost:8081/auth-service/oauth2/jwks
+
 soaesps:
     config-server:
          client: http://localhost:8080/config/

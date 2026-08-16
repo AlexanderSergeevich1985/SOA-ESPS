@@ -7,6 +7,7 @@ import com.soaesps.core.Utils.CryptoHelper;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Cache;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import jakarta.annotation.Nonnull;
@@ -15,10 +16,13 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Entity
-@Table(name = "t_user_details")//"T_USER_DETAILS"
+@Table(name = "t_user_details")
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.TRANSACTIONAL, region = "STATIC_DATA")
 @NamedQueries({
@@ -27,6 +31,7 @@ import java.util.List;
 })
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class BaseUserDetails extends BaseEntity implements UserDetails {
+
     @ManyToMany(fetch = FetchType.LAZY, cascade = { CascadeType.ALL })
     @JoinTable(
             name = "USERS_ROLES",
@@ -58,19 +63,28 @@ public class BaseUserDetails extends BaseEntity implements UserDetails {
     @Column(name = "is_enabled", nullable = false)
     private boolean enabled = true;
 
+    @Column(name = "is_mfa_enabled", nullable = false)
+    private boolean mfaEnabled = false;
+
     @Transient
     private String objectDigest;
 
     public BaseUserDetails() {}
 
-    @Nullable
     @Override
-    public List<Role> getAuthorities() {
-        return null;
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return authorities == null ? Collections.emptyList() : authorities;
     }
 
-    public void setAuthorities(@Nullable List<Role> authorities) {
-        this.authorities = authorities;
+    public void setAuthorities(@Nullable Collection<? extends GrantedAuthority> authorities) {
+        if (authorities == null) {
+            this.authorities = null;
+        } else {
+            this.authorities = authorities.stream()
+                    .filter(Role.class::isInstance)
+                    .map(Role.class::cast)
+                    .collect(Collectors.toList());
+        }
     }
 
     @Nonnull
@@ -94,46 +108,28 @@ public class BaseUserDetails extends BaseEntity implements UserDetails {
     }
 
     @Override
-    public boolean isAccountNonExpired() {
-        return accountNonExpired;
-    }
-
-    public void setAccountNonExpired(boolean accountNonExpired) {
-        this.accountNonExpired = accountNonExpired;
-    }
+    public boolean isAccountNonExpired() { return accountNonExpired; }
+    public void setAccountNonExpired(boolean accountNonExpired) { this.accountNonExpired = accountNonExpired; }
 
     @Override
-    public boolean isAccountNonLocked() {
-        return accountNonLocked;
-    }
-
-    public void setAccountNonLocked(boolean accountNonLocked) {
-        this.accountNonLocked = accountNonLocked;
-    }
+    public boolean isAccountNonLocked() { return accountNonLocked; }
+    public void setAccountNonLocked(boolean accountNonLocked) { this.accountNonLocked = accountNonLocked; }
 
     @Override
-    public boolean isCredentialsNonExpired() {
-        return credentialsNonExpired;
-    }
-
-    public void setCredentialsNonExpired(boolean credentialsNonExpired) {
-        this.credentialsNonExpired = credentialsNonExpired;
-    }
+    public boolean isCredentialsNonExpired() { return credentialsNonExpired; }
+    public void setCredentialsNonExpired(boolean credentialsNonExpired) { this.credentialsNonExpired = credentialsNonExpired; }
 
     @Override
-    public boolean isEnabled() {
-        return enabled;
-    }
+    public boolean isEnabled() { return enabled; }
+    public void setEnabled(boolean enabled) { this.enabled = enabled; }
 
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
+    public boolean isMfaEnabled() { return mfaEnabled; }
+    public void setMfaEnabled(boolean mfaEnabled) { this.mfaEnabled = mfaEnabled; }
 
     public String getObjectDigest() throws IOException, NoSuchAlgorithmException {
-        if (objectDigest == null || getObjectDigest().isEmpty()) {
+        if (objectDigest == null || objectDigest.isEmpty()) {
             objectDigest = CryptoHelper.getObjectDigest(this);
         }
-
         return objectDigest;
     }
 }

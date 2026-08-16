@@ -10,7 +10,7 @@ public interface BankAccountServiceI {
 
     boolean modifyAccount(@Nonnull final BankAccount accountNew);
 
-    boolean deleteAccount(@Nonnull final Integer accountId);
+    boolean deleteAccount(@Nonnull final Long accountId);
 
-    boolean archiveAccount(@Nonnull final Integer accountId) throws Exception;
+    boolean archiveAccount(@Nonnull final Long accountId) throws Exception;
 }

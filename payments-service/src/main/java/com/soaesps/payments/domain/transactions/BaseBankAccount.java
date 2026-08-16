@@ -2,14 +2,20 @@ package com.soaesps.payments.domain.transactions;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.soaesps.core.DataModels.BaseEntity;
-import org.hibernate.annotations.Type;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
 
+/**
+ * Base entity for bank account models.
+ * Uses @MappedSuperclass to inherit common fields without creating a separate table.
+ */
 @MappedSuperclass
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class BaseBankAccount extends BaseEntity {
+
     @Embedded
     private ServerBADesc serverBADesc;
 
@@ -17,7 +23,7 @@ public class BaseBankAccount extends BaseEntity {
     private String indentation;
 
     @Lob
-    @Type(type="org.hibernate.type.BinaryType")
+    @JdbcTypeCode(SqlTypes.VARBINARY)
     @Column(name = "bill_signature", nullable = false)
     private byte[] billSignature;
 

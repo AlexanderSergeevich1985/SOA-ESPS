@@ -1,10 +1,7 @@
-package Test;
+package com.soaesps.profile.benchmark;
 
-import TestTask.ParserApplication;
-import org.junit.*;
-import org.junit.runner.JUnitCore;
-import org.junit.runner.Result;
-import org.junit.runner.notification.Failure;
+import com.soaesps.profile.utils.ParserApplication;
+import org.junit.jupiter.api.Test;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.profile.StackProfiler;
 import org.openjdk.jmh.results.RunResult;
@@ -12,20 +9,23 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.Collection;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
+/**
+ * JMH benchmark suite for CSV/XML record parsers.
+ */
 public class ParserApplicationTest {
-    private static Logger logger = Logger.getLogger(ParserApplicationTest.class.getName());
+
+    private static final Logger logger = LoggerFactory.getLogger(ParserApplicationTest.class);
 
     @State(Scope.Thread)
     @Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
@@ -33,44 +33,38 @@ public class ParserApplicationTest {
     @Fork(3)
     @BenchmarkMode(Mode.AverageTime)
     @OutputTimeUnit(TimeUnit.NANOSECONDS)
-    static public class ParserApplicationBenchmark {
-        private ParserApplication application = new ParserApplication();
+    public static class ParserApplicationBenchmark {
+
+        private final ParserApplication application = new ParserApplication();
+
+        private static final Properties properties = new Properties();
         private String recordsFilePath;
-        private static Properties properties = new Properties();
 
         static {
-            try(InputStream is = new FileInputStream("resources/test.properties")) {
-                properties.load(is);
-            }
-            catch(FileNotFoundException fnfex) {
-                if(logger.isLoggable(Level.INFO)) {
-                    logger.log(Level.INFO, "FileNotFoundException occur : ", fnfex.toString());
+            try (InputStream is = ParserApplicationBenchmark.class
+                    .getClassLoader().getResourceAsStream("test.properties")) {
+                if (is != null) {
+                    properties.load(is);
+                } else {
+                    LoggerFactory.getLogger(ParserApplicationBenchmark.class)
+                            .warn("test.properties not found on classpath");
                 }
-            }
-            catch(IOException ioex) {
-                if(logger.isLoggable(Level.INFO)) {
-                    logger.log(Level.INFO, "IOException occur : ", ioex.toString());
-                }
+            } catch (IOException ex) {
+                LoggerFactory.getLogger(ParserApplicationBenchmark.class)
+                        .error("Failed to load test.properties", ex);
             }
         }
-
-        private ParserApplication converter = new ParserApplication();
 
         @Param({"csv", "xml"})
         private String type;
 
-        @Setup(org.openjdk.jmh.annotations.Level.Iteration)
+        @Setup(Level.Iteration)
         public void setup() {
-            switch (type) {
-                case "csv":
-                    this.recordsFilePath = properties.getProperty("test.filePath.csv");
-                    break;
-                case "xml":
-                    this.recordsFilePath = properties.getProperty("test.filePath.xml");
-                    break;
-                default:
-                    throw new IllegalStateException("Unknown type: " + type);
-            }
+            this.recordsFilePath = switch (type) {
+                case "csv" -> properties.getProperty("test.filePath.csv");
+                case "xml" -> properties.getProperty("test.filePath.xml");
+                default -> throw new IllegalStateException("Unknown type: " + type);
+            };
         }
 
         @Benchmark
@@ -90,19 +84,12 @@ public class ParserApplicationTest {
                 .include(ParserApplicationBenchmark.class.getSimpleName())
                 .addProfiler(StackProfiler.class)
                 .build();
+
         Collection<RunResult> runResults = new Runner(opt).run();
         assertFalse(runResults.isEmpty());
-        for(RunResult runResult : runResults) {
-            System.out.println(runResult.getAggregatedResult().toString());
-        }
-    }
 
-    public static void main(String[] args) {
-        Result result = JUnitCore.runClasses(ParserApplicationTest.class);
-        for(Failure failure : result.getFailures()) {
-            if(logger.isLoggable(Level.INFO)) {
-                logger.log(Level.INFO, "Failure occur : ", failure.toString());
-            }
+        for (RunResult runResult : runResults) {
+            logger.info("Benchmark result: {}", runResult.getAggregatedResult());
         }
     }
 }

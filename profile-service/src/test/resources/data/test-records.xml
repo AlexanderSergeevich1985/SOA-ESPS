@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<records>
+    <record>
+        <id>1</id>
+        <name>Alice</name>
+        <amount>100.50</amount>
+    </record>
+    <record>
+        <id>2</id>
+        <name>Bob</name>
+        <amount>200.75</amount>
+    </record>
+</records>

@@ -6,50 +6,38 @@ import com.soaesps.core.DataModels.security.BaseOAuth2AccessToken;
 import com.soaesps.core.DataModels.security.BaseUserDetails;
 import com.soaesps.core.DataModels.security.SecActionStatus;
 import com.soaesps.core.Utils.HashGeneratorHelper;
-import com.soaesps.core.Utils.TimeSynchronizer;
 import com.soaesps.core.security.repository.AuthAuditRepository;
 import com.soaesps.core.security.util.SecurityHelper;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.token.Token;
-import org.springframework.security.core.token.TokenService;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.security.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.SecureRandom;
 
 @Service
-public class AuthTokenService implements TokenService {
-    static private final Logger logger;
+public class AuthTokenService {
+    private static final Logger logger = LoggerFactory.getLogger(AuthTokenService.class);
 
-    static {
-        logger = Logger.getLogger(TimeSynchronizer.class.getName());
-        logger.setLevel(Level.INFO);
-    }
+    public static final Integer DEFAULT_RAND_MAX_SEED = 100;
+    public static final Integer DEFAULT_RAND_STRING_SIZE = 20;
 
-    public static Integer DEFAULT_RAND_MAX_SEED = 100;
-
-    public static Integer DEFAULT_RAND_STRING_SIZE = 20;
-
-    @Value("secret")
+    @Value("${app.security.secret-hash:secret}")
     private String secretHash;
 
     private PublicKey publicKey;
-
     private PrivateKey privateKey;
-
     private Integer serverInteger;
-
     private SecureRandom secureRandom;
 
     private final AccessTokenFactory accessTokenFactory;
-
     private final OAuth2TokenRepository oAuth2TokenRepository;
-
-    private AuthAuditRepository authAuditRepository;
+    private final AuthAuditRepository authAuditRepository;
 
     private static final RandomGenerator rng = HashGeneratorHelper
             .getRandomGenerator(Math.toIntExact(System.currentTimeMillis() % DEFAULT_RAND_MAX_SEED));
@@ -63,26 +51,26 @@ public class AuthTokenService implements TokenService {
         this.authAuditRepository = authAuditRepository;
     }
 
-    @Override
-    public Token allocateToken(String extendedInformation) {
-        final BaseUserDetails userDetails = null;
+    public BaseOAuth2AccessToken allocateToken(String extendedInformation) {
+        final BaseUserDetails userDetails = null; // TODO: Здесь нужно передавать реального пользователя
         BaseOAuth2AccessToken token = null;
         try {
             token = accessTokenFactory.createAccessToken(userDetails);
-            oAuth2TokenRepository.save(token);
-            final AuthAudit authAudit = new AuthAudit();
-            authAuditRepository.save(authAudit);
-        } catch (final IOException ex) {
-            if(logger.isLoggable(Level.INFO)) {
-                logger.log(Level.INFO, "[AuthTokenService/allocateToken]: ", ex);
+            if (token != null) {
+                oAuth2TokenRepository.save(token);
+                final AuthAudit authAudit = new AuthAudit();
+                authAuditRepository.save(authAudit);
             }
+        } catch (final IOException ex) {
+            logger.error("[AuthTokenService/allocateToken]: Ошибка при создании токена", ex);
+        } catch (final Exception ex) {
+            logger.error("[AuthTokenService/allocateToken]: Непредвиденная ошибка", ex);
         }
 
         return token;
     }
 
-    @Override
-    public Token verifyToken(final String key) {
+    public BaseOAuth2AccessToken verifyToken(final String key) {
         if (key == null || key.isEmpty()) {
             return null;
         }
@@ -91,6 +79,7 @@ public class AuthTokenService implements TokenService {
                 return getToken(key);
             }
         } catch (IOException ex) {
+            logger.warn("Не удалось верифицировать ключ токена: {}", key, ex);
             return null;
         }
 
@@ -101,65 +90,23 @@ public class AuthTokenService implements TokenService {
         BaseOAuth2AccessToken token = null;
         try {
             token = accessTokenFactory.createAccessToken(null);
-            token.setKey(key);
-        } catch (IOException ex) {}
-
+            if (token != null) {
+                token.setKey(key);
+            }
+        } catch (IOException ex) {
+            logger.error("Ошибка при инициализации токена", ex);
+        }
         return token;
     }
-
-    /*private String generateRandomStr(final Long creationTime) throws NoSuchAlgorithmException {
-        HashGeneratorHelper.mixTwoString();
-        return
-    }
-
-    private String computeServerSecret(long time) {
-        return serverSecret + ":" + new Long(time % serverInteger).intValue();
-    }
-
-    public void setServerSecret(String serverSecret) {
-        this.serverSecret = serverSecret;
-    }
-
-    public void setSecureRandom(SecureRandom secureRandom) {
-        this.secureRandom = secureRandom;
-    }*/
-
-
-    /*public void setPseudoRandomNumberBytes(int pseudoRandomNumberBytes) {
-        Assert.isTrue(pseudoRandomNumberBytes >= 0,
-                "Must have a positive pseudo random number bit size");
-        this.pseudoRandomNumberBytes = pseudoRandomNumberBytes;
-    }
-
-    public void setServerInteger(Integer serverInteger) {
-        this.serverInteger = serverInteger;
-    }
-
-    public void afterPropertiesSet() {
-        Assert.hasText(serverSecret, "Server secret required");
-        Assert.notNull(serverInteger, "Server integer required");
-        Assert.notNull(secureRandom, "SecureRandom instance required");
-    }
-
-    public AuthAudit verifyAccessToken(final BaseOAuth2AccessToken accessToken) {
-        if (accessToken != null) {
-            accessToken.getExpiresIn()
-        }
-        accessTokenFactory.
-        final AuthAudit authAudit = new AuthAudit();
-        authAudit.setActionDate(DateTimeHelper.getLocalCurrentTime());
-        authAudit.setUserId(Long.valueOf(details.getId()));
-        authAudit.setIpAddress(ipAdress);
-        authAudit.setStatus(status);
-
-        return authAudit;
-    }*/
 
     private AuthAudit authAudit(final BaseUserDetails details,
                                 final String ipAdress,
                                 final SecActionStatus status) {
         final AuthAudit authAudit = SecurityHelper.initAuthAudit();
-        authAudit.setUserId(Long.valueOf(details.getId()));
+
+        if (details != null && details.getId() != null) {
+            authAudit.setUserId(Long.valueOf(details.getId()));
+        }
         authAudit.setIpAddress(ipAdress);
         authAudit.setStatus(status);
 

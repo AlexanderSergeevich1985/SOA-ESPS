@@ -1,40 +1,56 @@
 package com.soaesps.msgprocess.service;
 
-import com.google.gson.Gson;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.soaesps.msgprocess.DataModels.message.MsgIOTDevice;
 import com.soaesps.msgprocess.DataModels.message.MsgResult;
 import com.soaesps.msgprocess.Utils.BaseQueue;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.util.concurrent.ListenableFuture;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.concurrent.CompletableFuture;
 
+/**
+ * Service implementation for processing IoT device messages via Kafka and WebSocket.
+ */
 @Service
 public class MsgProcessServiceImpl implements MsgProcessService {
-    static private final Logger logger;
+    private static final Logger logger = LoggerFactory.getLogger(MsgProcessServiceImpl.class);
 
-    static {
-        logger = Logger.getLogger(MsgProcessServiceImpl.class.getName());
-        logger.setLevel(Level.INFO);
+    private final KafkaTemplate<String, MsgIOTDevice> kafkaTemplate;
+    private final SimpMessagingTemplate smsgt;
+    private final ObjectMapper objectMapper;
+
+    public MsgProcessServiceImpl(KafkaTemplate<String, MsgIOTDevice> kafkaTemplate,
+                                 SimpMessagingTemplate smsgt,
+                                 ObjectMapper objectMapper) {
+        this.kafkaTemplate = kafkaTemplate;
+        this.smsgt = smsgt;
+        this.objectMapper = objectMapper;
     }
 
-    @Autowired
-    private KafkaTemplate kafkaTemplate;
-
-    @Autowired
-    private SimpMessagingTemplate smsgt;
-
-    BaseQueue<MsgResult> msgQueue = new BaseQueue<>();
+    private final BaseQueue<MsgResult> msgQueue = new BaseQueue<>();
 
     public MsgResult process(final String topicName, final MsgIOTDevice msg) {
-        ListenableFuture<SendResult> future = kafkaTemplate.send(topicName, msg);
+        CompletableFuture<SendResult<String, MsgIOTDevice>> future = kafkaTemplate.send(topicName, msg);
+
+        // Optional: Add callback for async error handling
+        future.whenComplete((result, ex) -> {
+            if (ex != null) {
+                logger.error("Failed to send message to topic {}: {}", topicName, ex.getMessage());
+            } else {
+                logger.debug("Message sent to topic {} with offset {}",
+                        topicName, result.getRecordMetadata().offset());
+            }
+        });
+
+        // WARNING: This synchronous pull after async send is an anti-pattern.
+        // Consider using CompletableFuture to properly wait for the response.
         return msgQueue.pull();
     }
 
@@ -44,8 +60,12 @@ public class MsgProcessServiceImpl implements MsgProcessService {
 
     @KafkaListener(topics = "${spring.kafka.topic.result}", groupId = "${spring.kafka.group-id}")
     public void consume(@Payload String message) {
-        Gson gsonObj = new Gson();
-        MsgResult result = gsonObj.fromJson(message, MsgResult.class);
-        msgQueue.push(result);
+        try {
+            MsgResult result = objectMapper.readValue(message, MsgResult.class);
+            msgQueue.push(result);
+            logger.debug("Consumed message from Kafka: {}", result);
+        } catch (Exception e) {
+            logger.error("Failed to deserialize Kafka message: {}", message, e);
+        }
     }
 }

@@ -1,46 +1,58 @@
 spring:
   profiles:
-    active: DEV#LOCAL
-
+    active: DEV, LOCAL
 
   cloud:
-      config:
-  #      uri: http://localhost:8888/
-        label: master
-        discovery:
-          enabled: true
-          service-id: config-server
-      bus:
-        trace:
-          enabled: true
+    config:
+      # uri: http://localhost:8888/
+      label: master
+      discovery:
+        enabled: true
+        service-id: config-server
+    bus:
+      enabled: true
+      trace:
         enabled: true
 
-  hibernate:
-    connection:
-      driverClassName: org.postgresql.Driver
-      url: jdbc:postgresql://localhost:5432/soa_esps
-      username: #########
-      password: #########
-      maxPoolSize: 4
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/soa_esps
+    username: #########
+    password: #########
+    hikari:
+      maximum-pool-size: 4
 
-      dialect: org.hibernate.dialect.PostgreSQLDialect
-      show_sql: false
-      generate-ddl: false
+  jpa:
+    show-sql: false
+    generate-ddl: false
+    hibernate:
       ddl-auto: validate
-      naming-strategy: org.hibernate.cfg.EJB3NamingStrategy
-      properties:
-        cache.use_second_level_cache: true
-        cache.use_query_cache: false
-        cache.region.factory_class: org.hibernate.cache.ehcache.SingletonEhCacheRegionFactory
+    properties:
+      hibernate:
+        # In Hibernate 6, dialect is auto-detected from JDBC metadata.
+        # Explicit definition is optional but kept here for clarity.
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+        # Matches the 'globally_quoted_identifiers' setting from your Java configuration
+        globally_quoted_identifiers: true
+
+        # Second Level Cache Configuration
+        cache:
+          use_second_level_cache: true
+          use_query_cache: false
+          region:
+            factory_class: org.redisson.hibernate.RedissonRegionFactory
+          # Optional: If you have an ehcache.xml for EhCache 3, point to it here.
+          # provider_configuration_file_resource_path: classpath:ehcache.xml
 
   rabbitmq:
     host: localhost
     port: 5672
     username: #########
     password: #########
+    connection-timeout: 2s
     listener:
       direct:
         consumers-per-queue: 2
-    connection-timeout: 2s
     template:
       reply-timeout: 10ms

@@ -25,7 +25,7 @@ public abstract class BaseEntity {
     @GenericGenerator(name="kaugen", strategy="increment")
     @GeneratedValue(generator="kaugen")
     @Column(name = "id", nullable = false)
-    private Integer id;
+    private Long id;
 
     @Column(name = "creation_time", nullable = false, updatable = false)
     @Convert(converter = TimestampConverter.class)
@@ -38,11 +38,11 @@ public abstract class BaseEntity {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd@HH:mm:ss.SSSZ")
     private ZonedDateTime modificationTime;
 
-    public Integer getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(final Integer id) {
+    public void setId(final Long id) {
         this.id = id;
     }
 

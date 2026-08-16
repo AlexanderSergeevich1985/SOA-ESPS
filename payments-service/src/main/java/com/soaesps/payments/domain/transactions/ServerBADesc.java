@@ -18,44 +18,48 @@
  */
 package com.soaesps.payments.domain.transactions;
 
-import org.hibernate.annotations.Type;
-import org.hibernate.validator.constraints.Length;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.Lob;
+import jakarta.validation.constraints.Size;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+/**
+ * Embeddable descriptor for bank account cryptographic and ownership details.
+ */
 @Embeddable
 public class ServerBADesc implements Serializable {
+
     @Column(name = "uuid", columnDefinition = "BINARY(32)", nullable = false)
     private UUID uuid;
 
     @Column(name = "owner_id", nullable = false)
-    @Length(max = 500)
     private Long ownerId;
 
     @Lob
-    @Type(type = "org.hibernate.type.BinaryType")
+    @JdbcTypeCode(SqlTypes.VARBINARY)
     @Column(name = "owner_public_key", nullable = false)
     private byte[] ownerPublicKey;
 
     @Lob
-    @Type(type = "org.hibernate.type.BinaryType")
+    @JdbcTypeCode(SqlTypes.VARBINARY)
     @Column(name = "public_key", nullable = false)
     private byte[] publicKey;
 
     @Lob
-    @Type(type = "org.hibernate.type.BinaryType")
+    @JdbcTypeCode(SqlTypes.VARBINARY)
     @Column(name = "private_key", nullable = false)
     private byte[] privateKey;
 
     @Lob
-    @Type(type = "org.hibernate.type.BinaryType")
+    @JdbcTypeCode(SqlTypes.VARBINARY)
     @Column(name = "cipher_key", nullable = false)
     private byte[] cipherKey;
 
@@ -63,7 +67,7 @@ public class ServerBADesc implements Serializable {
     private BigDecimal accountBalance;
 
     @Column(name = "shared_secret")
-    @Length(max = 500)
+    @Size(max = 500)
     private String sharedSecret;
 
     public ServerBADesc() {}

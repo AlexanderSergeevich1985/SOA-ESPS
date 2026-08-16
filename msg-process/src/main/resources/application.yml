@@ -1,4 +1,15 @@
 spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          msg-process-client:
+            client-id: your-client-id
+            client-secret: your-client-secret
+            authorization-grant-type: client_credentials
+        provider:
+          msg-process-client:
+            token-uri: http://your-auth-server/oauth2/token
   application:
     name: msg-process
   cloud:

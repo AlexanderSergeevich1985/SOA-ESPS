@@ -4,9 +4,10 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>LATEST</version>
+        <groupId>com.nukefintech</groupId>
+        <artifactId>soaesps</artifactId>
+        <version>1.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -18,89 +19,138 @@
     <name>msg-process</name>
 
     <properties>
-        <java.version>1.8</java.version>
-        <maven.compiler.target>1.8</maven.compiler.target>
-        <maven.compiler.source>1.8</maven.compiler.source>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- Spring Cloud BOM version compatible with Spring Boot 3.x -->
+        <spring-cloud.version>2023.0.4</spring-cloud.version>
+        <!-- Explicit versions to avoid BOM resolution issues -->
+        <jackson.version>2.17.2</jackson.version>
+        <gson.version>2.11.0</gson.version>
     </properties>
 
+    <dependencyManagement>
+        <dependencies>
+            <!-- Import Spring Cloud BOM to manage versions of all Spring Cloud dependencies -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
+        <!-- ==================== Spring Boot Starters ==================== -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- REPLACED: spring-cloud-starter-oauth2 was removed in Spring Cloud.
+             Replaced with standard Spring Boot OAuth2 Resource Server -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!-- ==================== Spring Cloud ==================== -->
+        <!-- REPLACED: spring-cloud-starter-feign is removed. Now it's spring-cloud-starter-openfeign -->
+        <dependency>
             <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-oauth2</artifactId>
-            <version>LATEST</version>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
+
+        <!-- ==================== Kafka & Spring Cloud Stream ==================== -->
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-feign</artifactId>
-            <version>LATEST</version>
+            <artifactId>spring-cloud-stream</artifactId>
+        </dependency>
+        <!-- REPLACED: In Spring Cloud Stream 4.x, the binder is the only required dependency.
+             spring-cloud-starter-stream-kafka was removed. -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-stream-binder-kafka</artifactId>
         </dependency>
 
+        <!-- ==================== JSON / Serialization ==================== -->
+        <!-- FIXED: Added explicit versions to avoid 'version missing' errors when parent BOM fails to resolve -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>${gson.version}</version>
+        </dependency>
+
+        <!-- ==================== WebJars (Updated for security) ==================== -->
         <dependency>
             <groupId>org.webjars</groupId>
             <artifactId>webjars-locator-core</artifactId>
         </dependency>
+        <!-- UPDATED: SockJS and STOMP to latest compatible versions -->
         <dependency>
             <groupId>org.webjars</groupId>
             <artifactId>sockjs-client</artifactId>
-            <version>1.0.2</version>
+            <version>1.5.1</version>
         </dependency>
         <dependency>
             <groupId>org.webjars</groupId>
             <artifactId>stomp-websocket</artifactId>
-            <version>2.3.3</version>
+            <version>2.3.4</version>
         </dependency>
+        <!-- UPDATED: Bootstrap 3 is EOL and has XSS vulnerabilities. Updated to Bootstrap 5. -->
         <dependency>
             <groupId>org.webjars</groupId>
             <artifactId>bootstrap</artifactId>
-            <version>3.3.7</version>
+            <version>5.3.3</version>
         </dependency>
         <dependency>
             <groupId>org.webjars</groupId>
             <artifactId>jquery</artifactId>
-            <version>3.1.0</version>
+            <version>3.7.1</version>
         </dependency>
 
+        <!-- ==================== Testing ==================== -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.springframework.kafka</groupId>
-            <artifactId>spring-kafka</artifactId>
-            <version>LATEST</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>LATEST</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-stream</artifactId>
-            <version>LATEST</version>
+            <artifactId>spring-kafka-test</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-stream-kafka</artifactId>
-            <version>LATEST</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-stream-binder-kafka</artifactId>
-            <version>LATEST</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>LATEST</version>
+            <artifactId>spring-cloud-stream-test-binder</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

@@ -1,73 +1,60 @@
 package com.soaesps.payments;
 
 import feign.RequestInterceptor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.security.oauth2.resource.ResourceServerProperties;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
-import org.springframework.cloud.netflix.feign.EnableFeignClients;
-import org.springframework.cloud.security.oauth2.client.feign.OAuth2FeignRequestInterceptor;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.oauth2.client.DefaultOAuth2ClientContext;
-import org.springframework.security.oauth2.client.OAuth2RestTemplate;
-import org.springframework.security.oauth2.client.token.grant.client.ClientCredentialsResourceDetails;
-import org.springframework.security.oauth2.config.annotation.web.configuration.EnableOAuth2Client;
-import org.springframework.security.oauth2.config.annotation.web.configuration.EnableResourceServer;
-import org.springframework.security.oauth2.config.annotation.web.configuration.ResourceServerConfigurerAdapter;
-import org.springframework.security.oauth2.provider.error.OAuth2AccessDeniedHandler;
-import org.springframework.security.oauth2.provider.token.ResourceServerTokenServices;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.security.web.SecurityFilterChain;
 
 @SpringBootApplication
-@EnableResourceServer
 @EnableDiscoveryClient
-@EnableOAuth2Client
-@EnableFeignClients
-@EnableGlobalMethodSecurity(prePostEnabled = true)
-@EnableConfigurationProperties
-@Configuration
-public class PaymentsApplication extends ResourceServerConfigurerAdapter {
-	@Autowired
-	private ResourceServerTokenServices tokenServices;
+@EnableFeignClients(basePackages = "com.soaesps.payments")
+@EnableMethodSecurity
+public class PaymentsApplication {
 
-	@Autowired
-	private ResourceServerProperties rsp;
+    public static void main(String[] args) {
+        SpringApplication.run(PaymentsApplication.class, args);
+    }
 
-	public static void main(String[] args) {
-		SpringApplication.run(PaymentsApplication.class, args);
-	}
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
+                        .anyRequest().authenticated()
+                )
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(org.springframework.security.config.Customizer.withDefaults())
+                );
 
-	@Bean
-	@ConfigurationProperties(prefix = "security.oauth2.client")
-	public ClientCredentialsResourceDetails clientCredentialsResourceDetails() {
-		return new ClientCredentialsResourceDetails();
-	}
+        return http.build();
+    }
 
-	@Bean
-	public RequestInterceptor oauth2FeignRequestInterceptor(){
-		return new OAuth2FeignRequestInterceptor(new DefaultOAuth2ClientContext(), clientCredentialsResourceDetails());
-	}
+    @Bean
+    public RequestInterceptor requestTokenBearerInterceptor() {
+        return requestTemplate -> {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-	@Bean
-	public OAuth2RestTemplate clientCredentialsRestTemplate() {
-		return new OAuth2RestTemplate(clientCredentialsResourceDetails());
-	}
+            if (authentication == null) {
+                return;
+            }
 
-	@Bean
-	public ResourceServerTokenServices tokenServices() {
-		return tokenServices;
-	}
-
-	@Override
-	public void configure(HttpSecurity http) throws Exception {
-		http.anonymous().disable()
-				.authorizeRequests()
-				.antMatchers("/payments/**").permitAll().anyRequest().authenticated()
-				.and().exceptionHandling().accessDeniedHandler(new OAuth2AccessDeniedHandler());
-	}
+            if (authentication instanceof JwtAuthenticationToken jwtAuth) {
+                String tokenValue = jwtAuth.getToken().getTokenValue();
+                requestTemplate.header("Authorization", "Bearer " + tokenValue);
+            }
+            else if (authentication.getCredentials() instanceof String token) {
+                requestTemplate.header("Authorization", "Bearer " + token);
+            }
+        };
+    }
 }

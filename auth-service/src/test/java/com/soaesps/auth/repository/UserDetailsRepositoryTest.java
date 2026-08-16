@@ -1,6 +1,5 @@
 package com.soaesps.auth.repository;
 
-import com.soaesps.auth.config.HibernateConfiguration;
 import com.soaesps.core.DataModels.security.BaseUserDetails;
 
 import org.junit.Assert;
@@ -21,7 +20,7 @@ import java.util.Optional;
 
 @RunWith(SpringRunner.class)
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@SpringBootTest(classes = {HibernateConfiguration.class})
+@SpringBootTest
 public class UserDetailsRepositoryTest {
     @Autowired
     private UserDetailsRepository userDetailsRepository;

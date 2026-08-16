@@ -10,7 +10,7 @@ import jakarta.persistence.Table;
 public class AccountHistory {
     @Id
     @Column(name = "account_id", nullable = false)
-    private Integer accountId;
+    private Long accountId;
 
     @Column(name = "archive_path", length = 256)
     private String archivePath;
@@ -20,11 +20,11 @@ public class AccountHistory {
 
     public AccountHistory() {}
 
-    public Integer getAccountId() {
+    public Long getAccountId() {
         return accountId;
     }
 
-    public void setAccountId(final Integer accountId) {
+    public void setAccountId(final Long accountId) {
         this.accountId = accountId;
     }
 

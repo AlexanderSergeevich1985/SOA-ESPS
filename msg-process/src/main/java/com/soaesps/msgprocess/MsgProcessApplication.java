@@ -1,73 +1,91 @@
 package com.soaesps.msgprocess;
 
 import feign.RequestInterceptor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.security.oauth2.resource.ResourceServerProperties;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
-import org.springframework.cloud.netflix.feign.EnableFeignClients;
-import org.springframework.cloud.security.oauth2.client.feign.OAuth2FeignRequestInterceptor;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.oauth2.client.DefaultOAuth2ClientContext;
-import org.springframework.security.oauth2.client.OAuth2RestTemplate;
-import org.springframework.security.oauth2.client.token.grant.client.ClientCredentialsResourceDetails;
-import org.springframework.security.oauth2.config.annotation.web.configuration.EnableOAuth2Client;
-import org.springframework.security.oauth2.config.annotation.web.configuration.EnableResourceServer;
-import org.springframework.security.oauth2.config.annotation.web.configuration.ResourceServerConfigurerAdapter;
-import org.springframework.security.oauth2.provider.error.OAuth2AccessDeniedHandler;
-import org.springframework.security.oauth2.provider.token.ResourceServerTokenServices;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.security.web.SecurityFilterChain;
 
+/**
+ * Main application class for the msg-process microservice.
+ * Configures OAuth2 Resource Server with JWT validation and Feign client token propagation.
+ */
 @SpringBootApplication
-@EnableResourceServer
 @EnableDiscoveryClient
-@EnableOAuth2Client
-@EnableFeignClients
-@EnableGlobalMethodSecurity(prePostEnabled = true)
-@EnableConfigurationProperties
-@Configuration
-public class MsgProcessApplication extends ResourceServerConfigurerAdapter {
-    @Autowired
-    private ResourceServerTokenServices tokenServices;
+@EnableFeignClients(basePackages = "com.soaesps.msgprocess") // FIXED: Modern OpenFeign annotation
+@EnableWebSecurity
+@EnableMethodSecurity // FIXED: Replaces deprecated @EnableGlobalMethodSecurity
+public class MsgProcessApplication {
 
-    @Autowired
-    private ResourceServerProperties rsp;
-
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
         SpringApplication.run(MsgProcessApplication.class, args);
     }
 
+    /**
+     * Main security filter chain configuration.
+     * Replaces the removed ResourceServerConfigurerAdapter.
+     */
     @Bean
-    @ConfigurationProperties(prefix = "security.oauth2.client")
-    public ClientCredentialsResourceDetails clientCredentialsResourceDetails() {
-        return new ClientCredentialsResourceDetails();
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                // Disable CSRF for stateless REST API with JWT tokens
+                .csrf(AbstractHttpConfigurer::disable)
+
+                // Stateless session: no HttpSession created, each request must contain JWT
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+
+                // Authorization rules
+                .authorizeHttpRequests(authorize -> authorize
+                        // FIXED: .antMatchers() replaced with .requestMatchers()
+                        .requestMatchers("/apps/**").permitAll()
+                        .requestMatchers("/actuator/health/**").permitAll()
+                        .anyRequest().authenticated()
+                )
+
+                // Enable OAuth2 Resource Server with JWT validation
+                // Replaces @EnableResourceServer and ResourceServerConfigurerAdapter
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(org.springframework.security.config.Customizer.withDefaults())
+                );
+
+        return http.build();
     }
 
+    /**
+     * Feign interceptor that propagates the incoming JWT token to downstream microservice calls.
+     * Replaces the removed OAuth2FeignRequestInterceptor.
+     */
     @Bean
-    public RequestInterceptor oauth2FeignRequestInterceptor(){
-        return new OAuth2FeignRequestInterceptor(new DefaultOAuth2ClientContext(), clientCredentialsResourceDetails());
-    }
+    public RequestInterceptor requestTokenBearerInterceptor() {
+        return requestTemplate -> {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-    @Bean
-    public OAuth2RestTemplate clientCredentialsRestTemplate() {
-        return new OAuth2RestTemplate(clientCredentialsResourceDetails());
-    }
+            if (authentication == null) {
+                // Internal system call without security context (e.g., scheduled task)
+                return;
+            }
 
-    @Bean
-    public ResourceServerTokenServices tokenServices() {
-        return tokenServices;
-    }
-
-    @Override
-    public void configure(HttpSecurity http) throws Exception {
-        http.anonymous().disable()
-                .authorizeRequests()
-                .antMatchers("/apps/**").permitAll().anyRequest().authenticated()
-                .and().exceptionHandling().accessDeniedHandler(new OAuth2AccessDeniedHandler());
+            // In Spring Security 6, JWT tokens are wrapped in JwtAuthenticationToken
+            if (authentication instanceof JwtAuthenticationToken jwtAuth) {
+                String tokenValue = jwtAuth.getToken().getTokenValue();
+                requestTemplate.header("Authorization", "Bearer " + tokenValue);
+            }
+            // Fallback for other authentication types
+            else if (authentication.getCredentials() instanceof String token) {
+                requestTemplate.header("Authorization", "Bearer " + token);
+            }
+        };
     }
 }
