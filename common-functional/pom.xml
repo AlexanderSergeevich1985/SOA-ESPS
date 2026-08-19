@@ -12,8 +12,8 @@
         <artifactId>common-functional</artifactId>
         <name>common-functional</name>
 
-        <properties>
-            <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
             <zip4j.version>2.11.5</zip4j.version>
             <guava.version>33.3.1-jre</guava.version>
 
@@ -50,6 +50,11 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-amqp</artifactId>
             </dependency>
+            <dependency>
+                <groupId>org.springframework.kafka</groupId>
+                <artifactId>spring-kafka</artifactId>
+            </dependency>
+
 
 
             <!-- Spring Cloud OpenFeign -->

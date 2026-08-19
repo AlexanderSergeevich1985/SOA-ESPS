@@ -11,7 +11,6 @@ import org.springframework.core.io.InputStreamSource;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
-import org.thymeleaf.spring5.SpringTemplateEngine;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -37,12 +36,12 @@ public class EmailSender implements SenderI {
 
     private final JavaMailSenderImpl javaMailSender;
 
-    private final SpringTemplateEngine templateEngine;
+    //private final SpringTemplateEngine templateEngine;
 
     @Autowired
-    public EmailSender(final JavaMailSenderImpl javaMailSender, final SpringTemplateEngine templateEngine) {
+    public EmailSender(final JavaMailSenderImpl javaMailSender) {
         this.javaMailSender = javaMailSender;
-        this.templateEngine = templateEngine;
+        //this.templateEngine = templateEngine;
     }
 
     @Override

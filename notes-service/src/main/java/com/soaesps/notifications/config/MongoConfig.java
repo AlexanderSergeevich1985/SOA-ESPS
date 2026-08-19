@@ -1,10 +1,11 @@
 package com.soaesps.notifications.config;
 
-import com.mongodb.*;
+import com.mongodb.ConnectionString;
+import com.mongodb.MongoCredential;
+import com.mongodb.ReadPreference;
 import com.mongodb.client.MongoClient;
-
 import com.mongodb.client.MongoClients;
-import com.mongodb.connection.ServerSettings;
+import com.mongodb.MongoClientSettings;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -15,8 +16,8 @@ import org.springframework.data.mongodb.repository.config.EnableMongoRepositorie
 @Configuration
 @EnableMongoRepositories(basePackages = "com.soaesps.notifications.repository")
 public class MongoConfig extends AbstractMongoClientConfiguration {
-    private static final int MONGO_MAX_POOL_SIZE = 4;
 
+    private static final int MONGO_MAX_POOL_SIZE = 4;
     private static final int MONGO_MIN_POOL_SIZE = 1;
 
     @Value("${spring.data.mongodb.host}")
@@ -42,21 +43,22 @@ public class MongoConfig extends AbstractMongoClientConfiguration {
     @Override
     @Bean
     public MongoClient mongoClient() {
-        final ServerAddress address = new ServerAddress("127.0.0.1", 27017);
-        final MongoCredential credential = MongoCredential
+        // 1. Create credentials safely
+        MongoCredential credential = MongoCredential
                 .createCredential(username, getDatabaseName(), password.toCharArray());
-        final MongoClientOptions options = new MongoClientOptions.Builder().build();
-        final MongoClientSettings settings = MongoClientSettings.builder()
+
+        // 2. Build modern MongoClientSettings without deprecated classes
+        MongoClientSettings settings = MongoClientSettings.builder()
                 .readPreference(ReadPreference.secondaryPreferred())
-                .applyToConnectionPoolSettings(builder -> builder.maxSize(MONGO_MAX_POOL_SIZE).minSize(MONGO_MIN_POOL_SIZE))
-                .applyToServerSettings(builder -> builder
-                        .applySettings(ServerSettings
-                                .builder()
-                                .applyConnectionString(connectionString())
-                                .build()))
+                .applyConnectionString(connectionString())
+                .applyToConnectionPoolSettings(builder -> builder
+                        .maxSize(MONGO_MAX_POOL_SIZE)
+                        .minSize(MONGO_MIN_POOL_SIZE))
                 .credential(credential)
                 .build();
-        return MongoClients.create();
+
+        // 3. Pass settings into the creator factory method
+        return MongoClients.create(settings);
     }
 
     protected ConnectionString connectionString() {

@@ -74,17 +74,21 @@ public class UserProfile extends BaseEntity {
 
     @Override
     public int hashCode() {
-        return this.getId().intValue();
+        return 31;
     }
 
     @Override
     public boolean equals(Object obj) {
-        if(this == obj) return true;
-        if(obj == null || !(obj instanceof UserProfile)) {
+        if (this == obj) return true;
+        if (obj == null) return false;
+
+        // Handle Hibernate proxies correctly using fields/getters validation
+        if (!(obj instanceof UserProfile)) return false;
+        UserProfile other = (UserProfile) obj;
+
+        if (this.userName == null || other.getUserName() == null) {
             return false;
         }
-        UserProfile other = (UserProfile) obj;
-        if(this.userName == null || other.getUserName() == null || !this.userName.equalsIgnoreCase(other.getUserName())) return false;
-        return true;
+        return this.userName.equalsIgnoreCase(other.getUserName());
     }
 }

@@ -1,50 +1,50 @@
 package com.soaesps.notifications.config;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.soaesps.core.config.KafkaConsumerConfig;
 import com.soaesps.core.Utils.CryptoHelper;
 import com.soaesps.core.component.aggregator.CorrelationStrategyI;
 import com.soaesps.core.component.aggregator.ReleaseStrategyI;
-import org.springframework.amqp.core.AcknowledgeMode;
-import org.springframework.amqp.rabbit.AsyncRabbitTemplate;
-import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.MessageSource;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.serialization.StringSerializer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.mongodb.MongoDbFactory;
-import org.springframework.expression.common.LiteralExpression;
-import org.springframework.integration.amqp.inbound.AmqpInboundChannelAdapter;
-import org.springframework.integration.amqp.outbound.AmqpOutboundEndpoint;
+import org.springframework.context.annotation.Import;
+import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
+import org.springframework.kafka.core.DefaultKafkaProducerFactory;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.core.ProducerFactory;
+import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
+import org.springframework.kafka.support.serializer.JsonSerializer;
 import org.springframework.integration.annotation.*;
 import org.springframework.integration.channel.DirectChannel;
-import org.springframework.integration.channel.NullChannel;
 import org.springframework.integration.channel.PublishSubscribeChannel;
 import org.springframework.integration.config.EnableIntegration;
-import org.springframework.integration.mongodb.inbound.MongoDbMessageSource;
-import org.springframework.integration.mongodb.store.MongoDbMessageStore;
-import org.springframework.integration.store.MessageGroupStore;
+import org.springframework.integration.kafka.inbound.KafkaMessageDrivenChannelAdapter;
+import org.springframework.integration.kafka.outbound.KafkaProducerMessageHandler;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.MessageHandler;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
+import java.util.Map;
 
 @Configuration
 @ComponentScan("com.soaesps.notifications.integration")
 @EnableIntegration
 @IntegrationComponentScan("com.soaesps.notifications.integration")
+@Import(KafkaConsumerConfig.class) // Imports your custom Kafka consumer beans
 public class IntegrationConfiguration {
-    private String host = "localhost";
 
-    private String DEFAULT_MESSAGE_QUEUE_NAME = "message_queue";
+    @Value("${spring.kafka.bootstrap-servers}")
+    private String bootstrapServers;
 
-    private String DEFAULT_EXCHANGER_NAME = "message_queue";
+    private static final String INPUT_TOPIC_NAME = "message_queue_inbound";
+    private static final String OUTPUT_TOPIC_NAME = "message_queue_outbound";
 
     @Bean(IntegrationConstant.GATEWAY_CHANNEL)
     public MessageChannel gatewayChannel() {
@@ -82,7 +82,7 @@ public class IntegrationConfiguration {
     }
 
     @Bean
-    public MessageChannel amqpInputChannel() {
+    public MessageChannel kafkaInputChannel() {
         return new DirectChannel();
     }
 
@@ -93,13 +93,8 @@ public class IntegrationConfiguration {
 
     @Bean
     @BridgeFrom(value = "pubSubFileChannel")
-    public MessageChannel amqpOutboundChannel() {
+    public MessageChannel kafkaOutboundChannel() {
         return new DirectChannel();
-    }
-
-    @Bean
-    public MessageGroupStore messageStore(final MongoDbFactory mongoDbFactory) {
-        return new MongoDbMessageStore(mongoDbFactory);
     }
 
     @Bean
@@ -111,73 +106,57 @@ public class IntegrationConfiguration {
     public CorrelationStrategyI correlationStrategy() {
         return new CorrelationStrategyI.CorrelationKeyStrategy((object) -> {
             try {
-                final Message message = (Message) object;
-
+                final Message<?> message = (Message<?>) object;
                 return CryptoHelper.getObjectDigest(message.getHeaders());
-            } catch (final IOException | NoSuchAlgorithmException ex) {}
+            } catch (final IOException | NoSuchAlgorithmException ex) {
+                throw new IllegalStateException("Failed to generate correlation key digest", ex);
+            }
         });
     }
-    
+
+    // ==========================================
+    // KAFKA INBOUND CONFIGURATION (RECEIVING)
+    // ==========================================
+
     @Bean
-    public RabbitTemplate rabbitTemplate() {
-        return new RabbitTemplate(rabbitConnectionFactory());
+    public KafkaMessageDrivenChannelAdapter<String, JsonNode> kafkaInboundAdapter(
+            ConcurrentKafkaListenerContainerFactory<String, JsonNode> factory) {
+
+        // Create a listener container from your shared Kafka Consumer Factory
+        ConcurrentMessageListenerContainer<String, JsonNode> container =
+                factory.createContainer(INPUT_TOPIC_NAME);
+
+        KafkaMessageDrivenChannelAdapter<String, JsonNode> adapter =
+                new KafkaMessageDrivenChannelAdapter<>(container, KafkaMessageDrivenChannelAdapter.ListenerMode.record);
+
+        adapter.setOutputChannel(kafkaInputChannel());
+        return adapter;
+    }
+
+    // ==========================================
+    // KAFKA OUTBOUND CONFIGURATION (SENDING)
+    // ==========================================
+
+    @Bean
+    public ProducerFactory<String, Object> kafkaProducerFactory() {
+        Map<String, Object> props = new HashMap<>();
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+        return new DefaultKafkaProducerFactory<>(props);
     }
 
     @Bean
-    public AsyncRabbitTemplate asyncRabbitTemplate(final ConnectionFactory rabbitConnectionFactory) {
-        final AsyncRabbitTemplate asyncRabbitTemplate = new AsyncRabbitTemplate(rabbitConnectionFactory(),
-                "sendMessageExchange",
-                "sendMessageKey",
-                "asyncReplyQueue");
-        asyncRabbitTemplate.setReceiveTimeout(60000);
-        asyncRabbitTemplate.setAutoStartup(true);
-
-        return asyncRabbitTemplate;
+    public KafkaTemplate<String, Object> kafkaTemplate() {
+        return new KafkaTemplate<>(kafkaProducerFactory());
     }
 
     @Bean
-    public RabbitAdmin amqpAdmin() {
-        return new RabbitAdmin(rabbitConnectionFactory());
-    }
-
-    @Bean
-    public SimpleMessageListenerContainer listenerContainer(final ConnectionFactory connectionFactory) {
-        final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
-        container.setQueueNames(DEFAULT_MESSAGE_QUEUE_NAME);
-        container.setConcurrentConsumers(2);
-        container.setAcknowledgeMode(AcknowledgeMode.MANUAL);
-
-        return container;
-    }
-
-    @Bean
-    public ConnectionFactory rabbitConnectionFactory() {
-        final CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
-        connectionFactory.setHost(host);
-        connectionFactory.setConnectionTimeout(3000);
-        connectionFactory.setRequestedHeartBeat(30);
-
-        return connectionFactory;
-    }
-
-    @Bean
-    @InboundChannelAdapter(value = "pubSubFileChannel", poller = @Poller(fixedDelay = "1000"))
-    public AmqpInboundChannelAdapter amqpInbound(final SimpleMessageListenerContainer listenerContainer,
-                                                 final @Qualifier("amqpInputChannel") MessageChannel channel) {
-        final AmqpInboundChannelAdapter source = new AmqpInboundChannelAdapter(listenerContainer);
-        source.setMessageConverter(new Jackson2JsonMessageConverter());
-        source.setOutputChannel(channel);
-
-        return source;
-    }
-
-    @Bean
-    @ServiceActivator(inputChannel = "amqpOutboundChannel")
-    public AmqpOutboundEndpoint amqpOutbound() { //MessageHandlers
-        final AmqpOutboundEndpoint endpoint = new AmqpOutboundEndpoint(rabbitTemplate());
-        endpoint.setExchangeName(DEFAULT_EXCHANGER_NAME);
-        endpoint.setExpectReply(true);
-        endpoint.setOutputChannel(new NullChannel()); //amqpReplyChannel()
-        return endpoint;
+    @ServiceActivator(inputChannel = "kafkaOutboundChannel")
+    public MessageHandler kafkaOutbound() {
+        KafkaProducerMessageHandler<String, Object> handler =
+                new KafkaProducerMessageHandler<>(kafkaTemplate());
+        handler.setTopicExpression(new org.springframework.expression.common.LiteralExpression(OUTPUT_TOPIC_NAME));
+        return handler;
     }
 }

@@ -122,6 +122,7 @@
         <module>msg-process</module>
         <module>profile-service</module>
         <module>documents-service</module>
+        <module>notes-service</module>
     </modules>
 
 </project>

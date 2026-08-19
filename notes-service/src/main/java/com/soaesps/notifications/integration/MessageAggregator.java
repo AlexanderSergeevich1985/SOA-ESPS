@@ -30,6 +30,6 @@ public class MessageAggregator {
 
     @CorrelationStrategy
     public Object getCorrelationKey(final Message<?> message) {
-        return correlationStrategy.getCorrelationKey(message)
+        return correlationStrategy.getCorrelationKey(message);
     }
 }

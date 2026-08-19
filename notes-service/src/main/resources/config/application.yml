@@ -1,6 +1,28 @@
+soa:
+  security:
+    jwt:
+      enabled: true
+    permit-all:
+      - /actuator/health/**
+      - /api/public/**        # public notifications feed
+    internal:
+      - /api/internal/**      # mTLS-only zone
+
+server:
+  port: 8443
+  ssl:
+    bundle: notes-server
+    client-auth: want
+
 spring:
   profiles:
     active: DEV#LOCAL
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://auth.soa-esps.ru
 
   rabbitmq:
     host: localhost
