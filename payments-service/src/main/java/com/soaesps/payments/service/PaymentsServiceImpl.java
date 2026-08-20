@@ -45,7 +45,6 @@ public class PaymentsServiceImpl implements PaymentsService {
     @Override
     @Transactional
     public BaseClientBill transferMoney(final BaseTransaction transaction) {
-        // FIXED: findOne() was removed in Spring Data JPA 3.0. Replaced with findById().orElse(null)
         BaseServerBill payerBill = this.repository.findById(transaction.getTransactionDescriptor().getPayerId()).orElse(null);
         BaseServerBill payeeBill = this.repository.findById(transaction.getTransactionDescriptor().getPayeeId()).orElse(null);
 
@@ -61,7 +60,6 @@ public class PaymentsServiceImpl implements PaymentsService {
                 logger.warn("Transfer failed: Cryptographic verification failed for transaction");
             }
         } catch (final Exception ex) {
-            // Using SLF4J parameterized logging instead of java.util.logging
             logger.error("Exception occurred during money transfer", ex);
         }
 

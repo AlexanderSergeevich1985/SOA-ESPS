@@ -1,9 +1,7 @@
 package com.soaesps.schedulerservice.config;
 
-
-import org.apache.commons.lang3.ArrayUtils;
+import org.quartz.Trigger;
 import org.quartz.spi.TriggerFiredBundle;
-
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -12,16 +10,18 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 import org.springframework.scheduling.quartz.SpringBeanJobFactory;
 
-import org.quartz.Trigger;
-
-import jakarta.sql.DataSource;
+import javax.sql.DataSource;
+import java.util.List;
 import java.util.Properties;
 
+/**
+ * Quartz scheduler configuration with JDBC job store and cluster support.
+ */
 @Configuration
 public class QuartzConfig {
-    private ApplicationContext applicationContext;
 
-    private DataSource dataSource;
+    private final ApplicationContext applicationContext;
+    private final DataSource dataSource;
 
     public QuartzConfig(ApplicationContext applicationContext, DataSource dataSource) {
         this.applicationContext = applicationContext;
@@ -32,31 +32,46 @@ public class QuartzConfig {
     public SpringBeanJobFactory springBeanJobFactory() {
         AutowiringSpringBeanJobFactory jobFactory = new AutowiringSpringBeanJobFactory();
         jobFactory.setApplicationContext(applicationContext);
-
         return jobFactory;
     }
 
     @Bean
-    public SchedulerFactoryBean scheduler(Trigger... triggers) {
+    public SchedulerFactoryBean scheduler(List<Trigger> triggers) {
         SchedulerFactoryBean schedulerFactory = new SchedulerFactoryBean();
+
         Properties properties = new Properties();
-        properties.setProperty("org.quartz.scheduler.instanceName", "MyInstanceName");
-        properties.setProperty("org.quartz.scheduler.instanceId", "Instance1");
+        properties.setProperty("org.quartz.scheduler.instanceName", "soa-esps-scheduler");
+        // FIXED: 'AUTO' is mandatory for clustering; a hardcoded id breaks multi-node deployments
+        properties.setProperty("org.quartz.scheduler.instanceId", "AUTO");
+        // Cluster mode: nodes coordinate via the shared QRTZ_* tables
+        properties.setProperty("org.quartz.jobStore.isClustered", "true");
+        properties.setProperty("org.quartz.jobStore.clusterCheckinInterval", "15000");
+        properties.setProperty("org.quartz.threadPool.threadCount", "10");
+
         schedulerFactory.setOverwriteExistingJobs(true);
         schedulerFactory.setAutoStartup(true);
         schedulerFactory.setQuartzProperties(properties);
         schedulerFactory.setDataSource(dataSource);
         schedulerFactory.setJobFactory(springBeanJobFactory());
         schedulerFactory.setWaitForJobsToCompleteOnShutdown(true);
-        if (ArrayUtils.isNotEmpty(triggers)) {
-            schedulerFactory.setTriggers(triggers);
+
+        if (triggers != null && !triggers.isEmpty()) {
+            schedulerFactory.setTriggers(triggers.toArray(new Trigger[0]));
         }
 
         return schedulerFactory;
     }
 
+    /**
+     * Job factory that injects @Autowired fields/setters into Quartz job instances.
+     *
+     * NOTE: required only while jobs use FIELD injection. The default SpringBeanJobFactory
+     * in Spring 6 already resolves CONSTRUCTOR dependencies, so once jobs are migrated
+     * to constructor injection this class can be deleted.
+     */
     public static final class AutowiringSpringBeanJobFactory
             extends SpringBeanJobFactory implements ApplicationContextAware {
+
         private AutowireCapableBeanFactory beanFactory;
 
         @Override
@@ -68,7 +83,6 @@ public class QuartzConfig {
         protected Object createJobInstance(final TriggerFiredBundle bundle) throws Exception {
             final Object job = super.createJobInstance(bundle);
             beanFactory.autowireBean(job);
-
             return job;
         }
     }

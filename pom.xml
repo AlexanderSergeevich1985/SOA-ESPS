@@ -123,6 +123,7 @@
         <module>profile-service</module>
         <module>documents-service</module>
         <module>notes-service</module>
+        <module>scheduler-service</module>
     </modules>
 
 </project>

@@ -4,10 +4,8 @@ import com.soaesps.core.Utils.convertor.hibernate.TimestampConverter;
 import com.soaesps.schedulerservice.Utils.convertor.FailedDTOConvertor;
 import com.soaesps.schedulerservice.dto.FailedDTO;
 import org.hibernate.annotations.GenericGenerator;
-import org.hibernate.annotations.Type;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 
 @Entity

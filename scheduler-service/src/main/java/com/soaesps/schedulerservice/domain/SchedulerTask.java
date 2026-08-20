@@ -25,7 +25,7 @@ public class SchedulerTask {
     @Column(name = "cron_trigger")
     private String cronTrigger;
 
-    protected SchedulerTask() {}
+    public SchedulerTask() {}
 
     public Integer getId() {
         return id;

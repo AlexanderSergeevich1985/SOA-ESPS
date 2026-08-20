@@ -50,9 +50,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-
-        <!-- REPLACED: spring-cloud-starter-oauth2 was removed in Spring Cloud.
-             Replaced with standard Spring Boot OAuth2 Resource Server -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
@@ -63,7 +60,6 @@
         </dependency>
 
         <!-- ==================== Spring Cloud ==================== -->
-        <!-- REPLACED: spring-cloud-starter-feign is removed. Now it's spring-cloud-starter-openfeign -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-openfeign</artifactId>
@@ -78,15 +74,12 @@
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-stream</artifactId>
         </dependency>
-        <!-- REPLACED: In Spring Cloud Stream 4.x, the binder is the only required dependency.
-             spring-cloud-starter-stream-kafka was removed. -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-stream-binder-kafka</artifactId>
         </dependency>
 
         <!-- ==================== JSON / Serialization ==================== -->
-        <!-- FIXED: Added explicit versions to avoid 'version missing' errors when parent BOM fails to resolve -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
@@ -113,7 +106,6 @@
             <groupId>org.webjars</groupId>
             <artifactId>webjars-locator-core</artifactId>
         </dependency>
-        <!-- UPDATED: SockJS and STOMP to latest compatible versions -->
         <dependency>
             <groupId>org.webjars</groupId>
             <artifactId>sockjs-client</artifactId>
@@ -124,7 +116,6 @@
             <artifactId>stomp-websocket</artifactId>
             <version>2.3.4</version>
         </dependency>
-        <!-- UPDATED: Bootstrap 3 is EOL and has XSS vulnerabilities. Updated to Bootstrap 5. -->
         <dependency>
             <groupId>org.webjars</groupId>
             <artifactId>bootstrap</artifactId>

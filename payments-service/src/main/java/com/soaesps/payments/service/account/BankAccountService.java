@@ -31,8 +31,6 @@ public class BankAccountService implements BankAccountServiceI {
     private final ArchiveServiceI archiveService;
     private final ServerBankAccountRepository serverBankAccountRepository;
 
-    // FIXED: Replaced @Autowired field injection with constructor injection (Spring Boot best practice).
-    // Injected Spring-managed ObjectMapper instead of creating a new instance manually.
     public BankAccountService(ObjectMapper mapper,
                               ArchiveServiceI archiveService,
                               ServerBankAccountRepository serverBankAccountRepository) {

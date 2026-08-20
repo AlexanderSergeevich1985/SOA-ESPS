@@ -1,0 +1,32 @@
+spring:
+  quartz:
+    job-store-type: jdbc
+    jdbc:
+      initialize-schema: always
+    properties:
+      org.quartz.scheduler.instanceName: soa-esps-scheduler
+      org.quartz.scheduler.instanceId: AUTO
+      org.quartz.jobStore.isClustered: true
+      org.quartz.jobStore.clusterCheckinInterval: 15000
+      org.quartz.threadPool.threadCount: 10
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/soa_esps}
+    username: ${DB_USER:espssoa}
+    password: ${DB_PASSWORD:espssoa}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 4
+      data-source-properties:
+        cachePrepStmts: true
+        prepStmtCacheSize: 250
+        prepStmtCacheSqlLimit: 2048
+
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: validate   # update/create только для dev
+    properties:
+      hibernate:
+        globally_quoted_identifiers: true
+        # Dialect is autoопределяется Hibernate 6 из JDBC metadata

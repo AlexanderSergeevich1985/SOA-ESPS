@@ -1,4 +1,4 @@
-package com.soaesps.notifications.config;
+package com.soaesps.schedulerservice.config;
 
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -60,5 +60,4 @@ public class ThymeleafConfiguration {
         resolver.setDefaultLocale(Locale.ENGLISH);
         return resolver;
     }
-
 }

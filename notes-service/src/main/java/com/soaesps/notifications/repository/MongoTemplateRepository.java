@@ -29,8 +29,6 @@ public class MongoTemplateRepository implements TemplateRepository {
     public String getTemplateContent(String templateName) {
         return actualMongoRepository.findById(templateName)
                 .map(MongoHtmlTemplate::getHtmlContent)
-                // FIXED: domain exception instead of IllegalArgumentException,
-                // so callers (render pipeline, channels) can react specifically
                 .orElseThrow(() -> new TemplateNotFoundException(templateName));
     }
 
