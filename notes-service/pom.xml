@@ -121,6 +121,11 @@
             <artifactId>firebase-admin</artifactId>
             <version>9.4.3</version>
         </dependency>
+        <dependency>
+            <groupId>io.minio</groupId>
+            <artifactId>minio</artifactId>
+            <version>8.5.14</version>
+        </dependency>
 
         <!-- ==================== JSON / Serialization ==================== -->
         <dependency>

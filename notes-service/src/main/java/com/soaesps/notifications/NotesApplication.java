@@ -9,7 +9,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.Import;
 
 @SpringBootApplication
-//@EnableDiscoveryClient
+@EnableDiscoveryClient
 @Import({BaseSecurityConfiguration.class, KafkaConsumerConfig.class, UniversalKafkaListener.class})
 public class NotesApplication {
     public static void main(String[] args) {

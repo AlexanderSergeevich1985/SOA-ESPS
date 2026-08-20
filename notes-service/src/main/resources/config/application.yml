@@ -32,3 +32,23 @@ spring:
     listener:
       direct:
         consumers-per-queue: 2
+
+  data:
+    mongodb:
+      host: localhost
+      port: 27017
+      database: notifications
+      username: your_db_user
+      password: your_db_password
+
+# Active storage engine selection (options: mongo / minio)
+# If missing or set to 'mongo', MongoDB implementation triggers by default.
+storage:
+  type: mongo
+
+# This block is required ONLY when storage.type is set to 'minio'
+minio:
+  url: http://localhost:9000
+  access-key: YOUR_MINIO_ACCESS_KEY
+  secret-key: YOUR_MINIO_SECRET_KEY
+  bucket-name: html-templates
