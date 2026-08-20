@@ -15,7 +15,7 @@ import org.springframework.data.mongodb.repository.config.EnableMongoRepositorie
 
 @Configuration
 @EnableMongoRepositories(basePackages = "com.soaesps.notifications.repository")
-public class MongoConfig extends AbstractMongoClientConfiguration {
+public class  MongoConfig extends AbstractMongoClientConfiguration {
 
     private static final int MONGO_MAX_POOL_SIZE = 4;
     private static final int MONGO_MIN_POOL_SIZE = 1;
