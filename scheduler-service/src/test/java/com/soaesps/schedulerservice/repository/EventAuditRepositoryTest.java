@@ -1,5 +1,6 @@
 package com.soaesps.schedulerservice.repository;
 
+import com.soaesps.core.security.config.BaseSecurityConfiguration;
 import com.soaesps.schedulerservice.domain.EventAudit;
 import com.soaesps.schedulerservice.dto.FailedDTO;
 import org.junit.jupiter.api.BeforeEach;
@@ -7,6 +8,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 
@@ -26,7 +30,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  *  - loads only the JPA slice (no full application context),
  *  - makes tests fast, isolated and re-runnable.
  */
-@DataJpaTest
+@DataJpaTest(properties = "spring.main.allow-bean-definition-overriding=true")
+@EnableAutoConfiguration(exclude = {
+        SecurityAutoConfiguration.class,
+        BaseSecurityConfiguration.class
+})
 class EventAuditRepositoryTest {
 
     @Autowired

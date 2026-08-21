@@ -4,11 +4,8 @@ import org.hibernate.annotations.GenericGenerator;
 
 import jakarta.persistence.*;
 import java.time.ZonedDateTime;
-import java.util.HashSet;
-import java.util.Set;
 
 @MappedSuperclass
-@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
 public abstract class BaseReport {
     @Id
     @GenericGenerator(name="kaugen" , strategy="increment")

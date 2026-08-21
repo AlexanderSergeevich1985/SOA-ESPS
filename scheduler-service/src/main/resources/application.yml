@@ -1,4 +1,32 @@
+server:
+  port: 8443
+  ssl:
+    bundle: scheduler-server
+    client-auth: need    # HARD requirement: only services with valid cert can reach us
+
 spring:
+  ssl:
+    bundle:
+      jks:
+        scheduler-server:
+          keystore:
+            location: classpath:certs/scheduler-service.p12
+            password: ${KEYSTORE_PASSWORD:changeit}
+            type: PKCS12
+          truststore:
+            location: classpath:certs/scheduler-service-truststore.p12
+            password: ${TRUSTSTORE_PASSWORD:changeit}
+            type: PKCS12
+        scheduler-client:
+          keystore:
+            location: classpath:certs/scheduler-service.p12
+            password: ${KEYSTORE_PASSWORD:changeit}
+            type: PKCS12
+          truststore:
+            location: classpath:certs/scheduler-service-truststore.p12
+            password: ${TRUSTSTORE_PASSWORD:changeit}
+            type: PKCS12
+
   quartz:
     job-store-type: jdbc
     jdbc:
@@ -30,3 +58,18 @@ spring:
       hibernate:
         globally_quoted_identifiers: true
         # Dialect is autoопределяется Hibernate 6 из JDBC metadata
+
+# Standard dual-auth properties (from BaseSecurityConfiguration)
+soa:
+  security:
+    jwt:
+      enabled: false             # scheduler-service is internal-only, no end-user access
+    mtls:
+      enabled: true
+      service-role: SERVICE
+    permit-all:
+      - /actuator/health/**
+      - /actuator/info
+    internal:
+      - /scheduler/composeReport
+      - /scheduler/registerTask

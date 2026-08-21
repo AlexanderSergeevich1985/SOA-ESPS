@@ -1,44 +1,33 @@
 package com.soaesps.schedulerservice;
 
+import com.soaesps.core.security.config.BaseSecurityConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.EnvironmentAware;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.PropertySource;
-import org.springframework.core.env.Environment;
-import org.springframework.core.io.ClassPathResource;
+import org.springframework.context.annotation.Import;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.WeakHashMap;
-
+/**
+ * Entry point for the scheduler microservice.
+ *
+ * <p>Security is provided by the standard dual-auth configuration
+ * ({@link BaseSecurityConfiguration}): mTLS for inter-service calls
+ * and optional JWT for end-user access, configurable via application.yml.
+ *
+ * <p>{@link EnableScheduling} activates the {@code @Scheduled} / {@code TaskScheduler}
+ * infrastructure used by {@code SchedulerServiceImpl}.
+ */
+//@PropertySource("classpath:config/application.yml")
 @SpringBootApplication
-@EnableConfigurationProperties
-@PropertySource("classpath:config/application.yml")
-@EnableAutoConfiguration
-public class SchedulerApplication implements EnvironmentAware {//extends ResourceServerConfigurerAdapter {
-    private static Logger logger = LoggerFactory.getLogger(SchedulerApplication.class);
+@EnableScheduling
+@Import(BaseSecurityConfiguration.class)
+public class SchedulerApplication {
+
+    private static final Logger log = LoggerFactory.getLogger(SchedulerApplication.class);
 
     public static void main(String[] args) {
         SpringApplication.run(SchedulerApplication.class, args);
-    }
-
-    @Bean
-    static public PropertyPlaceholderConfigurer ppc() throws IOException {
-        PropertyPlaceholderConfigurer ppc = new PropertyPlaceholderConfigurer();
-        ppc.setLocations(new ClassPathResource("config/application.yml"));
-        ppc.setIgnoreUnresolvablePlaceholders(true);
-        return ppc;
-    }
-
-    @Override
-    public void setEnvironment(Environment environment) {
-        //logger.info("URL = {}", environment.getRequiredProperty("url"));
+        log.info("Scheduler service started");
     }
 }

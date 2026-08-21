@@ -11,7 +11,7 @@ soa:
 server:
   port: 8443
   ssl:
-    bundle: notes-server
+    #bundle: notes-server
     client-auth: want
 
 spring:

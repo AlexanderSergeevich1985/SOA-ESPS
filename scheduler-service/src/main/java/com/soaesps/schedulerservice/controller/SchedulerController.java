@@ -9,6 +9,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -47,6 +48,7 @@ public class SchedulerController {
      * @param start required lower bound of the reporting window (ISO-8601)
      * @param end   optional upper bound; defaults to "now"
      */
+    @PreAuthorize("hasRole('SERVICE')")
     @GetMapping(path = "/composeReport", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> composeReport(
             @RequestParam(name = "start")
@@ -84,6 +86,7 @@ public class SchedulerController {
     /**
      * Registers a new scheduled task in the Quartz engine.
      */
+    @PreAuthorize("hasRole('SERVICE')")
     @PostMapping(path = "/registerTask", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Void> registerTask(@Valid @RequestBody SchedulerTask task) {
         log.info("Registering scheduler task: {}", task.getClassName());
