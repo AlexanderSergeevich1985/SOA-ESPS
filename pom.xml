@@ -124,6 +124,7 @@
         <module>documents-service</module>
         <module>notes-service</module>
         <module>scheduler-service</module>
+        <module>api-gateway</module>
     </modules>
 
 </project>

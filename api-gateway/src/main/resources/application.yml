@@ -1,0 +1,72 @@
+server:
+  port: 8080 # Public entry point for all clients
+
+spring:
+  application:
+    name: api-gateway
+  profiles:
+    active: DEV
+
+---
+# ===================================================================
+# CONFIGURATION FOR PROFILE: DEV (Development with Cloud Infrastructure)
+# ===================================================================
+spring:
+  config:
+    activate:
+      on-profile: DEV
+    import: "optional:configserver:http://${CONFIG_USER_NAME}:${CONFIG_SERVICE_PASSWORD}@config:8888"
+
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+
+      # Explicit route mappings for your ecosystem
+      routes:
+        # 1. Routing to Authentication Server
+        - id: auth-service-route
+          uri: lb://auth-service
+          predicates:
+            - Path=/api/v1/auth/**
+          filters:
+            - StripPrefix=3
+
+        # 2. Routing to Notes Service (with automatic Token Relay)
+        - id: notes-service-route
+          uri: lb://notes-service
+          predicates:
+            - Path=/api/v1/notes/**
+          filters:
+            - StripPrefix=3
+            - TokenRelay # Extracts incoming JWT and forwards it down to notes-service
+
+        # 3. Routing for Messenger WebSockets
+        - id: chat-websocket-route
+          uri: lb:ws://chat-service
+          predicates:
+            - Path=/chat-ws/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka:8761/eureka/
+
+---
+# ===================================================================
+# CONFIGURATION FOR PROFILE: TEST (Isolated Local Test Context)
+# ===================================================================
+spring:
+  config:
+    activate:
+      on-profile: TEST
+  cloud:
+    config:
+      enabled: false
+
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: false

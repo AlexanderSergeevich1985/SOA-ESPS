@@ -1,17 +1,47 @@
 server:
   port: 8888
 
-security:
-  user:
-    password: ${CONFIG_SERVICE_PASSWORD}
-
 spring:
+  application:
+    name: config-server
+  security:
+    user:
+      name: user
+      password: ${CONFIG_SERVICE_PASSWORD:secret}
+
+  profiles:
+    active: TEST
+
+---
+# ===================================================================
+# CONFIGURATION FOR PROFILE: DEV (Uses Git repository)
+# ===================================================================
+spring:
+  config:
+    activate:
+      on-profile: DEV
   cloud:
     config:
       server:
         git:
-          uri: ${HOME}/mcg-config
-        #native:
-        #  searchLocations: ${HOME}/files-config
-  #profiles:
-     #active: native
+          # Universal placeholder ${user.home} resolves correctly on both Windows and Linux
+          uri: file://${user.home}/mcg-config
+          clone-on-start: true
+          default-label: main
+
+---
+# ===================================================================
+# CONFIGURATION FOR PROFILE: TEST (Bypasses Git, reads raw YAML files)
+# ===================================================================
+spring:
+  config:
+    activate:
+      on-profile: TEST
+  profiles:
+    active: native # Activates Spring Cloud Config native storage mode
+  cloud:
+    config:
+      server:
+        native:
+          # Reads plaintext configuration files from the specified local directory
+          search-locations: file://${user.home}/files-config

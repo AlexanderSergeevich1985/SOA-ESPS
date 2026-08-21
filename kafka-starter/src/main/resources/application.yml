@@ -1,16 +1,55 @@
 spring:
   application:
     name: kafka-starter
-    config:
-      uri: http://config:8888
-      fail-fast: true
-      password: ${CONFIG_SERVICE_PASSWORD}
-      username: ${CONFIG_USER_NAME}
-  kafka:
-    consumer:
-    auto-offset-reset: earliest
+
+  profiles:
+    active: TEST
+
+# Custom topic configuration properties accessible via @ConfigurationProperties
 kafka:
   topics:
     name: msg-process-result
     num-partitions: 5
     replication-factor: 2
+
+---
+# ===================================================================
+# CONFIGURATION FOR PROFILE: DEV (Fetches config, connects to Kafka)
+# ===================================================================
+spring:
+  config:
+    activate:
+      on-profile: DEV
+    # Modern Spring Boot 3.x way to import external configuration.
+    # Uses 'optional:' prefix to prevent immediate crash if config server is still booting up.
+    import: "optional:configserver:http://${CONFIG_USER_NAME}:${CONFIG_SERVICE_PASSWORD}@config:8888"
+
+  kafka:
+    consumer:
+      # Correct indentation for consumer-specific auto-offset property
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.json.trusted.packages: "com.soaesps.*"
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+---
+# ===================================================================
+# CONFIGURATION FOR PROFILE: TEST (Config Server & External Kafka Disabled)
+# ===================================================================
+spring:
+  config:
+    activate:
+      on-profile: TEST
+  # Completely disables Spring Cloud Config Client for isolated testing
+  cloud:
+    config:
+      enabled: false
+  # Excludes real Kafka infrastructure beans to prevent ConnectionExceptions during builds
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
