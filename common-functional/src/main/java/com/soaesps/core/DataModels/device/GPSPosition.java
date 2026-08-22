@@ -7,18 +7,19 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import java.io.Serializable;
+import java.util.Objects;
 
 @Entity
 @Table(name = "GPS_POSITION")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class GPSPosition extends BaseOnlyIdEntity implements Serializable {
-    @Column(name = "longitude", columnDefinition = "FLOAT(126)")
+    @Column(name = "longitude")
     private Double longitude;
 
-    @Column(name = "latitude", columnDefinition = "FLOAT(126)")
+    @Column(name = "latitude")
     private Double latitude;
 
-    @Column(name = "altitude", columnDefinition = "FLOAT(126)")
+    @Column(name = "altitude")
     private Double altitude;
 
     public Double getLongitude() {
@@ -43,5 +44,21 @@ public class GPSPosition extends BaseOnlyIdEntity implements Serializable {
 
     public void setAltitude(final Double altitude) {
         this.altitude = altitude;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        GPSPosition that = (GPSPosition) o;
+        return Objects.equals(longitude, that.longitude) &&
+                Objects.equals(latitude, that.latitude) &&
+                Objects.equals(altitude, that.altitude);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), longitude, latitude, altitude);
     }
 }

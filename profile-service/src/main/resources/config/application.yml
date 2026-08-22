@@ -1,10 +1,48 @@
+# ===================================================================
+# GLOBAL APP INITIALIZATION & DEFAULT STATE
+# ===================================================================
 spring:
+  application:
+    name: profile-service
   profiles:
-    active: DEV, LOCAL
+    active: DEV # Default profile for local boot
+  cloud:
+    compatibility-verifier:
+      # Bypasses release train compatibility check for Boot 3.4.1 locally and in containers
+      enabled: false
+
+  # Global Kafka baseline parameters
+  kafka:
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      retries: 3
+    consumer:
+      group-id: my-awesome-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+soaesps:
+  config-server:
+    client: http://localhost:8080/config/
+
+---
+# ===================================================================
+# PROFILE: DEV / LOCAL (Combined environment for local HTTP workflow)
+# ===================================================================
+spring:
+  config:
+    activate:
+      on-profile: DEV, LOCAL
+    import: "optional:configserver:http://${CONFIG_USER_NAME:admin}:${CONFIG_SERVICE_PASSWORD:admin}@localhost:8888"
+
+  kafka:
+    bootstrap-servers: localhost:9092
 
   cloud:
     config:
-      # uri: http://localhost:8888/
       label: master
       discovery:
         enabled: true
@@ -16,43 +54,150 @@ spring:
 
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/soa_esps
-    username: #########
-    password: #########
+    url: jdbc:postgresql://localhost:5432/profile_db
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PWD:postgres}
     hikari:
       maximum-pool-size: 4
 
   jpa:
     show-sql: false
     generate-ddl: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     properties:
       hibernate:
-        # In Hibernate 6, dialect is auto-detected from JDBC metadata.
-        # Explicit definition is optional but kept here for clarity.
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-
-        # Matches the 'globally_quoted_identifiers' setting from your Java configuration
         globally_quoted_identifiers: true
-
-        # Second Level Cache Configuration
         cache:
           use_second_level_cache: true
           use_query_cache: false
           region:
             factory_class: org.redisson.hibernate.RedissonRegionFactory
-          # Optional: If you have an ehcache.xml for EhCache 3, point to it here.
-          # provider_configuration_file_resource_path: classpath:ehcache.xml
 
   rabbitmq:
     host: localhost
     port: 5672
-    username: #########
-    password: #########
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
     connection-timeout: 2s
     listener:
       direct:
         consumers-per-queue: 2
     template:
       reply-timeout: 10ms
+
+server:
+  port: 8082
+  ssl:
+    enabled: false # Plain HTTP execution for comfortable local development
+
+soa:
+  security:
+    jwt:
+      enabled: true
+    permit-all:
+      - /actuator/health/**
+      - /actuator/info
+    internal:
+      - /api/internal/**
+    mtls:
+      enabled: false # Disabled locally to avoid keystore requirements
+
+---
+# ===================================================================
+# PROFILE: DOCKER (Secure internal service-to-service mTLS network)
+# ===================================================================
+spring:
+  config:
+    activate:
+      on-profile: DOCKER
+
+  kafka:
+    # Routes traffic inside Docker virtual network bridge to Kafka container
+    bootstrap-servers: kafka:9092
+
+  datasource:
+    url: jdbc:postgresql://postgres-db:5432/profile_db
+    driver-class-name: org.postgresql.Driver
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PWD}
+    hikari:
+      maximum-pool-size: 10
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
+
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: ${RABBITMQ_USER}
+    password: ${RABBITMQ_PASSWORD}
+
+server:
+  port: 8443 # Production secure port deployment
+  ssl:
+    enabled: true
+    client-auth: want
+    # Leverages dynamic application name mapping to target service specific certificates
+    key-store: "file:/etc/certs/${spring.application.name}.p12"
+    key-store-password: "${CERTS_PASSWORD}"
+    key-store-type: "PKCS12"
+    trust-store: "file:/etc/certs/internal-truststore.p12"
+    trust-store-password: "${TRUSTSTORE_PASSWORD}"
+    trust-store-type: "PKCS12"
+
+soa:
+  security:
+    jwt:
+      enabled: true
+    permit-all:
+      - /actuator/health/**
+    internal:
+      - /api/internal/**
+    mtls:
+      enabled: true # Enforces strict X.509 client certificate checks inside containers
+
+---
+# ===================================================================
+# PROFILE: TEST (Isolated Maven engine pipeline context layout)
+# ===================================================================
+spring:
+  config:
+    activate:
+      on-profile: TEST
+  cloud:
+    config:
+      enabled: false
+      import-check.enabled: false
+
+  # Drops Kafka auto-configurations to prevent connection attempts during testing phases
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+
+  datasource:
+    url: jdbc:h2:mem:test_db;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+
+server:
+  port: 0
+
+soa:
+  security:
+    jwt:
+      enabled: false
+    permit-all:
+      - "/**"
+    internal: []
+    mtls:
+      enabled: false
