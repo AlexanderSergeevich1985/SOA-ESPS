@@ -5,6 +5,7 @@ import com.soaesps.core.config.KafkaConsumerConfig;
 import com.soaesps.core.Utils.CryptoHelper;
 import com.soaesps.core.component.aggregator.CorrelationStrategyI;
 import com.soaesps.core.component.aggregator.ReleaseStrategyI;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,9 +14,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
-import org.springframework.kafka.core.DefaultKafkaProducerFactory;
-import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.core.ProducerFactory;
+import org.springframework.kafka.core.*;
 import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 import org.springframework.integration.annotation.*;
@@ -42,6 +41,19 @@ public class IntegrationConfiguration {
 
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
+
+    // Producer properties from YAML
+    @Value("${spring.kafka.producer.key-serializer}")
+    private String producerKeySerializer;
+
+    @Value("${spring.kafka.producer.value-serializer}")
+    private String producerValueSerializer;
+
+    @Value("${spring.kafka.producer.acks}")
+    private String producerAcks;
+
+    @Value("${spring.kafka.producer.retries}")
+    private int producerRetries;
 
     private static final String INPUT_TOPIC_NAME = "message_queue_inbound";
     private static final String OUTPUT_TOPIC_NAME = "message_queue_outbound";
@@ -114,35 +126,38 @@ public class IntegrationConfiguration {
         });
     }
 
-    // ==========================================
+    // =========================================================================
     // KAFKA INBOUND CONFIGURATION (RECEIVING)
-    // ==========================================
-
+    // =========================================================================
     @Bean
     public KafkaMessageDrivenChannelAdapter<String, JsonNode> kafkaInboundAdapter(
             ConcurrentKafkaListenerContainerFactory<String, JsonNode> factory) {
 
-        // Create a listener container from your shared Kafka Consumer Factory
-        ConcurrentMessageListenerContainer<String, JsonNode> container =
-                factory.createContainer(INPUT_TOPIC_NAME);
+        // Create a listener container from the shared container factory passed as argument
+        var container = factory.createContainer(INPUT_TOPIC_NAME);
 
         KafkaMessageDrivenChannelAdapter<String, JsonNode> adapter =
                 new KafkaMessageDrivenChannelAdapter<>(container, KafkaMessageDrivenChannelAdapter.ListenerMode.record);
 
+        // Pipe the incoming payload into Spring Integration channel
         adapter.setOutputChannel(kafkaInputChannel());
         return adapter;
     }
 
-    // ==========================================
+    // =========================================================================
     // KAFKA OUTBOUND CONFIGURATION (SENDING)
-    // ==========================================
-
+    // =========================================================================
     @Bean
     public ProducerFactory<String, Object> kafkaProducerFactory() {
         Map<String, Object> props = new HashMap<>();
+
+        // Dynamically mapping properties from your exact application.yml block
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, producerKeySerializer);
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, producerValueSerializer);
+        props.put(ProducerConfig.ACKS_CONFIG, producerAcks);
+        props.put(ProducerConfig.RETRIES_CONFIG, producerRetries);
+
         return new DefaultKafkaProducerFactory<>(props);
     }
 

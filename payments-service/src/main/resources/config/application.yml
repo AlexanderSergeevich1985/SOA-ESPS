@@ -1,37 +1,162 @@
+# ===================================================================
+# GLOBAL APP INITIALIZATION
+# ===================================================================
 spring:
-   profiles:
-       active: DEV#LOCAL
-
-   datasource:
-       url: jdbc:postgresql://localhost:5432/soa_esps
-       driver-class-name: org.postgresql.Driver
-       username: #########
-       password: #########
-       hikari:
-         maximum-pool-size: 4
-
-   jpa:
-      database-platform: org.hibernate.dialect.PostgreSQL9Dialect
-      hibernate:
-          ddl-auto: validate
-          naming:
-            implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
-            physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
-      show_sql: false
-      generate-ddl: false
-      ddl-auto: validate
-      properties:
-         cache.use_second_level_cache: true
-         cache.use_query_cache: false
-         cache.region.factory_class: org.hibernate.cache.ehcache.SingletonEhCacheRegionFactory
-
-   security:
-      oauth2:
-         resourceserver:
-            jwt:
-               issuer-uri: http://localhost:8081/auth-service
-               jwk-set-uri: http://localhost:8081/auth-service/oauth2/jwks
+  application:
+    name: payments-service
+  profiles:
+    active: DEV # Default profile for local boot
 
 soaesps:
-    config-server:
-         client: http://localhost:8080/config/
+  config-server:
+    client: http://localhost:8080/config/
+
+---
+# ===================================================================
+# PROFILE: DEV (Local development - Clean HTTP, No SSL overhead)
+# ===================================================================
+spring:
+  config:
+    activate:
+      on-profile: DEV
+    import: "optional:configserver:http://${CONFIG_USER_NAME}:${CONFIG_SERVICE_PASSWORD}@localhost:8888"
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/soa_esps
+    driver-class-name: org.postgresql.Driver
+    username: ${DB_USER:postgres}        # Pulls from system env, defaults to postgres
+    password: ${DB_PASSWORD:postgres}    # Pulls from system env, defaults to postgres
+    hikari:
+      maximum-pool-size: 4
+
+  jpa:
+    # Modern dialect for Spring Boot 3.4.1 (automatically resolves engine specifics)
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
+      naming:
+        implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+        physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
+    show-sql: false
+    generate-ddl: false
+    properties:
+      hibernate:
+        cache:
+          use_second_level_cache: true
+          use_query_cache: false
+          region:
+            factory_class: org.hibernate.cache.ehcache.SingletonEhCacheRegionFactory
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8081/auth-service
+          jwk-set-uri: http://localhost:8081/auth-service/oauth2/jwks
+
+server:
+  port: 8082 # Or your designated local port
+  ssl:
+    enabled: false # Explicitly disabled locally so Tomcat boots without .p12 files
+
+soa:
+  security:
+    jwt:
+      enabled: true
+    permit-all:
+      - /actuator/health/**
+    internal:
+      - /api/internal/**
+    mtls:
+      enabled: false # Switched off for local HTTP debugging
+
+---
+# ===================================================================
+# PROFILE: DOCKER / PROD (Secure internal mesh with unique mTLS)
+# ===================================================================
+spring:
+  config:
+    activate:
+      on-profile: DOCKER
+
+  datasource:
+    url: jdbc:postgresql://postgres-db:5432/soa_esps # Internal network host
+    driver-class-name: org.postgresql.Driver
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 10 # Expanded pool for production-like load
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
+  
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Production domain or internal cloud route mapping
+          issuer-uri: https://soa-esps.ru
+          jwk-set-uri: http://auth-service:8000/oauth2/jwks
+
+server:
+  port: 8443
+  ssl:
+    enabled: true
+    client-auth: want
+    key-store: "file:/etc/certs/${spring.application.name}.p12" # Uses app name dynamically
+    key-store-password: "${CERTS_PASSWORD}"
+    key-store-type: "PKCS12"
+    trust-store: "file:/etc/certs/internal-truststore.p12"
+    trust-store-password: "${TRUSTSTORE_PASSWORD}"
+    trust-store-type: "PKCS12"
+
+soa:
+  security:
+    jwt:
+      enabled: true
+    permit-all:
+      - /actuator/health/**
+    internal:
+      - /api/internal/**
+    mtls:
+      enabled: true # Enforces X.509 client certificate verification over mTLS mesh
+
+---
+# ===================================================================
+# PROFILE: TEST (Isolated Maven Builds & JUnit testing)
+# ===================================================================
+spring:
+  config:
+    activate:
+      on-profile: TEST
+  cloud:
+    config:
+      enabled: false
+      import-check.enabled: false
+
+  # Switches database connection to a lightning-fast, zero-setup in-memory H2 database
+  datasource:
+    url: jdbc:h2:mem:test_db;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop # Dynamically builds schemas per test context session
+
+server:
+  port: 0
+
+soa:
+  security:
+    jwt:
+      enabled: false
+    permit-all:
+      - "/**" # Completely eliminates security context crashes during data validation tests
+    internal: []
+    mtls:
+      enabled: false

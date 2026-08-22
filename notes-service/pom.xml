@@ -18,7 +18,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <spring-cloud.version>2023.0.4</spring-cloud.version>
+        <spring-cloud.version>2024.0.0</spring-cloud.version>
         <htmlflow.version>5.0.2</htmlflow.version>
         <flapdoodle.version>4.11.0</flapdoodle.version>
         <jackson.version>2.17.2</jackson.version>

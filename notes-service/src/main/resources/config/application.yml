@@ -1,22 +1,95 @@
-soa:
-  security:
-    jwt:
-      enabled: true
-    permit-all:
-      - /actuator/health/**
-      - /api/public/**        # public notifications feed
-    internal:
-      - /api/internal/**      # mTLS-only zone
-
-server:
-  port: 8443
-  ssl:
-    #bundle: notes-server
-    client-auth: want
-
+# ===================================================================
+# GLOBAL APP INITIALIZATION
+# ===================================================================
 spring:
+  application:
+    name: notifications-service
   profiles:
-    active: DEV#LOCAL
+    # Restoring your original default active profile
+    active: DEV
+
+  kafka: # URL of the running Kafka broker(s)
+      bootstrap-servers: localhost:9092
+
+      producer:
+        # Serializer class for message keys
+        key-serializer: org.apache.kafka.common.serialization.StringSerializer
+        # Serializer class for message values
+        value-serializer: org.apache.kafka.common.serialization.StringSerializer
+        # Number of acknowledgments the producer requires the leader to have received (all, 1, or 0)
+        acks: all
+        # Number of retries if the request fails
+        retries: 3
+
+      consumer:
+        # Unique string that identifies the consumer group this consumer belongs to
+        group-id: my-awesome-group
+        # What to do when there is no initial offset in Kafka (earliest or latest)
+        auto-offset-reset: earliest
+        # Deserializer class for message keys
+        key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+        # Deserializer class for message values
+        value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+# Active storage engine selection (options: mongo / minio)
+# If missing or set to 'mongo', MongoDB implementation triggers by default.
+storage:
+  type: mongo
+
+notification:
+  telegram:
+    bot-token: ${TELEGRAM_BOT_TOKEN:123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11}
+    enabled: ${TELEGRAM_NOTIFICATIONS_ENABLED:true}
+
+# This block is required ONLY when storage.type is set to 'minio'
+minio:
+  url: http://localhost:9000
+  access-key: ${MINIO_ACCESS_KEY:admin}
+  secret-key: ${MINIO_SECRET_KEY:supersecretkey}
+  bucket-name: html-templates
+
+mail:
+  protocol: smtp
+  host: ://example.com
+  port: 587
+  from: noreply@example.com
+  username: ${MAIL_USERNAME:your_username}
+  password: ${MAIL_PWD:your_password}
+  smtp:
+    debug: false
+    auth: true
+    starttls:
+      enable: true
+      required: true
+    socketFactory:
+      port: 587
+      fallback: false
+
+logo:
+  path: "images/logo.png" # Path to your logo in src/main/resources
+
+---
+# ===================================================================
+# PROFILE: DEV (Your exact local development environment)
+# ===================================================================
+spring:
+  config:
+    activate:
+      on-profile: DEV
+    import: "optional:configserver:http://${CONFIG_USER_NAME}:${CONFIG_SERVICE_PASSWORD}@localhost:8888"
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/notifications_sql_db
+    username: ${POSTGRES_USER:default_user}
+    password: ${POSTGRES_PWD:default_pass}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
 
   security:
     oauth2:
@@ -37,18 +110,110 @@ spring:
     mongodb:
       host: localhost
       port: 27017
-      database: notifications
-      username: your_db_user
-      password: your_db_password
+      database: templates
+      username: ${MONGO_USER:default_user}
+      password: ${MONGO_PWD:default_pass}
 
-# Active storage engine selection (options: mongo / minio)
-# If missing or set to 'mongo', MongoDB implementation triggers by default.
-storage:
-  type: mongo
+server:
+  port: 8443
+  ssl:
+    # Disabled locally to prevent "Unable to start web server / no trust material" crashes
+    enabled: false
 
-# This block is required ONLY when storage.type is set to 'minio'
-minio:
-  url: http://localhost:9000
-  access-key: YOUR_MINIO_ACCESS_KEY
-  secret-key: YOUR_MINIO_SECRET_KEY
-  bucket-name: html-templates
+soa:
+  security:
+    jwt:
+      enabled: true
+    # Using your exact kebab-case properties from the snippet
+    permit-all:
+      - /actuator/health/**
+      - /api/public/**        # public notifications feed
+    internal:
+      - /api/internal/**      # mTLS-only zone
+    mtls:
+      enabled: false          # Kept false for local plain-HTTP execution
+
+---
+# ===================================================================
+# PROFILE: DOCKER / PROD (Production mesh with full mTLS and infrastructure)
+# ===================================================================
+spring:
+  config:
+    activate:
+      on-profile: DOCKER
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://auth.soa-esps.ru
+
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+  data:
+    mongodb:
+      host: mongodb
+      port: 27017
+      database: templates
+      username: ${MONGO_USER}
+      password: ${MONGO_PASSWORD}
+
+server:
+  port: 8443
+  ssl:
+    enabled: true
+    client-auth: want
+    # Standard classic key-store paths for your Docker environment
+    key-store: "file:/etc/certs/notifications-service.p12"
+    key-store-password: "${CERTS_PASSWORD}"
+    key-store-type: "PKCS12"
+    trust-store: "file:/etc/certs/internal-truststore.p12"
+    trust-store-password: "${TRUSTSTORE_PASSWORD}"
+    trust-store-type: "PKCS12"
+
+soa:
+  security:
+    jwt:
+      enabled: true
+    permit-all:
+      - /actuator/health/**
+      - /api/public/**
+    internal:
+      - /api/internal/**
+    mtls:
+      enabled: true # Enforces client certificate validation in Docker containers
+
+---
+# ===================================================================
+# PROFILE: TEST (Isolated environment for your JUnit repository slices)
+# ===================================================================
+spring:
+  config:
+    activate:
+      on-profile: TEST
+  cloud:
+    config:
+      enabled: false
+  # Cuts off MongoDB and RabbitMQ autoconfigurations so DeviceTokenRepositoryTest is fully isolated
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration
+      - org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration
+      - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+
+server:
+  port: 0
+
+soa:
+  security:
+    jwt:
+      enabled: false
+    permit-all:
+      - "/**" # Bypasses all security filters during test slicing
+    internal: []
+    mtls:
+      enabled: false

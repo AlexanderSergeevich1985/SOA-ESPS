@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.InputStreamSource;
-import org.springframework.mail.javamail.JavaMailSenderImpl;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
@@ -21,7 +21,7 @@ import java.util.logging.Logger;
 
 @Service("emailSender")
 public class EmailSender implements SenderI {
-    static private final Logger logger;
+    private static final Logger logger;
 
     static {
         logger = Logger.getLogger(EmailSender.class.getName());
@@ -34,105 +34,94 @@ public class EmailSender implements SenderI {
     @Value("${logo.path}")
     private String pathToLogo;
 
-    private final JavaMailSenderImpl javaMailSender;
-
-    //private final SpringTemplateEngine templateEngine;
+    private final JavaMailSender javaMailSender;
 
     @Autowired
-    public EmailSender(final JavaMailSenderImpl javaMailSender) {
+    public EmailSender(final JavaMailSender javaMailSender) {
         this.javaMailSender = javaMailSender;
-        //this.templateEngine = templateEngine;
     }
 
     @Override
     public void send(final MimeMessage message) {
-        final MimeMessage mimeMessage = javaMailSender.createMimeMessage();
         try {
-            javaMailSender.send(mimeMessage);
-            logger.log(Level.INFO, "[EmailSender/send]: E-Mail sent to User ");
+            javaMailSender.send(message);
+            logger.log(Level.INFO, "[EmailSender/send]: E-Mail sent to User");
         } catch (final Exception ex) {
-            logger.log(Level.INFO, "[EmailSender/send]: E-mail could not be sent to user, exception is: {}", ex.getMessage());
+            logger.log(Level.SEVERE, "[EmailSender/send]: E-mail could not be sent to user, exception is: " + ex.getMessage(), ex);
         }
     }
 
     public class EmailBuilder {
         private final MimeMessage mimeMessage;
-
         private final MimeMessageHelper msgBuilder;
 
         private EmailBuilder() throws MessagingException {
             this.mimeMessage = javaMailSender.createMimeMessage();
             this.msgBuilder = new MimeMessageHelper(mimeMessage, true, CharEncoding.UTF_8);
+            if (from != null) {
+                msgBuilder.setFrom(from);
+            }
         }
 
         public EmailBuilder sendTo(final String to) throws MessagingException {
             msgBuilder.setBcc(to);
-
             return this;
         }
 
         public EmailBuilder sendTo(final String[] to) throws MessagingException {
             msgBuilder.setBcc(to);
-
             return this;
         }
 
         public EmailBuilder sendTo(final Collection<String> to) throws MessagingException {
-            msgBuilder.setBcc(to.toArray(new String[to.size()]));
-
+            msgBuilder.setBcc(to.toArray(new String[0]));
             return this;
         }
 
         public EmailBuilder from(final String from) throws MessagingException {
             msgBuilder.setFrom(from);
-
             return this;
         }
 
         public EmailBuilder subject(final String subject) throws MessagingException {
             msgBuilder.setSubject(subject);
-
             return this;
         }
 
         public EmailBuilder text(final String text) throws MessagingException {
             msgBuilder.setText(text);
-
             return this;
         }
 
         public EmailBuilder attachment(final MailAttachment attachment) throws MessagingException {
             msgBuilder.addAttachment(attachment.getName(), attachment.getSource(), attachment.getType().type());
-
             return this;
         }
 
         public EmailBuilder attachments(final MailAttachment... attachments) throws MessagingException {
-            for (final MailAttachment attachment: attachments) {
+            for (final MailAttachment attachment : attachments) {
                 this.attachment(attachment);
             }
-
             return this;
         }
 
         public EmailBuilder attachments(final Collection<MailAttachment> attachments) throws MessagingException {
-            for (final MailAttachment attachment: attachments) {
+            for (final MailAttachment attachment : attachments) {
                 this.attachment(attachment);
             }
-
             return this;
         }
 
         public EmailBuilder logo(final String pathToLogo) throws MessagingException {
             final InputStreamSource is = new ClassPathResource(pathToLogo);
             msgBuilder.addInline(Paths.get(pathToLogo).getFileName().toString(), is, MediaType.PNG.toString());
-
             return this;
         }
 
         public EmailBuilder logo() throws MessagingException {
-            logo(pathToLogo);
-
+            if (pathToLogo != null) {
+                logo(pathToLogo);
+            }
             return this;
         }
 
@@ -141,9 +130,7 @@ public class EmailSender implements SenderI {
         }
     }
 
-    static public EmailBuilder builder(final EmailSender emailSender) throws MessagingException {
-        final EmailBuilder emailBuilder = emailSender.new EmailBuilder();
-
-        return emailBuilder;
+    public EmailBuilder builder() throws MessagingException {
+        return new EmailBuilder();
     }
 }

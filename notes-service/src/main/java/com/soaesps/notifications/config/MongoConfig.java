@@ -43,9 +43,8 @@ public class  MongoConfig extends AbstractMongoClientConfiguration {
     @Override
     @Bean
     public MongoClient mongoClient() {
-        // 1. Create credentials safely
         MongoCredential credential = MongoCredential
-                .createCredential(username, getDatabaseName(), password.toCharArray());
+                .createScramSha256Credential(username, mongoDbDatabaseName, password.toCharArray());
 
         // 2. Build modern MongoClientSettings without deprecated classes
         MongoClientSettings settings = MongoClientSettings.builder()

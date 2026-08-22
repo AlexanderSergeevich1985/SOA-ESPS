@@ -23,28 +23,49 @@ public class KafkaConsumerConfig {
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServerAddress;
 
-    @Value("${spring.kafka.group-id}")
-    private String groupIdConfig;
+    // Consumer properties from YAML
+    @Value("${spring.kafka.consumer.group-id}")
+    private String consumerGroupId;
+
+    @Value("${spring.kafka.consumer.auto-offset-reset}")
+    private String consumerAutoOffsetReset;
+
+    @Value("${spring.kafka.consumer.key-deserializer}")
+    private String consumerKeyDeserializer;
+
+    @Value("${spring.kafka.consumer.value-deserializer}")
+    private String consumerValueDeserializer;
 
     @Bean
     public ConsumerFactory<String, JsonNode> consumerFactory() {
         Map<String, Object> props = new HashMap<>();
+
+        // Map all standard consumer configurations from your properties
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServerAddress);
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, groupIdConfig);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, consumerGroupId);
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, consumerAutoOffsetReset);
+
+        // Pass class names as strings to let Kafka architecture manage deserializer initialization fallback
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, consumerKeyDeserializer);
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, consumerValueDeserializer);
 
         // Configure target JSON deserializer for the universal JsonNode class
         JsonDeserializer<JsonNode> jsonDeserializer = new JsonDeserializer<>(JsonNode.class);
         jsonDeserializer.addTrustedPackages("*"); // Safe for JsonNode since it represents raw JSON tree
         jsonDeserializer.setUseTypeHeaders(false); // Ignore sender type headers to avoid package mismatch errors
 
-        // Wrap with ErrorHandlingDeserializer to catch bad/malformed JSON strings (Poison Pills)
-        ErrorHandlingDeserializer<JsonNode> errorHandlingDeserializer =
+        // Configure ErrorHandlingDeserializer to prevent infinite loops caused by malformed JSON data (Poison Pills)
+        ErrorHandlingDeserializer<JsonNode> errorHandlingValueDeserializer =
                 new ErrorHandlingDeserializer<>(jsonDeserializer);
 
+        ErrorHandlingDeserializer<String> errorHandlingKeyDeserializer =
+                new ErrorHandlingDeserializer<>(new StringDeserializer());
+
+        // Return factory utilizing delegation patterns for safe deserialization
         return new DefaultKafkaConsumerFactory<>(
                 props,
-                new StringDeserializer(),
-                errorHandlingDeserializer
+                errorHandlingKeyDeserializer,
+                errorHandlingValueDeserializer
         );
     }
 

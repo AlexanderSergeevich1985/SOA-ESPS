@@ -1,15 +1,29 @@
 package com.soaesps.core.security.config;
 
+import feign.RequestInterceptor;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 
 /**
  * Standard dual-authentication security configuration for all SOA-ESPS microservices.
@@ -31,6 +45,52 @@ public class BaseSecurityConfiguration {
     @Bean
     public MtlsUserDetailsService mtlsUserDetailsService(SoaSecurityProperties properties) {
         return new MtlsUserDetailsService(properties.getMtls().getServiceRole());
+    }
+
+    /**
+     * Standard entry point for REST APIs.
+     * Returns a clean 401 Unauthorized status instead of a browser basic auth popup.
+     */
+    @Bean
+    public AuthenticationEntryPoint authenticationEntryPoint() {
+        return new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    @Primary
+    public AuthenticationProvider authenticationProvider(MtlsUserDetailsService mtlsUserDetailsService) {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(mtlsUserDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder());
+        return authProvider;
+    }
+
+    @Bean
+    @Primary
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
+        return authConfig.getAuthenticationManager();
+    }
+
+    @Bean
+    public RequestInterceptor requestTokenBearerInterceptor() {
+        return requestTemplate -> {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null) {
+                return;
+            }
+            if (authentication instanceof JwtAuthenticationToken jwtAuth) {
+                String tokenValue = jwtAuth.getToken().getTokenValue();
+                requestTemplate.header("Authorization", "Bearer " + tokenValue);
+            }
+            else if (authentication.getCredentials() instanceof String token) {
+                requestTemplate.header("Authorization", "Bearer " + token);
+            }
+        };
     }
 
     @Bean
