@@ -3,7 +3,7 @@ package com.soaesps.payments.domain.transactions;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "server_bills")
+@Table(name = "bank_account")
 public class BankAccount extends BaseBankAccount {
     @OneToOne(fetch = FetchType.LAZY, optional = false, cascade = CascadeType.ALL)
     @PrimaryKeyJoinColumn

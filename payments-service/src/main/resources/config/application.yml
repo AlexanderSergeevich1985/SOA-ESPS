@@ -7,6 +7,29 @@ spring:
   profiles:
     active: DEV # Default profile for local boot
 
+  kafka: # URL of the running Kafka broker(s)
+    bootstrap-servers: localhost:9092
+
+    producer:
+      # Serializer class for message keys
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      # Serializer class for message values
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      # Number of acknowledgments the producer requires the leader to have received (all, 1, or 0)
+      acks: all
+      # Number of retries if the request fails
+      retries: 3
+
+    consumer:
+      # Unique string that identifies the consumer group this consumer belongs to
+      group-id: my-awesome-group
+      # What to do when there is no initial offset in Kafka (earliest or latest)
+      auto-offset-reset: earliest
+      # Deserializer class for message keys
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      # Deserializer class for message values
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
 soaesps:
   config-server:
     client: http://localhost:8080/config/
@@ -21,11 +44,16 @@ spring:
       on-profile: DEV
     import: "optional:configserver:http://${CONFIG_USER_NAME}:${CONFIG_SERVICE_PASSWORD}@localhost:8888"
 
+  cloud:
+    config:
+      import-check:
+        enabled: false # Disables strict import checking before profiles activate
+
   datasource:
-    url: jdbc:postgresql://localhost:5432/soa_esps
+    url: jdbc:postgresql://localhost:5432/payments_db
     driver-class-name: org.postgresql.Driver
-    username: ${DB_USER:postgres}        # Pulls from system env, defaults to postgres
-    password: ${DB_PASSWORD:postgres}    # Pulls from system env, defaults to postgres
+    username: ${POSTGRES_USER:postgres}        # Pulls from system env, defaults to postgres
+    password: ${POSTGRES_PWD:postgres}    # Pulls from system env, defaults to postgres
     hikari:
       maximum-pool-size: 4
 
@@ -33,7 +61,7 @@ spring:
     # Modern dialect for Spring Boot 3.4.1 (automatically resolves engine specifics)
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
       naming:
         implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
         physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
@@ -80,10 +108,10 @@ spring:
       on-profile: DOCKER
 
   datasource:
-    url: jdbc:postgresql://postgres-db:5432/soa_esps # Internal network host
+    url: jdbc:postgresql://postgres-db:5432/payments_db # Internal network host
     driver-class-name: org.postgresql.Driver
-    username: ${DB_USER}
-    password: ${DB_PASSWORD}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PWD}
     hikari:
       maximum-pool-size: 10 # Expanded pool for production-like load
 

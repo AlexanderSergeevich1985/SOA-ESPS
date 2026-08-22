@@ -18,7 +18,7 @@ import java.util.zip.ZipOutputStream;
 
 public class ArchiverService implements ArchiveServiceI {
     @Autowired
-    private FileService fileService;
+    private FileServiceI fileService;
 
     public boolean archiveOne(@Nonnull final String archiveName, @Nonnull InputStream in) throws IOException {
         final Path path = Paths.get(archiveName);

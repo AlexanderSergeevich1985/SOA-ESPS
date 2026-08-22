@@ -10,7 +10,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.Import;
 
 @SpringBootApplication
-@EnableDiscoveryClient
+//@EnableDiscoveryClient
 @EnableFeignClients(basePackages = "com.soaesps.payments")
 @Import({BaseSecurityConfiguration.class, KafkaConsumerConfig.class, UniversalKafkaListener.class})
 public class PaymentsApplication {

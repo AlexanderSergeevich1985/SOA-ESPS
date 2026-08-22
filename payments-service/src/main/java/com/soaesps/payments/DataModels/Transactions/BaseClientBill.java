@@ -25,8 +25,10 @@ import jakarta.annotation.Nonnull;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
+
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "CLIENT_BILLS")
@@ -35,7 +37,7 @@ public class BaseClientBill extends BaseEntity {
     @Embedded
     ClientBillDesc clientBillDesc;
 
-    @Lob
+    @JdbcTypeCode(SqlTypes.VARBINARY)
     @Column(name = "bill_signature", nullable = false)
     private byte[] billSignature;
 

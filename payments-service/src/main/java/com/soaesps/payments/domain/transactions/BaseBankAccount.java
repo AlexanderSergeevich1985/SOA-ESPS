@@ -22,9 +22,8 @@ public class BaseBankAccount extends BaseEntity {
     @Column(name = "indentation", length = 256, nullable = false)
     private String indentation;
 
-    @Lob
     @JdbcTypeCode(SqlTypes.VARBINARY)
-    @Column(name = "bill_signature", nullable = false)
+    @Column(name = "bill_signature", nullable = false, length = 1024)
     private byte[] billSignature;
 
     public BaseBankAccount() {}

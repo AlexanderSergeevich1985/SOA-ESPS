@@ -18,24 +18,51 @@
  */
 package com.soaesps.payments.DataModels.Transactions;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.soaesps.core.DataModels.BaseEntity;
-
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
+import java.io.Serial;
+
+/**
+ * Persistent entity representing a server-side bill with cryptographic material.
+ *
+ * <p>Inherits ID, versioning and audit fields from {@link BaseEntity}.
+ * The embedded {@link ServerBillDesc} holds keys and balance; this entity
+ * adds the bill signature and a human-readable identifier.
+ *
+ * <p><b>SECURITY:</b> {@code billSignature} is a public cryptographic structure
+ * (e.g. Ed25519 signature) and does NOT require encryption at rest.
+ * Private keys inside {@link ServerBillDesc} MUST be encrypted before persistence
+ * — see {@code CryptoKeyEncryptionService}.
+ */
 @Entity
-@Table(name = "SERVER_BILLS")
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+@Table(name = "SERVER_BILLS", indexes = {
+        // Index on ownerId inside the embedded ServerBillDesc
+        @Index(name = "idx_server_bills_owner_id", columnList = "owner_id"),
+        @Index(name = "idx_server_bills_uuid", columnList = "uuid", unique = true)
+})
 public class BaseServerBill extends BaseEntity {
-    @Embedded
-    ServerBillDesc serverBillDesc;
 
+    @Serial
+    private static final long serialVersionUID = 1L;
+
+    @Embedded
+    private ServerBillDesc serverBillDesc;
+
+    @NotNull
+    @Size(max = 256)
     @Column(name = "indentation", length = 256, nullable = false)
     private String indentation;
 
-    @Lob
-    @Column(name = "bill_signature", nullable = false)
+    @NotNull
+    @Column(name = "bill_signature", nullable = false, length = 1024)
+    @JdbcTypeCode(SqlTypes.VARBINARY)
+    @Basic(fetch = FetchType.LAZY)
     private byte[] billSignature;
 
     public BaseServerBill() {}

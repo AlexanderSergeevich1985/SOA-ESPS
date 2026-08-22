@@ -18,35 +18,45 @@
  */
 package com.soaesps.payments.DataModels.Transactions;
 
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.hibernate.validator.constraints.Length;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
-import jakarta.persistence.Lob;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.UUID;
 
 @Embeddable
 public class ClientBillDesc implements Serializable {
-    @Column(name = "issuer_id")
-    @Length(max = 500)
+    @NotNull
+    @Size(max = 500)
+    @Column(name = "issuer_id", nullable = false, length = 500)
     private String issuerId;
 
-    @Column(name = "uuid", columnDefinition = "BINARY(32)", nullable = false)
+    @NotNull
+    @Column(name = "uuid", nullable = false, length = 16)
+    @JdbcTypeCode(SqlTypes.BINARY)
     private UUID uuid;
 
-    @Lob
+    @NotNull
+    @JdbcTypeCode(SqlTypes.VARBINARY)
     @Column(name = "public_key", nullable = false)
     private byte[] publicKey;
 
-    @Lob
-    @Column(name = "server_public_key", nullable = false)
+    @NotNull
+    @JdbcTypeCode(SqlTypes.VARBINARY)
+    @Column(name = "server_public_key", nullable = false, length = 4096)
     private byte[] serverPublicKey;
 
-    @Column(name = "account_balance", nullable = false)
+    @Column(name = "account_balance", nullable = false, length = 4096)
     private BigDecimal accountBalance;
 
     @Column(name = "shared_secret")
@@ -107,5 +117,25 @@ public class ClientBillDesc implements Serializable {
 
     public void setEncodedSharedSecret(@Nullable String encodedSharedSecret) {
         this.encodedSharedSecret = encodedSharedSecret;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof ClientBillDesc that)) return false;
+        return Objects.equals(uuid, that.uuid)
+                && Objects.equals(issuerId, that.issuerId)
+                && Arrays.equals(publicKey, that.publicKey)
+                && Arrays.equals(serverPublicKey, that.serverPublicKey)
+                && Objects.equals(accountBalance, that.accountBalance)
+                && Objects.equals(encodedSharedSecret, that.encodedSharedSecret);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(uuid, issuerId, accountBalance, encodedSharedSecret);
+        result = 31 * result + Arrays.hashCode(publicKey);
+        result = 31 * result + Arrays.hashCode(serverPublicKey);
+        return result;
     }
 }

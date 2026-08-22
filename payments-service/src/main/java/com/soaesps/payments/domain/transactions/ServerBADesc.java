@@ -1,23 +1,6 @@
-/**The MIT License (MIT)
- Copyright (c) 2018 by AleksanderSergeevich
- Permission is hereby granted, free of charge, to any person obtaining a copy
- of this software and associated documentation files (the "Software"), to deal
- in the Software without restriction, including without limitation the rights
- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- copies of the Software, and to permit persons to whom the Software is
- furnished to do so, subject to the following conditions:
- The above copyright notice and this permission notice shall be included in all
- copies or substantial portions of the Software.
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- SOFTWARE.
- */
 package com.soaesps.payments.domain.transactions;
 
+import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -25,10 +8,12 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
-import jakarta.persistence.Lob;
 import jakarta.validation.constraints.Size;
+import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -36,31 +21,31 @@ import java.util.UUID;
  */
 @Embeddable
 public class ServerBADesc implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
 
-    @Column(name = "uuid", columnDefinition = "BINARY(32)", nullable = false)
+    @NotNull
+    @Column(name = "uuid", nullable = false, length = 16)
+    @JdbcTypeCode(SqlTypes.BINARY)
     private UUID uuid;
 
     @Column(name = "owner_id", nullable = false)
     private Long ownerId;
 
-    @Lob
     @JdbcTypeCode(SqlTypes.VARBINARY)
-    @Column(name = "owner_public_key", nullable = false)
+    @Column(name = "owner_public_key", nullable = false, length = 4096)
     private byte[] ownerPublicKey;
 
-    @Lob
     @JdbcTypeCode(SqlTypes.VARBINARY)
-    @Column(name = "public_key", nullable = false)
+    @Column(name = "public_key", nullable = false, length = 4096)
     private byte[] publicKey;
 
-    @Lob
     @JdbcTypeCode(SqlTypes.VARBINARY)
-    @Column(name = "private_key", nullable = false)
+    @Column(name = "private_key", nullable = false, length = 4096)
     private byte[] privateKey;
 
-    @Lob
     @JdbcTypeCode(SqlTypes.VARBINARY)
-    @Column(name = "cipher_key", nullable = false)
+    @Column(name = "cipher_key", nullable = false, length = 512)
     private byte[] cipherKey;
 
     @Column(name = "account_balance", nullable = false)
@@ -142,5 +127,29 @@ public class ServerBADesc implements Serializable {
 
     public void setSharedSecret(@Nullable String sharedSecret) {
         this.sharedSecret = sharedSecret;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof ServerBADesc that)) return false;
+        return Objects.equals(uuid, that.uuid)
+                && Objects.equals(ownerId, that.ownerId)
+                && Arrays.equals(ownerPublicKey, that.ownerPublicKey)
+                && Arrays.equals(publicKey, that.publicKey)
+                && Arrays.equals(privateKey, that.privateKey)
+                && Arrays.equals(cipherKey, that.cipherKey)
+                && Objects.equals(accountBalance, that.accountBalance)
+                && Objects.equals(sharedSecret, that.sharedSecret);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(uuid, ownerId, accountBalance, sharedSecret);
+        result = 31 * result + Arrays.hashCode(ownerPublicKey);
+        result = 31 * result + Arrays.hashCode(publicKey);
+        result = 31 * result + Arrays.hashCode(privateKey);
+        result = 31 * result + Arrays.hashCode(cipherKey);
+        return result;
     }
 }

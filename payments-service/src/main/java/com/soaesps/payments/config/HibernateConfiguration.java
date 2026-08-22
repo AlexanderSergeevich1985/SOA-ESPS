@@ -4,6 +4,7 @@ import com.soaesps.core.config.BaseHibernateConfiguration;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
@@ -22,6 +23,7 @@ public class HibernateConfiguration extends BaseHibernateConfiguration {
      * Inherits underlying database connection logic and populates vendors properties.
      */
     @Bean
+    @Primary
     public LocalContainerEntityManagerFactoryBean entityManagerFactory(final DataSource restDataSource) {
         final LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
         em.setDataSource(restDataSource);

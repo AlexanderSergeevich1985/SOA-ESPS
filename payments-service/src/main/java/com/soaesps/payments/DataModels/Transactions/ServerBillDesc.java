@@ -18,47 +18,79 @@
  */
 package com.soaesps.payments.DataModels.Transactions;
 
-import org.hibernate.validator.constraints.Length;
-
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
-import jakarta.persistence.Lob;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.UUID;
 
+/**
+ * Embedded descriptor for a server-side bill containing cryptographic material.
+ *
+ * <p><b>SECURITY NOTE:</b> {@code privateKey} and {@code cipherKey} MUST NOT be persisted
+ * in plaintext. The owning entity is responsible for encrypting these fields with a
+ * KMS-managed master key before calling {@code save()} and decrypting them on load.
+ * See {@code CryptoKeyEncryptionService} for the transparent encryption layer.
+ */
 @Embeddable
 public class ServerBillDesc implements Serializable {
-    @Column(name = "uuid", columnDefinition = "BINARY(32)", nullable = false)
+    @Serial
+    private static final long serialVersionUID = 1L;
+
+    @NotNull
+    @Column(name = "uuid", nullable = false, length = 16)
+    @JdbcTypeCode(SqlTypes.BINARY)
     private UUID uuid;
 
-    @Column(name = "owner_id", nullable = false)
-    @Length(max = 500)
+    @NotNull
+    @Size(max = 500)
+    @Column(name = "owner_id", nullable = false, length = 500)
     private String ownerId;
 
-    @Lob
-    @Column(name = "owner_public_key", nullable = false)
+    @NotNull
+    @Column(name = "owner_public_key", nullable = false, length = 4096)
+    @JdbcTypeCode(SqlTypes.VARBINARY)
     private byte[] ownerPublicKey;
 
-    @Lob
-    @Column(name = "public_key", nullable = false)
+    @NotNull
+    @Column(name = "public_key", nullable = false, length = 4096)
+    @JdbcTypeCode(SqlTypes.VARBINARY)
     private byte[] publicKey;
 
-    @Lob
-    @Column(name = "private_key", nullable = false)
+    /**
+     * MUST be encrypted with a KMS-managed master key before persistence.
+     * The repository/service layer applies {@code CryptoKeyEncryptionService} transparently.
+     */
+    @NotNull
+    @Column(name = "private_key_enc", nullable = false, length = 4096)
+    @JdbcTypeCode(SqlTypes.VARBINARY)
     private byte[] privateKey;
 
-    @Lob
-    @Column(name = "cipher_key", nullable = false)
+    /**
+     * Symmetric cipher key used to protect payload data.
+     * Also MUST be encrypted with the master key before persistence.
+     */
+    @NotNull
+    @Column(name = "cipher_key_enc", nullable = false, length = 2048)
+    @JdbcTypeCode(SqlTypes.VARBINARY)
     private byte[] cipherKey;
 
-    @Column(name = "account_balance", nullable = false)
+    @NotNull
+    @Column(name = "account_balance", nullable = false, precision = 19, scale = 4)
     private BigDecimal accountBalance;
 
-    @Column(name = "shared_secret")
-    @Length(max = 500)
+    @Size(max = 500)
+    @Column(name = "shared_secret", length = 500)
     private String sharedSecret;
 
     public ServerBillDesc() {}
@@ -133,5 +165,29 @@ public class ServerBillDesc implements Serializable {
 
     public void setSharedSecret(@Nullable String sharedSecret) {
         this.sharedSecret = sharedSecret;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof ServerBillDesc that)) return false;
+        return Objects.equals(uuid, that.uuid)
+                && Objects.equals(ownerId, that.ownerId)
+                && Arrays.equals(ownerPublicKey, that.ownerPublicKey)
+                && Arrays.equals(publicKey, that.publicKey)
+                && Arrays.equals(privateKey, that.privateKey)
+                && Arrays.equals(cipherKey, that.cipherKey)
+                && Objects.equals(accountBalance, that.accountBalance)
+                && Objects.equals(sharedSecret, that.sharedSecret);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(uuid, ownerId, accountBalance, sharedSecret);
+        result = 31 * result + Arrays.hashCode(ownerPublicKey);
+        result = 31 * result + Arrays.hashCode(publicKey);
+        result = 31 * result + Arrays.hashCode(privateKey);
+        result = 31 * result + Arrays.hashCode(cipherKey);
+        return result;
     }
 }
