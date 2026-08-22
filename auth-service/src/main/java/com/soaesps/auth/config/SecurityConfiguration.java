@@ -43,11 +43,6 @@ public class SecurityConfiguration {
     @Autowired
     private CustomAuthenticationSuccessHandler successHandler;
 
-    /*@Bean("passwordEncoder")
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }*/
-
     @Bean
     public AccessTokenFactory tokenProvider() {
         return AccessTokenFactory.getInstance(tokenRepository, "secret", 10000);
@@ -59,10 +54,11 @@ public class SecurityConfiguration {
      * The primary technical mTLS chain is inherited automatically from BaseAuthorizationServerConfiguration.
      */
     @Bean
-    @Order(2) // Executes immediately after the high-priority technical OAuth2/mTLS filter chain
+    @Order(2) // Выполняется сразу после цепочки OAuth2 сервера авторизации
     public SecurityFilterChain userSecurityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable()) // Replaces old .csrf().disable()
+                .securityMatcher("/login", "/login_security_check", "/logout", "/accounts/**", "/login/otp", "/login/otp/verify")
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize -> authorize
                         // Added /login/otp and verification endpoints to the open list
                         .requestMatchers("/accounts/**", "/login/otp", "/login/otp/verify").permitAll()
@@ -79,7 +75,6 @@ public class SecurityConfiguration {
                         .usernameParameter("username")
                         .passwordParameter("password")
                         .loginProcessingUrl("/login_security_check")
-                        .failureUrl("/login?error")
                         .failureHandler(failureHandler)
                         .successHandler(successHandler)
                         .permitAll()
@@ -96,9 +91,4 @@ public class SecurityConfiguration {
 
         return http.build();
     }
-
-    /*@Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
-        return authenticationConfiguration.getAuthenticationManager();
-    }*/
 }

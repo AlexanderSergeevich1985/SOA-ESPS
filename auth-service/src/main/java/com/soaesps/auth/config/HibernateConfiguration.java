@@ -21,7 +21,7 @@ import javax.sql.DataSource;
 // Unified scanning package mapping for domain entities and modern data models
 @EntityScan(basePackages = {"com.soaesps.auth"})
 // Configures automated Spring Data JPA repository layer mapping orchestration
-@EnableJpaRepositories(basePackages = {"com.soaesps.auth.repository"})
+@EnableJpaRepositories(basePackages = {"com.soaesps.auth.repository", "com.soaesps.core.security.repository"})
 public class HibernateConfiguration extends BaseHibernateConfiguration {
 
     /**

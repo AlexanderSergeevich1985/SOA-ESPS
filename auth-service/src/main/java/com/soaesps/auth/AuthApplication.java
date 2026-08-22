@@ -1,6 +1,5 @@
 package com.soaesps.auth;
 
-import com.soaesps.core.config.BaseAuthorizationServerConfiguration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
@@ -63,7 +62,7 @@ public class AuthApplication {
          */
         private RegisteredClient createMicroserviceClient(String clientName, String clientSecret, TokenSettings tokenSettings) {
             // Fallback placeholder if system environment variable defaults are absent during boot verification
-            String secureSecret = (clientSecret != null && !clientSecret.isEmpty()) ? clientSecret : "temporary-dev-secret";
+            String secureSecret = (clientSecret != null && !clientSecret.isEmpty()) ? clientSecret : "temporary-dev-secret-" + clientName;
 
             return RegisteredClient.withId(UUID.randomUUID().toString())
                     .clientId(clientName)
