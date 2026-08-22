@@ -21,7 +21,7 @@ import java.util.UUID;
 
 @SpringBootApplication
 @EnableDiscoveryClient
-@EnableMethodSecurity // Replaces deprecated @EnableGlobalMethodSecurity
+@EnableMethodSecurity
 public class AuthApplication {
 
     public static void main(String[] args) {
@@ -33,7 +33,7 @@ public class AuthApplication {
 
         // Modern Spring Authorization Server client repository template mapping legacy layout
         @Bean
-        public RegisteredClientRepository registeredClientRepository(Environment env, TokenSettings tokenSettings) {
+        public RegisteredClientRepository inMemoryRegisteredClientRepository(Environment env, TokenSettings tokenSettings) {
             List<RegisteredClient> clients = new ArrayList<>();
 
             // 1. Browser client setup

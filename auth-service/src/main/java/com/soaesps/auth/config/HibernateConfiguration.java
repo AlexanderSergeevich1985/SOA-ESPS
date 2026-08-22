@@ -1,4 +1,4 @@
-package com.soaesps.profile.config;
+package com.soaesps.auth.config;
 
 import com.soaesps.core.config.BaseHibernateConfiguration;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -19,9 +19,9 @@ import javax.sql.DataSource;
 
 @Configuration
 // Unified scanning package mapping for domain entities and modern data models
-@EntityScan(basePackages = {"com.soaesps.profile"})
+@EntityScan(basePackages = {"com.soaesps.auth"})
 // Configures automated Spring Data JPA repository layer mapping orchestration
-@EnableJpaRepositories(basePackages = {"com.soaesps.profile.repository"})
+@EnableJpaRepositories(basePackages = {"com.soaesps.auth.repository"})
 public class HibernateConfiguration extends BaseHibernateConfiguration {
 
     /**
@@ -37,8 +37,10 @@ public class HibernateConfiguration extends BaseHibernateConfiguration {
         // Dynamically scans all nested packages under payments module context boundary
         // Scan all required packages for JPA entities
         em.setPackagesToScan(
+                "com.soaesps.core.DataModels.security",
                 "com.soaesps.core.DataModels.device",
                 "com.soaesps.core.DataModels.user"
+                //"com.soaesps.payments.DataModels.Transactions"
         );
 
         em.setJpaVendorAdapter(new HibernateJpaVendorAdapter());

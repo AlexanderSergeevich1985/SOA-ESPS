@@ -1,30 +1,169 @@
+# ===================================================================
+# GLOBAL APP INITIALIZATION & COMPATIBILITY LAYER
+# ===================================================================
 spring:
+  application:
+    name: auth-service
   profiles:
-    active: DEV#LOCAL
+    active: DEV # Default profile for local boot
+  cloud:
+    compatibility-verifier:
+      # Bypasses the release train version mismatch check between Boot 3.4.1 and Cloud
+      enabled: false
 
-  hibernate:
-    connection:
-      driverClassName: org.postgresql.Driver
-      url: jdbc:postgresql://localhost:5432/soa_esps
-      username: ########
-      password: ########
-      maxPoolSize: 4
+---
+# ===================================================================
+# PROFILE: DEV#LOCAL (Local development - Clean HTTP, No mTLS hassle)
+# ===================================================================
+spring:
+  config:
+    activate:
+      on-profile: DEV
+    import: "optional:configserver:http://${CONFIG_USER_NAME:admin}:${CONFIG_SERVICE_PASSWORD:admin}@localhost:8888"
 
-      dialect: org.hibernate.dialect.PostgreSQLDialect
-      show_sql: false
-      generate-ddl: false
-      ddl-auto: validate
-      naming-strategy: org.hibernate.cfg.EJB3NamingStrategy
-      properties:
-        cache.use_second_level_cache: true
-        cache.use_query_cache: false
-        cache.region.factory_class: org.hibernate.cache.ehcache.SingletonEhCacheRegionFactory
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/auth_db
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PWD:postgres}
+    hikari:
+      maximum-pool-size: 4
+
+  jpa:
+    show-sql: false
+    generate-ddl: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        globally_quoted_identifiers: true
+        cache:
+          use_second_level_cache: true
+          use_query_cache: false
+          region:
+            factory_class: org.hibernate.cache.ehcache.SingletonEhCacheRegionFactory
 
   rabbitmq:
     host: localhost
     port: 5672
-    username: ########
-    password: ########
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
     listener:
       direct:
         consumers-per-queue: 2
+
+server:
+  port: 8000 # Standard local HTTP port for Authorization Server
+  ssl:
+    enabled: false # Plain HTTP execution for comfortable local development
+
+soa:
+  security:
+    jwt:
+      enabled: false # Auth Service generates tokens, doesn't validate them as resource server
+    permit-all:
+      - /oauth2/token
+      - /oauth2/jwks
+      - /actuator/health/**
+    internal:
+      - /api/v1/internal/**
+    mtls:
+      enabled: false # Switched off for local HTTP debugging
+
+---
+# ===================================================================
+# PROFILE: DOCKER / PROD (Secure internal service-to-service mTLS network)
+# ===================================================================
+spring:
+  config:
+    activate:
+      on-profile: DOCKER
+
+  datasource:
+    url: jdbc:postgresql://postgres-db:5432/auth_db
+    driver-class-name: org.postgresql.Driver
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 10
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
+
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: ${RABBITMQ_USER}
+    password: ${RABBITMQ_PASSWORD}
+  ssl:
+    bundle:
+          jks:
+            auth-server-bundle:
+              key:
+                alias: "auth-service"
+              keystore:
+                location: "file:/etc/certs/auth-service.p12" # Unique keystore for Auth Service
+                password: "${CERTS_PASSWORD}"
+                type: "PKCS12"
+              truststore:
+                location: "file:/etc/certs/internal-truststore.p12" # Shared truststore across all services
+                password: "${TRUSTSTORE_PASSWORD}"
+                type: "PKCS12"
+
+server:
+  port: 8000
+  ssl:
+    bundle: "auth-server-bundle" # Binds this specific bundle to the server port
+
+soa:
+  security:
+    jwt:
+      enabled: false
+    permit-all:
+      - /oauth2/token
+      - /oauth2/jwks
+      - /actuator/health/**
+    internal:
+      - /api/v1/internal/**
+    mtls:
+      enabled: true # Enforces X.509 client certificate checks on internal endpoints
+
+---
+# ===================================================================
+# PROFILE: TEST (Isolated Maven engine pipeline context layout)
+# ===================================================================
+spring:
+  config:
+    activate:
+      on-profile: TEST
+  cloud:
+    config:
+      enabled: false
+      import-check.enabled: false
+
+  datasource:
+    url: jdbc:h2:mem:test_db;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+
+server:
+  port: 0
+
+soa:
+  security:
+    jwt:
+      enabled: false
+    permit-all:
+      - "/**" # Completely eliminates security context crashes during data validation tests
+    internal: []
+    mtls:
+      enabled: false

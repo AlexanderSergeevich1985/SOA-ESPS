@@ -213,4 +213,18 @@ public class BaseOAuth2AccessToken extends BaseEntity implements Serializable {
     public String getExtendedInformation() {
         return additionalInformation == null || additionalInformation.isEmpty() ? "" : additionalInformation.get("extended.info").toString();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        BaseOAuth2AccessToken that = (BaseOAuth2AccessToken) o;
+        return Objects.equals(value, that.value) && Objects.equals(sessionUuid, that.sessionUuid);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), value, sessionUuid);
+    }
 }

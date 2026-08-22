@@ -10,22 +10,18 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.core.annotation.Order;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity // Replaces deprecated @EnableGlobalMethodSecurity(prePostEnabled = true)
+@EnableMethodSecurity
 @ComponentScan({"com.soaesps.auth", "com.soaesps.core.security"})
 @Import(com.soaesps.core.config.BaseAuthorizationServerConfiguration.class)
 public class SecurityConfiguration {
@@ -47,10 +43,10 @@ public class SecurityConfiguration {
     @Autowired
     private CustomAuthenticationSuccessHandler successHandler;
 
-    @Bean("passwordEncoder")
+    /*@Bean("passwordEncoder")
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
-    }
+    }*/
 
     @Bean
     public AccessTokenFactory tokenProvider() {
@@ -101,11 +97,8 @@ public class SecurityConfiguration {
         return http.build();
     }
 
-    /**
-     * Replaces the old programmatic AuthenticationManagerBuilder configure method with a direct Bean declaration.
-     */
-    @Bean
+    /*@Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
-    }
+    }*/
 }

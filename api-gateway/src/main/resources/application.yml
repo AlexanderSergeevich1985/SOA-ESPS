@@ -7,6 +7,18 @@ spring:
   profiles:
     active: DEV
 
+  data:
+    redis:
+          host: ${REDIS_HOST:localhost}
+          port: ${REDIS_PORT:6379}
+          password: ${REDIS_PASSWORD:}
+          timeout: 2s
+          lettuce:
+            pool:
+              max-active: 16
+              max-idle: 8
+              min-idle: 2
+
 ---
 # ===================================================================
 # CONFIGURATION FOR PROFILE: DEV (Development with Cloud Infrastructure)
@@ -48,11 +60,27 @@ spring:
           uri: lb:ws://chat-service
           predicates:
             - Path=/chat-ws/**
+  security:
+    oauth2:
+          client:
+            registration:
+              gateway-client:
+                provider: dummy-provider
+                client-id: gateway
+                client-secret: secret
+                authorization-grant-type: client_credentials
+                #redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+                scope: openid,profile
+            provider:
+              dummy-provider:
+                issuer-uri: http://localhost:8080/oauth2/token # Any dummy URL just to trigger initialization
 
 eureka:
   client:
-    service-url:
-      defaultZone: http://eureka:8761/eureka/
+    #service-url:
+      #defaultZone: http://eureka:8761/eureka/
+    register-with-eureka: false
+    fetch-registry: false
 
 ---
 # ===================================================================
