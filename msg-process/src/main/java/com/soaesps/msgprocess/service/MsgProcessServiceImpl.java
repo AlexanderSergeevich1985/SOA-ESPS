@@ -58,7 +58,7 @@ public class MsgProcessServiceImpl implements MsgProcessService {
         smsgt.convertAndSend(topicName, msg);
     }
 
-    @KafkaListener(topics = "${spring.kafka.topic.result}", groupId = "${spring.kafka.group-id}")
+    @KafkaListener(topics = "${spring.kafka.topic.result:res_topic}", groupId = "${spring.kafka.consumer.group-id}")
     public void consume(@Payload String message) {
         try {
             MsgResult result = objectMapper.readValue(message, MsgResult.class);

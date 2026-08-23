@@ -1,6 +1,6 @@
 package com.soaesps.profile;
 
-import com.soaesps.core.config.KafkaConsumerConfig;
+import com.soaesps.core.config.BaseKafkaConsumerConfig;
 import com.soaesps.core.integration.listener.UniversalKafkaListener;
 import com.soaesps.core.security.config.BaseSecurityConfiguration;
 import org.springframework.boot.SpringApplication;
@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Import;
 @EnableDiscoveryClient
 @EnableConfigurationProperties
 @EnableFeignClients(basePackages = "com.soaesps.profile")
-@Import({BaseSecurityConfiguration.class, KafkaConsumerConfig.class, UniversalKafkaListener.class})
+@Import({BaseSecurityConfiguration.class, BaseKafkaConsumerConfig.class, UniversalKafkaListener.class})
 public class ProfileApplication {
     public static void main(final String[] args) {
         SpringApplication.run(ProfileApplication.class, args);

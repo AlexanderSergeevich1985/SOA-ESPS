@@ -1,43 +1,274 @@
-app:
-  triton:
-    grpc-host: ${TRITON_HOST:triton-server}
-    grpc-port: ${TRITON_GRPC_PORT:8001}   # gRPC порт Triton (HTTP был 8000)
-    model-name: ${TRITON_MODEL:fraud-detector}
-    input-name: INPUT__0
-    features: 12
-    timeout-ms: 5000
+# =============================================================================
+# GLOBAL APP INITIALIZATION & DEFAULT CONFIGURATION
+# =============================================================================
+server:
+  port: 8080
+  # Graceful shutdown: in-flight frames finish processing before the pod terminates
+  shutdown: graceful
 
 spring:
   application:
     name: msg-process
+  profiles:
+    active: DEV
 
-  # OAuth2 configuration for internal microservice communication
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration
+
+  # -------------------------------------------------------------------------
+  # Spring Cloud Stream: functional reactive pipeline over Kafka
+  # -------------------------------------------------------------------------
+  cloud:
+    stream:
+      kafka:
+        binder:
+          brokers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+          # Kafka consumer properties forwarded directly to the consumer client.
+          # Keys in brackets are required because of the dot in the property name.
+          configuration:
+            "[max.poll.records]": 500
+            "[fetch.min.bytes]": 65536
+            "[fetch.max.wait.ms]": 100
+            "[max.partition.fetch.bytes]": 4194304
+            "[session.timeout.ms]": 30000
+          # Kafka producer properties forwarded to the producer client
+          producer-properties:
+            linger.ms: 5
+            batch.size: 1048576
+            compression.type: lz4
+            buffer.memory: 67108864
+
+      # Functional binding: the Java Function bean that drives the whole pipeline
+      function:
+        definition: processDataFrame
+
+      bindings:
+        # ----- INBOUND: raw frames from upstream -----
+        processDataFrame-in-0:
+          destination: ${APP_INPUT_TOPIC:inbound}
+          group: ${APP_CONSUMER_GROUP:msgresult}
+          # Raw byte[] frames — must NOT be application/json or the binder will
+          # try to parse each frame as JSON and fail with MessageConversionException
+          content-type: application/octet-stream
+          consumer:
+            # Valid values: record, batch, time, count, manual, manual_immediate
+            ack-mode: manual
+            # One polling thread per partition; must be <= topic partition count
+            concurrency: 8
+            # No framework-level retry — the Function itself handles transient errors
+            max-attempts: 1
+            # Built-in DLQ: permanently failed frames are routed to this topic
+            enable-dlq: true
+            dlq-name: ${APP_DLQ_TOPIC:frames-dlq}
+
+        # ----- OUTBOUND: inference results to downstream -----
+        processDataFrame-out-0:
+          destination: ${APP_OUTPUT_TOPIC:outbound}
+          content-type: application/json
+          producer:
+            partition-count: 8
+
+  # -------------------------------------------------------------------------
+  # Jackson tuning for outbound JSON serialization
+  # -------------------------------------------------------------------------
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    default-property-inclusion: non_null
+
+# -----------------------------------------------------------------------------
+# Actuator / observability
+# -----------------------------------------------------------------------------
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,bindings
+  endpoint:
+    health:
+      show-details: when_authorized
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# =============================================================================
+# Application-specific configuration
+# =============================================================================
+app:
+  # Micro-batch parameters (used only if the Function bean implements batching)
+  pipeline:
+    batch-size: 256
+    batch-window-ms: 20
+    inference-concurrency: 32
+
+  # Triton Inference Server (gRPC protocol)
+  triton:
+    grpc-host: ${TRITON_HOST:triton-server}
+    # gRPC port (8001), NOT the HTTP API port (8000)
+    grpc-port: ${TRITON_GRPC_PORT:8001}
+    model-name: ${TRITON_MODEL:fraud-detector}
+    input-name: ${TRITON_INPUT_NAME:INPUT__0}
+    timeout-ms: 5000
+    features: ${TRITON_FEATURES:12}
+    # z-score normalization (comma-separated, empty = disabled)
+    mean: ${TRITON_MEAN:}
+    std: ${TRITON_STD:}
+
+# -----------------------------------------------------------------------------
+# Logging
+# -----------------------------------------------------------------------------
+logging:
+  level:
+    root: INFO
+    com.soaesps.msgprocess: INFO
+    # Kafka client logs are extremely noisy at INFO under high throughput
+    org.apache.kafka: WARN
+    org.springframework.kafka: WARN
+    org.springframework.cloud.stream: INFO
+    io.grpc: INFO
+
+---
+# =============================================================================
+# PROFILE: DEV (Local infrastructure overrides)
+# =============================================================================
+spring:
+  config:
+    activate:
+      on-profile: DEV
+    # Optional Config Server import: startup proceeds even if Config Server is down.
+    # Credentials are provided via spring.cloud.config.* below (NOT as query params —
+    # Spring Cloud Config does not parse username/password from the import URI).
+    import: "optional:configserver:${CONFIG_SERVER_URI:http://localhost:8888}"
+
+  kafka: # URL of the running Kafka broker(s)
+    bootstrap-servers: localhost:9092
+    producer:
+      # Serializer class for message keys
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      # Serializer class for message values
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      # Number of acknowledgments the producer requires the leader to have received (all, 1, or 0)
+      acks: all
+      # Number of retries if the request fails
+      retries: 3
+    consumer:
+      # Unique string that identifies the consumer group this consumer belongs to
+      group-id: my-awesome-group
+      iot-group-id: ${IOT_GROUP_ID:iot-group-id}
+      # What to do when there is no initial offset in Kafka (earliest or latest)
+      auto-offset-reset: earliest
+      # Deserializer class for message keys
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      # Deserializer class for message values
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+  cloud:
+    config:
+      # Do not block startup if the local Config Server is offline
+      fail-fast: false
+      username: ${CONFIG_USER_NAME:configUser}
+      password: ${CONFIG_SERVICE_PASSWORD:changeit}
+    stream:
+      kafka:
+        binder:
+          brokers: localhost:9092
+
   security:
     oauth2:
       client:
         registration:
           msg-process-client:
-            client-id: your-client-id
-            client-secret: your-client-secret
+            client-id: ${OAUTH_CLIENT_ID:msg-process}
+            client-secret: ${OAUTH_CLIENT_SECRET:changeit}
             authorization-grant-type: client_credentials
         provider:
           msg-process-client:
-            token-uri: http://your-auth-server/oauth2/token
+            token-uri: ${OAUTH_TOKEN_URI:http://localhost:8000/oauth2/token}
 
-  # Config Server properties
+app:
+  triton:
+    grpc-host: localhost
+    tls:
+      # Local development: skip mTLS to avoid the need to generate certificates
+      enabled: false
+
+---
+# =============================================================================
+# PROFILE: DOCKER (Containerized cluster setup)
+# =============================================================================
+spring:
+  config:
+    activate:
+      on-profile: DOCKER
+    # Required Config Server import: the pod refuses to start without remote config
+    import: "configserver:${CONFIG_SERVER_URI:http://config:8888}"
+
   cloud:
     config:
-      uri: http://config:8888
       fail-fast: true
-      password: ${CONFIG_SERVICE_PASSWORD}
-      username: ${CONFIG_USER_NAME}
+      username: ${CONFIG_USER_NAME:configUser}
+      password: ${CONFIG_SERVICE_PASSWORD:changeit}
+      retry:
+        initial-interval: 1000
+        max-interval: 5000
+        max-attempts: 6
 
-    # Reactive Spring Cloud Stream Configuration
-    stream:
-      function:
-        definition: processDataFrame # Defines the Java Functional Bean name
-      bindings:
-        processDataFrame-in-0: # Standard naming pattern: [beanName]-in-[index]
-          destination: inbound
-          group: msgresult
-          content-type: application/json
+  security:
+    oauth2:
+      client:
+        registration:
+          msg-process-client:
+            client-id: ${OAUTH_CLIENT_ID:msg-process}
+            client-secret: ${OAUTH_CLIENT_SECRET:changeit}
+            authorization-grant-type: client_credentials
+        provider:
+          msg-process-client:
+            token-uri: ${OAUTH_TOKEN_URI:http://auth-service:8000/oauth2/token}
+
+app:
+  triton:
+    tls:
+      enabled: ${TRITON_TLS_ENABLED:true}
+      keystore:
+        location: ${TRITON_KEYSTORE:classpath:certs/msg-process.p12}
+        password: ${TRITON_KEYSTORE_PASSWORD:changeit}
+        type: PKCS12
+      truststore:
+        location: ${TRITON_TRUSTSTORE:classpath:certs/msg-process-truststore.p12}
+        password: ${TRITON_TRUSTSTORE_PASSWORD:changeit}
+        type: PKCS12
+
+---
+# =============================================================================
+# PROFILE: TEST (Isolated fast pipeline for Maven test execution)
+# =============================================================================
+spring:
+  config:
+    activate:
+      on-profile: TEST
+    # Disable all remote config sources during tests
+    import: "optional:file:./src/test/resources/"
+
+  cloud:
+    config:
+      enabled: false
+
+  # Completely disable Kafka and SCS bindings so the test context boots without
+  # a broker. Tests inject their own fake beans where needed.
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+      - org.springframework.cloud.stream.config.BindingServiceConfiguration
+
+server:
+  # Random free port — avoids conflicts when running tests in parallel
+  port: 0
+
+app:
+  triton:
+    tls:
+      enabled: false

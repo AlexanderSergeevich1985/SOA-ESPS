@@ -1,7 +1,7 @@
 package com.soaesps.notifications.config;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.soaesps.core.config.KafkaConsumerConfig;
+import com.soaesps.core.config.BaseKafkaConsumerConfig;
 import com.soaesps.core.Utils.CryptoHelper;
 import com.soaesps.core.component.aggregator.CorrelationStrategyI;
 import com.soaesps.core.component.aggregator.ReleaseStrategyI;
@@ -32,7 +32,7 @@ import java.util.Map;
 @ComponentScan("com.soaesps.notifications.integration")
 @EnableIntegration
 @IntegrationComponentScan("com.soaesps.notifications.integration")
-@Import(KafkaConsumerConfig.class) // Imports your custom Kafka consumer beans
+@Import(BaseKafkaConsumerConfig.class) // Imports your custom Kafka consumer beans
 public class IntegrationConfiguration {
 
     @Value("${spring.kafka.bootstrap-servers}")

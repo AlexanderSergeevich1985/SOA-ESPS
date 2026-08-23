@@ -17,6 +17,7 @@ import reactor.core.publisher.MonoSink;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -31,16 +32,19 @@ public class TritonGrpcClient implements DisposableBean {
     private final ManagedChannel channel;
     private final GRPCInferenceServiceGrpc.GRPCInferenceServiceStub asyncStub;
     private final long timeoutMs;
+    private String inputName;
 
     public TritonGrpcClient(
             @Value("${app.triton.grpc-host:triton-server}") String host,
             @Value("${app.triton.grpc-port:8001}") int port,
-            @Value("${app.triton.timeout-ms:5000}") long timeoutMs) {
+            @Value("${app.triton.timeout-ms:5000}") long timeoutMs,
+            @Value("${app.triton.input-name:RAW_FEATURES}") String inputName) {
         this.timeoutMs = timeoutMs;
         this.channel = ManagedChannelBuilder.forAddress(host, port)
                 .usePlaintext()   // for TLS: .useTransportSecurity() + SslContext
                 .build();
         this.asyncStub = GRPCInferenceServiceGrpc.newStub(channel);
+        this.inputName = inputName;
     }
 
     /** Runs inference; completes when Triton responds or the deadline hits. */
@@ -126,5 +130,42 @@ public class TritonGrpcClient implements DisposableBean {
     @Override
     public void destroy() {
         channel.shutdown();
+    }
+
+    /** Runs inference on raw JSON features; Triton ensemble does the preprocessing. */
+    public Mono<InferenceResult> infer(String modelName, String jsonFeatures) {
+        GrpcService.ModelInferRequest request = buildRequest(modelName, jsonFeatures);
+        return Mono.<GrpcService.ModelInferResponse>create(sink ->
+                        asyncStub.withDeadlineAfter(timeoutMs, TimeUnit.MILLISECONDS)
+                                .modelInfer(request, unaryObserver(sink)))
+                .map(this::decodeResponse);
+    }
+
+    /**
+     * Builds a BYTES tensor with the JSON payload.
+     *
+     * <p>Triton wire format for BYTES tensors: each element is
+     * 4-byte little-endian length prefix + raw bytes.
+     */
+    private GrpcService.ModelInferRequest buildRequest(String modelName, String jsonFeatures) {
+        byte[] json = jsonFeatures.getBytes(StandardCharsets.UTF_8);
+
+        ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES + json.length)
+                .order(ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(json.length);   // length prefix (LE)
+        buffer.put(json);             // payload
+
+        GrpcService.ModelInferRequest.InferInputTensor tensor = GrpcService.ModelInferRequest.InferInputTensor.newBuilder()
+                .setName(inputName)   // MUST match the ensemble model input name in config.pbtxt
+                .setDatatype("BYTES")
+                .addShape(1)
+                .build();
+
+        return GrpcService.ModelInferRequest.newBuilder()
+                .setModelName(modelName)
+                .setId(UUID.randomUUID().toString())
+                .addInputs(tensor)
+                .addRawInputContents(ByteString.copyFrom(buffer.array()))
+                .build();
     }
 }

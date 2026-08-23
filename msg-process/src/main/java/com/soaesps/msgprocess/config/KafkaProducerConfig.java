@@ -1,11 +1,13 @@
 package com.soaesps.msgprocess.config;
 
+import com.soaesps.core.integration.listener.UniversalKafkaListener;
 import com.soaesps.msgprocess.DataModels.message.MsgIOTDevice;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
@@ -15,6 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Configuration
+@Import({UniversalKafkaListener.class})
 public class KafkaProducerConfig {
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServerAddress;
@@ -31,7 +34,7 @@ public class KafkaProducerConfig {
     }
 
     @Bean
-    public KafkaTemplate<String, MsgIOTDevice> kafkaTemplate() {
+    public KafkaTemplate<String, MsgIOTDevice> iotKafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());
     }
 }

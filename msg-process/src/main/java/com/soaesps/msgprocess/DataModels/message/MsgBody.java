@@ -46,7 +46,7 @@ public class MsgBody implements Serializable {
     public MsgBodyField getEnd_field() {
         return this.end_field;
     }
-    protected class MsgBodyField<T> implements Serializable {
+    public class MsgBodyField<T> implements Serializable {
         private String name;
         private String type;
         private T value;

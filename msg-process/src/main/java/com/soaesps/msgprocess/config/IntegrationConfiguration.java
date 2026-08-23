@@ -1,6 +1,8 @@
 package com.soaesps.msgprocess.config;
 
+import com.soaesps.msgprocess.DataModels.message.MsgIOTDevice;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -44,7 +46,6 @@ import java.util.Map;
  */
 @Configuration
 @EnableIntegration
-@Import(KafkaConsumerConfig.class)
 public class IntegrationConfiguration {
 
     private static final String INPUT_TOPIC_NAME = "raw-frames";
@@ -111,15 +112,15 @@ public class IntegrationConfiguration {
      * - AckMode.RECORD: offset committed after each successful handler invocation
      */
     @Bean
-    public KafkaMessageDrivenChannelAdapter<String, byte[]> kafkaInboundAdapter(
-            ConcurrentKafkaListenerContainerFactory<String, byte[]> factory) {
+    public KafkaMessageDrivenChannelAdapter<String, MsgIOTDevice> kafkaInboundAdapter(@Qualifier("iotKafkaListenerContainerFactory")
+            ConcurrentKafkaListenerContainerFactory<String, MsgIOTDevice> factory) {
 
         factory.setConcurrency(listenerConcurrency);
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.RECORD);
 
         var container = factory.createContainer(INPUT_TOPIC_NAME);
 
-        KafkaMessageDrivenChannelAdapter<String, byte[]> adapter =
+        KafkaMessageDrivenChannelAdapter<String, MsgIOTDevice> adapter =
                 new KafkaMessageDrivenChannelAdapter<>(container,
                         KafkaMessageDrivenChannelAdapter.ListenerMode.record);
 
