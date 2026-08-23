@@ -1,4 +1,17 @@
+app:
+  triton:
+    grpc-host: ${TRITON_HOST:triton-server}
+    grpc-port: ${TRITON_GRPC_PORT:8001}   # gRPC порт Triton (HTTP был 8000)
+    model-name: ${TRITON_MODEL:fraud-detector}
+    input-name: INPUT__0
+    features: 12
+    timeout-ms: 5000
+
 spring:
+  application:
+    name: msg-process
+
+  # OAuth2 configuration for internal microservice communication
   security:
     oauth2:
       client:
@@ -10,33 +23,21 @@ spring:
         provider:
           msg-process-client:
             token-uri: http://your-auth-server/oauth2/token
-  application:
-    name: msg-process
+
+  # Config Server properties
   cloud:
-    stream:
-      default-binder: local-kafka
-      bindings:
-        inbound:
-          binder: local-kafka
-          destination: inbound
-          contentType: application/json
-        binders:
-          local-kafka:
-            type: kafka
-            environment:
-              spring:
-                cloud:
-                  stream:
-                    kafka:
-                      binder:
-                        brokers: localhost:9092
     config:
       uri: http://config:8888
       fail-fast: true
       password: ${CONFIG_SERVICE_PASSWORD}
       username: ${CONFIG_USER_NAME}
-  kafka:
-    bootstrap-servers: localhost:9092
-    topic:
-      result: msg-process-result
-    group-id: msgresult
+
+    # Reactive Spring Cloud Stream Configuration
+    stream:
+      function:
+        definition: processDataFrame # Defines the Java Functional Bean name
+      bindings:
+        processDataFrame-in-0: # Standard naming pattern: [beanName]-in-[index]
+          destination: inbound
+          group: msgresult
+          content-type: application/json

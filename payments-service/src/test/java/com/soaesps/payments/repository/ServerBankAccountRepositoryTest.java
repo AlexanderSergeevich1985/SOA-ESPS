@@ -56,14 +56,12 @@ class ServerBankAccountRepositoryTest {
         account.setIndentation("test");
         account.setCreationTime(ZonedDateTime.now());
 
-        // FIXED: BaseBankAccount requires billSignature (nullable = false)
         account.setBillSignature(new byte[]{1, 2, 3});
 
         ServerBADesc desc = new ServerBADesc();
         desc.setUuid(UUID.randomUUID());
         desc.setOwnerId(1L);
 
-        // FIXED: ServerBADesc requires several non-null fields based on previous class definition.
         // Without these, Hibernate will throw PropertyValueException on flush.
         desc.setAccountBalance(BigDecimal.ZERO);
         desc.setOwnerPublicKey(new byte[]{1});

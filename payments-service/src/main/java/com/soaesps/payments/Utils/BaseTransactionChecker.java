@@ -33,15 +33,12 @@ import java.util.Arrays;
  * Utility class for cryptographic verification and generation of transaction/check entities.
  */
 public class BaseTransactionChecker {
-
-    // FIXED: Changed to public static final and uppercase to follow Java constant conventions.
     public static final String ISSUER_ID = "Internet Banking Open Source Organization";
 
     /**
      * Signs a check descriptor using the payer's private key and encrypts it for the payee.
      */
     public static byte[] signCheck(@Nonnull final CheckDesc checkDesc, @Nonnull final PrivateKey privateKey) throws Exception {
-        // FIXED: Explicitly defined transformation. "RSA" alone is ambiguous and may fail or use insecure defaults in modern JCE.
         Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
         cipher.init(Cipher.ENCRYPT_MODE, CryptoHelper.bytesToPublicKey(checkDesc.getPayeePublicKey()));
 

@@ -15,8 +15,6 @@ import java.util.Locale;
 
 /**
  * Thymeleaf configuration for rendering HTML notification templates.
- * FIXED: Spring Boot 3 requires Thymeleaf 3.1+, which lives in org.thymeleaf.spring6.*;
- * the org.thymeleaf.spring5.* packages no longer exist.
  */
 @Configuration
 public class ThymeleafConfiguration {

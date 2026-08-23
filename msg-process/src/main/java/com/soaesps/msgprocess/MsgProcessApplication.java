@@ -22,9 +22,9 @@ import org.springframework.security.web.SecurityFilterChain;
  */
 @SpringBootApplication
 @EnableDiscoveryClient
-@EnableFeignClients(basePackages = "com.soaesps.msgprocess") // FIXED: Modern OpenFeign annotation
+@EnableFeignClients(basePackages = "com.soaesps.msgprocess")
 @EnableWebSecurity
-@EnableMethodSecurity // FIXED: Replaces deprecated @EnableGlobalMethodSecurity
+@EnableMethodSecurity
 public class MsgProcessApplication {
 
     public static void main(String[] args) {
@@ -48,7 +48,6 @@ public class MsgProcessApplication {
 
                 // Authorization rules
                 .authorizeHttpRequests(authorize -> authorize
-                        // FIXED: .antMatchers() replaced with .requestMatchers()
                         .requestMatchers("/apps/**").permitAll()
                         .requestMatchers("/actuator/health/**").permitAll()
                         .anyRequest().authenticated()

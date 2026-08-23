@@ -41,7 +41,6 @@ public class QuartzConfig {
 
         Properties properties = new Properties();
         properties.setProperty("org.quartz.scheduler.instanceName", "soa-esps-scheduler");
-        // FIXED: 'AUTO' is mandatory for clustering; a hardcoded id breaks multi-node deployments
         properties.setProperty("org.quartz.scheduler.instanceId", "AUTO");
         // Cluster mode: nodes coordinate via the shared QRTZ_* tables
         properties.setProperty("org.quartz.jobStore.isClustered", "true");
