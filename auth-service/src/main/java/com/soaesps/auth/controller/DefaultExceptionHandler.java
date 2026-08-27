@@ -1,6 +1,9 @@
 package com.soaesps.auth.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -31,5 +34,10 @@ public class DefaultExceptionHandler {
         if(logger.isLoggable(Level.INFO)) {
             logger.log(Level.INFO, "Exception occurred: ", ex);
         }
+    }
+
+    @ExceptionHandler({AuthorizationDeniedException.class, org.springframework.security.access.AccessDeniedException.class})
+    public ResponseEntity<Object> handleAccessDeniedException(Exception ex, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Access Denied: You do not have permissions");
     }
 }

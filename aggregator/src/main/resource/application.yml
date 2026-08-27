@@ -17,6 +17,14 @@ spring:
         output:
           destination: queue.pretty.log.messages
           binder: local_rabbit
+        metricsIn-in-0:
+          destination: ml-metrics
+                    group: metrics-writer
+                    consumer:
+                      batch-mode: true     # records arrive as List<MlMetricEvent>
+        actorMetricsIn-in-0:
+          destination: ml-metrics
+                    group: device-actors      # separate group: both consumers see every event
       binders:
         local_rabbit:
           type: rabbit
@@ -34,3 +42,77 @@ management:
   health:
     binders:
        enabled: true
+
+services:
+  temporal-db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: temporal
+      POSTGRES_PASSWORD: temporal
+      POSTGRES_DB: temporal
+    ports:
+      - "5432:5432"
+
+  temporal:
+    image: temporalio/auto-setup:1.25
+    depends_on:
+      - temporal-db
+    environment:
+      DB: postgresql
+      DB_PORT: 5432
+      POSTGRES_USER: temporal
+      POSTGRES_PWD: temporal
+      POSTGRES_SEEDS: temporal-db
+    ports:
+      - "7233:7233"
+
+  temporal-ui:
+    image: temporalio/ui:2.30.0
+    depends_on:
+      - temporal
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+    ports:
+      - "8233:8080"
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+        environment:
+          POSTGRES_DB: soaesps
+          POSTGRES_USER: soaesps
+          POSTGRES_PASSWORD: changeit
+        ports: ["5432:5432"]
+        volumes:
+          - tsdb-data:/var/lib/postgresql/data
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+        ports: ["9092:9092"]
+        environment:
+          KAFKA_NODE_ID: 1
+          KAFKA_PROCESS_ROLES: broker,controller
+          KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:29093
+          KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:29093
+          KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+          KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+          KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+          KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+          CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+
+pekko:
+  config: |
+    pekko {
+      actor {
+        serialization-bindings {
+          "com.soaesps.aggregator.actor.CborSerializable" = jackson-cbor
+        }
+      }
+      cluster {
+        sharding {
+          passivate-idle-entity.after = 10m
+          remember-entities = off
+        }
+      }
+    }
+
+
+volumes:
+  tsdb-data:

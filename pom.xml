@@ -125,6 +125,7 @@
         <module>notes-service</module>
         <module>scheduler-service</module>
         <module>api-gateway</module>
+        <!--module>aggregator</module-->
     </modules>
 
 </project>
