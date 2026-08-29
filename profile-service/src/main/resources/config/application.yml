@@ -194,9 +194,8 @@ spring:
     show-sql: false
 
   flyway:
-    enabled: false  # ← ДОБАВИТЬ: отключаем миграции в тестах
+    enabled: false
 
-# ← ДОБАВИТЬ: отключаем Eureka client
 eureka:
   client:
     enabled: false

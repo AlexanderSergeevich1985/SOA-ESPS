@@ -29,6 +29,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 /**
  * Service implementation for processing payments, checks, and bill generation.
  */
@@ -45,8 +47,8 @@ public class PaymentsServiceImpl implements PaymentsService {
     @Override
     @Transactional
     public BaseClientBill transferMoney(final BaseTransaction transaction) {
-        BaseServerBill payerBill = this.repository.findById(transaction.getTransactionDescriptor().getPayerId()).orElse(null);
-        BaseServerBill payeeBill = this.repository.findById(transaction.getTransactionDescriptor().getPayeeId()).orElse(null);
+        BaseServerBill payerBill = this.repository.findByServerBillDesc_Uuid(UUID.fromString(transaction.getTransactionDescriptor().getPayerId())).orElse(null);
+        BaseServerBill payeeBill = this.repository.findByServerBillDesc_Uuid(UUID.fromString(transaction.getTransactionDescriptor().getPayeeId())).orElse(null);
 
         if (payerBill == null || payeeBill == null) {
             logger.warn("Transfer failed: Payer or Payee bill not found for transaction");
@@ -67,8 +69,8 @@ public class PaymentsServiceImpl implements PaymentsService {
     }
 
     public BaseClientBill cashCheck(final BaseCheck check) {
-        BaseServerBill payerBill = this.repository.findById(check.getCheckDesc().getPayerId()).orElse(null);
-        BaseServerBill payeeBill = this.repository.findById(check.getCheckDesc().getPayeeId()).orElse(null);
+        BaseServerBill payerBill = this.repository.findByServerBillDesc_Uuid(UUID.fromString(check.getCheckDesc().getPayerId())).orElse(null);
+        BaseServerBill payeeBill = this.repository.findByServerBillDesc_Uuid(UUID.fromString(check.getCheckDesc().getPayeeId())).orElse(null);
 
         if (payerBill == null || payeeBill == null) {
             logger.warn("Check cashing failed: Payer or Payee bill not found");
@@ -90,7 +92,7 @@ public class PaymentsServiceImpl implements PaymentsService {
 
     @Override
     public BaseClientBill refreshBill(String billId) {
-        BaseServerBill clientBill = this.repository.findById(billId).orElse(null);
+        BaseServerBill clientBill = this.repository.findByServerBillDesc_Uuid(UUID.fromString(billId)).orElse(null);
         if (clientBill == null) {
             logger.warn("Bill refresh failed: Bill with id {} not found", billId);
             return null;

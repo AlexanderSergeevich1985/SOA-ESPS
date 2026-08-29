@@ -162,7 +162,15 @@ spring:
   cloud:
     config:
       enabled: false
-      import-check.enabled: false
+      import-check:
+        enabled: false
+    discovery:
+      enabled: false
+
+  # Drops Kafka auto-configurations to prevent connection attempts during testing phases
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
 
   # Switches database connection to a lightning-fast, zero-setup in-memory H2 database
   datasource:
@@ -175,6 +183,16 @@ spring:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: create-drop # Dynamically builds schemas per test context session
+    show-sql: false
+
+  flyway:
+    enabled: false
+
+eureka:
+  client:
+    enabled: false
+  instance:
+    prefer-ip-address: false
 
 server:
   port: 0

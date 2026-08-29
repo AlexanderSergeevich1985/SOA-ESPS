@@ -3,27 +3,16 @@ spring:
        active: DEV#TEST
 
    datasource:
-       url: jdbc:postgresql://localhost:5432/soa_esps
-       driver-class-name: org.postgresql.Driver
-       username: #########
-       password: #########
-       hikari:
-         maximum-pool-size: 4
+     url: jdbc:h2:mem:test_db;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+     driver-class-name: org.h2.Driver
+     username: sa
+     password: ""
 
    jpa:
-      database-platform: org.hibernate.dialect.PostgreSQL9Dialect
-      hibernate:
-          ddl-auto: validate
-          naming:
-            implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
-            physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
-      show_sql: false
-      generate-ddl: false
-      ddl-auto: validate
-      properties:
-         cache.use_second_level_cache: true
-         cache.use_query_cache: false
-         cache.region.factory_class: org.hibernate.cache.ehcache.SingletonEhCacheRegionFactory
+     database-platform: org.hibernate.dialect.H2Dialect
+     hibernate:
+       ddl-auto: create-drop
+     show-sql: false
 
 soaesps:
     config-server:

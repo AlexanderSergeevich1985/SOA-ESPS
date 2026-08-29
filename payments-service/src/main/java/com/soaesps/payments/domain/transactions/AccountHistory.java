@@ -1,9 +1,6 @@
 package com.soaesps.payments.domain.transactions;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "account_history")
@@ -11,6 +8,11 @@ public class AccountHistory {
     @Id
     @Column(name = "account_id", nullable = false)
     private Long accountId;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @MapsId
+    @JoinColumn(name = "account_id")
+    private BankAccount bankAccount;
 
     @Column(name = "archive_path", length = 256)
     private String archivePath;
@@ -26,6 +28,14 @@ public class AccountHistory {
 
     public void setAccountId(final Long accountId) {
         this.accountId = accountId;
+    }
+
+    public BankAccount getBankAccount() {
+        return bankAccount;
+    }
+
+    public void setBankAccount(BankAccount bankAccount) {
+        this.bankAccount = bankAccount;
     }
 
     public String getArchivePath() {
