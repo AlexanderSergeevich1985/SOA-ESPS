@@ -170,7 +170,7 @@
                 <version>3.5.2</version> <!-- Используйте актуальную версию -->
                 <configuration>
                     <argLine>
-                        -javaagent:${settings.localRepository}/net/bytebuddy/byte-buddy-agent/1.15.11/byte-buddy-agent-1.15.11.jar
+                        <argLine>-XX:+EnableDynamicAgentLoading</argLine>
                     </argLine>
                 </configuration>
             </plugin>
