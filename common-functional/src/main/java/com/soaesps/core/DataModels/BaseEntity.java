@@ -38,6 +38,25 @@ public abstract class BaseEntity {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd@HH:mm:ss.SSSZ")
     private ZonedDateTime modificationTime;
 
+    /**
+     * Automatically sets creation and modification timestamps before inserting into database.
+     */
+    @PrePersist
+    protected void onCreate() {
+        ZonedDateTime now = ZonedDateTime.now();
+        this.creationTime = now;
+        this.modificationTime = now;
+    }
+
+    /**
+     * Automatically updates modification timestamp before updating database record.
+     */
+    @PreUpdate
+    protected void onUpdate() {
+        this.modificationTime = ZonedDateTime.now();
+    }
+
+    // Getters and Setters remain unchanged
     public Long getId() {
         return id;
     }

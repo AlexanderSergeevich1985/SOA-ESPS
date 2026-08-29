@@ -77,8 +77,9 @@ public class MfaRestController {
 
         // Construct standardized REST serialization contract matching legacy response models
         final Map<String, String> tokenMap = new HashMap<>();
-        tokenMap.put("accessToken", mapper.writeValueAsString(accessToken));
-        tokenMap.put("refreshToken", mapper.writeValueAsString(accessToken));
+        tokenMap.put("access_token", accessToken.getValue());
+        tokenMap.put("refresh_token", accessToken.getRefreshToken().getValue());
+        tokenMap.put("token_type", "Bearer");
 
         return ResponseEntity.ok(tokenMap);
     }

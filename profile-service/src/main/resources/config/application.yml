@@ -171,7 +171,10 @@ spring:
   cloud:
     config:
       enabled: false
-      import-check.enabled: false
+      import-check:
+        enabled: false
+    discovery:
+      enabled: false
 
   # Drops Kafka auto-configurations to prevent connection attempts during testing phases
   autoconfigure:
@@ -188,6 +191,17 @@ spring:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: create-drop
+    show-sql: false
+
+  flyway:
+    enabled: false  # ← ДОБАВИТЬ: отключаем миграции в тестах
+
+# ← ДОБАВИТЬ: отключаем Eureka client
+eureka:
+  client:
+    enabled: false
+  instance:
+    prefer-ip-address: false
 
 server:
   port: 0

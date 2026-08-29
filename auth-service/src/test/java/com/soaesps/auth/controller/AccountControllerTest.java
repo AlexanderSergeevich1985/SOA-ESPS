@@ -24,6 +24,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -100,7 +101,7 @@ class AccountControllerTest {
     }
 
     @MockitoBean
-    private org.springframework.security.oauth2.jwt.JwtDecoder jwtDecoder;
+    private JwtDecoder jwtDecoder;
 
     @MockitoBean
     private AuthAuditRepository authAuditRepository;
