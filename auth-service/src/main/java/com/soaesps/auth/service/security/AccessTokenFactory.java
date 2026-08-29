@@ -15,10 +15,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.io.IOException;
 import java.security.*;
+import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Base64;
-import java.util.Date;
 import java.util.Optional;
 import java.util.Random;
 
@@ -82,9 +82,9 @@ public interface AccessTokenFactory {
         return tokenKey.equals(key);
     }
 
-    static boolean isNotExpired(final Date expiration) {
+    static boolean isNotExpired(final Instant expiration) {
         return expiration != null && expiration
-                .before(Date.from(DateTimeHelper.getLocalCurrentTime().toInstant(ZoneOffset.UTC)));
+                .isAfter(DateTimeHelper.getLocalCurrentTime().toInstant(ZoneOffset.UTC));
     }
 
     static boolean isNotFaked(final BaseOAuth2RefreshToken refreshToken, String secret)
@@ -133,7 +133,7 @@ public interface AccessTokenFactory {
             final String secretStr = SERVER_SECRET;//(publicKey != null && privateKey != null) ? genSecretStr() : secret;
             final BaseOAuth2AccessToken accessToken =
                     new BaseOAuth2AccessToken(secretStr, validityPeriod);
-            accessToken.setKey(calcTokenKey(secretStr, accessToken.getExpiration().getTime()));
+            accessToken.setKey(calcTokenKey(secretStr, accessToken.getExpiration().toEpochMilli()));
             accessToken.getAdditionalInformation().put("pubKey",
                     Base64.getEncoder().encodeToString(publicKey.getEncoded()));
 

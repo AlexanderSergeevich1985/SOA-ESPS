@@ -15,5 +15,13 @@ public class BaseOnlyIdEntity {
     @GenericGenerator(name="kaugen" , strategy="increment")
     @GeneratedValue(generator="kaugen")
     @Column(name = "id", nullable = false)
-    private Integer id;
+    private Long id;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
 }

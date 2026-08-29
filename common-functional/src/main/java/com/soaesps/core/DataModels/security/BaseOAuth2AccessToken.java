@@ -28,8 +28,11 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
+
+import java.io.ObjectStreamField;
 import java.io.Serializable;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.*;
 
@@ -49,9 +52,8 @@ public class BaseOAuth2AccessToken extends BaseEntity implements Serializable {
     @Column(name = "acc_token_value", length = 500, nullable = false)
     private String value;
 
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "acc_token_exp_date", nullable = false)
-    private Date expiration;
+    private Instant expiration;
 
     @Column(name = "token_type", length = 50, nullable = false)
     private String tokenType;
@@ -79,7 +81,7 @@ public class BaseOAuth2AccessToken extends BaseEntity implements Serializable {
 
     public BaseOAuth2AccessToken(final String value, final long interval) {
         this();
-        this.expiration = Date.from(DateTimeHelper.calcExpirationDate(Duration.ofSeconds(interval)));
+        this.expiration = DateTimeHelper.calcExpirationDate(Duration.ofSeconds(interval));
         this.value = HashGeneratorHelper.mixTwoString(value, this.expiration.toString());
     }
 
@@ -128,24 +130,24 @@ public class BaseOAuth2AccessToken extends BaseEntity implements Serializable {
     }
 
     public boolean isExpired() {
-        return this.expiration != null && this.expiration.before(Date.from(DateTimeHelper.getLocalCurrentTime().toInstant(ZoneOffset.UTC)));
+        return this.expiration != null && this.expiration.isAfter(DateTimeHelper.getLocalCurrentTime().toInstant(ZoneOffset.UTC));
     }
 
     @Nonnull
-    public Date getExpiration() {
+    public Instant getExpiration() {
         return this.expiration;
     }
 
-    public void setExpiration(@Nonnull Date expiration) {
+    public void setExpiration(@Nonnull Instant expiration) {
         this.expiration = expiration;
     }
 
     public int getExpiresIn() {
-        return this.expiration != null ? Long.valueOf(Duration.between(this.expiration.toInstant(), DateTimeHelper.getLocalCurrentTime().toInstant(ZoneOffset.UTC)).toMillis() / 1000L).intValue() : 0;
+        return this.expiration != null ? Long.valueOf(Duration.between(this.expiration, DateTimeHelper.getLocalCurrentTime().toInstant(ZoneOffset.UTC)).toMillis() / 1000L).intValue() : 0;
     }
 
     public void setExpiresIn(final long interval) {
-        this.setExpiration(Date.from(DateTimeHelper.calcExpirationDate(Duration.ofSeconds(interval))));
+        this.setExpiration(DateTimeHelper.calcExpirationDate(Duration.ofSeconds(interval)));
     }
 
     @Nonnull
@@ -164,6 +166,13 @@ public class BaseOAuth2AccessToken extends BaseEntity implements Serializable {
 
     public void setSessionUuid(@Nonnull String sessionUuid) {
         this.sessionUuid = sessionUuid;
+    }
+
+    @PrePersist
+    protected void ensureSessionUuidIsNotNull() {
+        if (this.sessionUuid == null || this.sessionUuid.isBlank()) {
+            this.sessionUuid = java.util.UUID.randomUUID().toString();
+        }
     }
 
     @Nullable
@@ -227,4 +236,16 @@ public class BaseOAuth2AccessToken extends BaseEntity implements Serializable {
     public int hashCode() {
         return Objects.hash(super.hashCode(), value, sessionUuid);
     }
+
+    /**
+     * Controls Java Serialization inside ObjectOutputStream for Access Tokens.
+     * Prevents the 'value' field from affecting the calculated MD5 cryptographic digest.
+     */
+    private static final ObjectStreamField[] serialPersistentFields = {
+            new ObjectStreamField("expiration", Instant.class),
+            new ObjectStreamField("tokenType", String.class),
+            new ObjectStreamField("sessionUuid", String.class),
+            new ObjectStreamField("scope", java.util.Set.class)
+    };
+
 }
