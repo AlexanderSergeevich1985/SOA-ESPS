@@ -2,99 +2,196 @@ package com.soaesps.auth.service;
 
 import com.soaesps.auth.repository.UserDetailsRepository;
 import com.soaesps.core.DataModels.security.BaseUserDetails;
-import com.soaesps.core.security.repository.AuthAuditRepository;
-import org.junit.*;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import com.soaesps.core.exception.UserAlreadyExistAuthException;
+import com.soaesps.core.security.checker.BaseUserDetailsChecker;
+import com.soaesps.core.security.util.SecurityHelper;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.Optional;
 
-import static org.mockito.MockitoAnnotations.initMocks;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(SpringRunner.class)
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
+@DisplayName("UserDetailsService Test Suite")
 public class UserDetailsServiceTest {
-    @MockBean
-    private AuthAuditRepository authAuditRepository;
 
-    @MockBean
+    // Enable experimental support for Java 25 before Mockito initializes Byte Buddy
+    static {
+        System.setProperty("net.bytebuddy.experimental", "true");
+    }
+
+    @Mock
     private UserDetailsRepository userDetailsRepository;
 
-    @Autowired
-    private BaseUserDetailsService baseUserDetailsService;
+    @Mock
+    private BaseUserDetailsChecker baseUserDetailsChecker; // Required dependency mock
 
-    @Before
-    public void setup() {
-        initMocks(this);
+    @InjectMocks // Mockito injects mocks into the concrete implementation class
+    private BaseUserDetailsServiceImpl baseUserDetailsService;
+
+    private BaseUserDetails testUser;
+    private MockedStatic<SecurityHelper> mockedSecurityHelper; // Used for mocking SecurityHelper static methods
+
+    @BeforeEach
+    void setUp() {
+        testUser = new BaseUserDetails();
+        testUser.setId(1L); // Explicitly set ID as service layer performs type casting
+        testUser.setUsername("testUser");
+        testUser.setPassword("password");
     }
 
-    @Test
-    public void A_contextLoads() {
-        Assert.assertNotNull(baseUserDetailsService);
+    @AfterEach
+    void tearDown() {
+        if (mockedSecurityHelper != null) {
+            mockedSecurityHelper.close(); // Mandatory cleanup for static mocks
+        }
     }
 
-    @Test(expected = UsernameNotFoundException.class)
-    public void B_loadUserByUsername_not_found_test() {
-        baseUserDetailsService.loadUserByUsername("testUser");
+    @Nested
+    @DisplayName("User Lookup (loadUserByUsername)")
+    class LoadUserByUsernameTests {
+
+        @Test
+        @DisplayName("Should throw exception when user is not found")
+        void shouldThrowExceptionWhenUserNotFound() {
+            when(userDetailsRepository.findByUsername("unknownUser"))
+                    .thenReturn(Optional.empty());
+
+            assertThrows(UsernameNotFoundException.class, () -> {
+                baseUserDetailsService.loadUserByUsername("unknownUser");
+            });
+        }
+
+        @Test
+        @DisplayName("Should successfully return user details when user exists")
+        void shouldReturnUserDetailsWhenUserExists() {
+            when(userDetailsRepository.findByUsername("testUser"))
+                    .thenReturn(Optional.of(testUser));
+
+            UserDetails result = baseUserDetailsService.loadUserByUsername("testUser");
+
+            assertNotNull(result);
+            assertEquals("testUser", result.getUsername());
+        }
     }
 
-    @Test
-    public void C_loadUserByUsername_test() {
-        Mockito.doReturn(Optional.of(getTestBaseUserDetails())).when(userDetailsRepository)
-                .findByUsername(Mockito.anyString());
-        UserDetails userDetails = baseUserDetailsService.loadUserByUsername("testUser");
-        Assert.assertNotNull(userDetails);
+    @Nested
+    @DisplayName("Account Management (CRUD - Set 1)")
+    class AccountManagementTests {
+
+        @Test
+        @DisplayName("Should successfully create an account")
+        void shouldCreateUserAccount() {
+            when(userDetailsRepository.findByUsername("testUser")).thenReturn(Optional.empty());
+            when(userDetailsRepository.save(any(BaseUserDetails.class))).thenReturn(testUser);
+
+            Long id = baseUserDetailsService.createUserAccount(testUser);
+
+            assertEquals(1L, id);
+            verify(userDetailsRepository, times(1)).save(testUser);
+        }
+
+        @Test
+        @DisplayName("Should throw exception during creation if profile already exists")
+        void shouldThrowExceptionWhenProfileExists() {
+            when(userDetailsRepository.findByUsername("testUser")).thenReturn(Optional.of(testUser));
+
+            assertThrows(IllegalArgumentException.class, () -> {
+                baseUserDetailsService.createUserAccount(testUser);
+            });
+        }
+
+        @Test
+        @DisplayName("Should successfully update an account if it exists")
+        void shouldUpdateUserAccount() {
+            when(userDetailsRepository.findByUsername("testUser"))
+                    .thenReturn(Optional.of(testUser));
+
+            boolean isUpdated = baseUserDetailsService.updateUserAccount("testUser", testUser);
+
+            assertTrue(isUpdated);
+            verify(userDetailsRepository, times(1)).save(testUser);
+        }
+
+        @Test
+        @DisplayName("Should successfully delete an existing account")
+        void shouldDeleteUserAccount() {
+            when(userDetailsRepository.findByUsername("testUser"))
+                    .thenReturn(Optional.of(testUser));
+
+            boolean isDeleted = baseUserDetailsService.deleteUserAccount("testUser");
+
+            assertTrue(isDeleted);
+            verify(userDetailsRepository, times(1)).delete(testUser);
+        }
     }
 
-    @Test
-    public void D_createUserAccount_test() {
-        BaseUserDetails bud = getTestBaseUserDetails();
-        baseUserDetailsService.createUserAccount(bud);
+    @Nested
+    @DisplayName("Standard Spring Security Methods (CRUD - Set 2)")
+    class SpringSecurityCrudTests {
+
+        @Test
+        @DisplayName("createUser: should throw exception if user already exists")
+        void shouldThrowExceptionWhenUserAlreadyExists() {
+            doNothing().when(baseUserDetailsChecker).check(any());
+            when(userDetailsRepository.findByUsername("testUser")).thenReturn(Optional.of(testUser));
+
+            assertThrows(UserAlreadyExistAuthException.class, () -> {
+                baseUserDetailsService.createUser(testUser);
+            });
+        }
+
+        @Test
+        @DisplayName("deleteUser: should delete by ID if user is found")
+        void shouldDeleteUserById() {
+            when(userDetailsRepository.findByUsername("testUser")).thenReturn(Optional.of(testUser));
+
+            baseUserDetailsService.deleteUser("testUser");
+
+            verify(userDetailsRepository, times(1)).deleteById(1L);
+        }
     }
 
-    @Test
-    public void E_updateUserAccount_test() {
-        BaseUserDetails bud = getTestBaseUserDetails();
-        Mockito.doReturn(Optional.of(bud)).when(userDetailsRepository)
-                .findByUsername(Mockito.anyString());
-        bud.setPassword("newTestPassword");
-        baseUserDetailsService.updateUserAccount("testUser", bud);
-    }
+    @Nested
+    @DisplayName("Security and Verifications")
+    class SecurityAndChecksTests {
 
-    @Test
-    public void F_deleteUserAccount_test() {
-        Mockito.doReturn(Optional.of(getTestBaseUserDetails())).when(userDetailsRepository)
-                .findByUsername(Mockito.anyString());
-        Assert.assertTrue(baseUserDetailsService.deleteUserAccount("testUser"));
-    }
+        @Test
+        @DisplayName("Should successfully change password for the current user")
+        void shouldChangePassword() {
+            // Initialize static mock for Spring Security utility class
+            mockedSecurityHelper = mockStatic(SecurityHelper.class);
+            mockedSecurityHelper.when(SecurityHelper::getCurrentLogin).thenReturn("testUser");
 
-    @Test
-    public void G_changePassword_test() {
-        Mockito.doReturn(Optional.of(getTestBaseUserDetails())).when(userDetailsRepository)
-                .findByUsername(Mockito.any());
-        baseUserDetailsService.changePassword("password", "newTestPassword");
-    }
+            when(userDetailsRepository.findByUsername("testUser")).thenReturn(Optional.of(testUser));
 
-    @Test
-    public void H_changePassword_test() {
-        Mockito.doReturn(Optional.of(getTestBaseUserDetails())).when(userDetailsRepository)
-                .findByUsername(Mockito.anyString());
-        Assert.assertTrue(baseUserDetailsService.userExists("testUser"));
-    }
+            baseUserDetailsService.changePassword("oldPassword", "newTestPassword");
 
-    private BaseUserDetails getTestBaseUserDetails() {
-        BaseUserDetails bud = new BaseUserDetails();
-        bud.setUsername("testUser");
-        bud.setPassword("password");
+            assertEquals("newTestPassword", testUser.getPassword());
+            verify(userDetailsRepository, times(1)).save(testUser);
+        }
 
-        return bud;
+        @Test
+        @DisplayName("Should return true if user exists")
+        void shouldReturnTrueWhenUserExists() {
+            when(userDetailsRepository.findByUsername("testUser"))
+                    .thenReturn(Optional.of(testUser));
+
+            boolean exists = baseUserDetailsService.userExists("testUser");
+
+            assertTrue(exists);
+        }
     }
 }

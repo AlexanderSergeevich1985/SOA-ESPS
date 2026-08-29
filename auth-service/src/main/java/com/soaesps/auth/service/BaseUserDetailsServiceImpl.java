@@ -31,7 +31,7 @@ public class BaseUserDetailsServiceImpl implements BaseUserDetailsService {
     @Override
     public UserDetails loadUserByUsername(final String userName) throws UsernameNotFoundException {
         final Optional<BaseUserDetails> result = this.repository.findByUsername(userName);
-        if(result == null || !result.isPresent()) {
+        if(result.isEmpty()) {
             throw new UsernameNotFoundException(userName);
         }
 
@@ -101,7 +101,7 @@ public class BaseUserDetailsServiceImpl implements BaseUserDetailsService {
         }
         BaseUserDetails userDetails = result.get();
         userDetails.setUsername(user.getUsername());
-        userDetails.setPassword(user.getUsername());
+        userDetails.setPassword(user.getPassword());
         userDetails.setAuthorities(user.getAuthorities().stream().map(a -> (Role) a)
                 .collect(Collectors.toList()));
         userDetails.setAccountNonExpired(user.isAccountNonExpired());
