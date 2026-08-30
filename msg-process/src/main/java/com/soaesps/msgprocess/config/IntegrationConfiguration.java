@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
+import org.springframework.expression.common.LiteralExpression;
 import org.springframework.integration.annotation.BridgeFrom;
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.integration.channel.DirectChannel;
@@ -24,6 +24,8 @@ import org.springframework.messaging.MessageHandler;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import static com.soaesps.msgprocess.config.KafkaConsumerConfig.IOT_KAFKA_CONTAINER;
 
 /**
  * Spring Integration pipeline for frame inference:
@@ -48,9 +50,10 @@ import java.util.Map;
 @EnableIntegration
 public class IntegrationConfiguration {
 
-    private static final String INPUT_TOPIC_NAME = "raw-frames";
-    private static final String OUTPUT_TOPIC_NAME = "inference-results";
-    private static final String DLQ_TOPIC_NAME = "frames-dlq";
+    public static final String INPUT_TOPIC_NAME = "raw-frames";
+    public static final String ROUTER_CHANNEL = "routingChannel";
+    public static final String OUTPUT_TOPIC_NAME = "inference-results";
+    public static final String DLQ_TOPIC_NAME = "frames-dlq";
 
     public static final String KAFKA_INPUT_CHANNEL = "kafkaInputChannel";
     public static final String KAFKA_OUTBOUND_CHANNEL = "kafkaOutboundChannel";
@@ -112,7 +115,7 @@ public class IntegrationConfiguration {
      * - AckMode.RECORD: offset committed after each successful handler invocation
      */
     @Bean
-    public KafkaMessageDrivenChannelAdapter<String, MsgIOTDevice> kafkaInboundAdapter(@Qualifier("iotKafkaListenerContainerFactory")
+    public KafkaMessageDrivenChannelAdapter<String, MsgIOTDevice> kafkaInboundAdapter(@Qualifier(IOT_KAFKA_CONTAINER)
             ConcurrentKafkaListenerContainerFactory<String, MsgIOTDevice> factory) {
 
         factory.setConcurrency(listenerConcurrency);
@@ -159,10 +162,8 @@ public class IntegrationConfiguration {
     @Bean
     @ServiceActivator(inputChannel = KAFKA_OUTBOUND_CHANNEL)
     public MessageHandler kafkaOutbound() {
-        KafkaProducerMessageHandler<String, Object> handler =
-                new KafkaProducerMessageHandler<>(kafkaTemplate());
-        handler.setTopicExpression(
-                new org.springframework.expression.common.LiteralExpression(OUTPUT_TOPIC_NAME));
+        KafkaProducerMessageHandler<String, Object> handler = new KafkaProducerMessageHandler<>(kafkaTemplate());
+        handler.setTopicExpression(new LiteralExpression(OUTPUT_TOPIC_NAME));
         return handler;
     }
 
@@ -173,10 +174,8 @@ public class IntegrationConfiguration {
     @Bean
     @ServiceActivator(inputChannel = DLQ_OUTBOUND_CHANNEL)
     public MessageHandler dlqOutbound() {
-        KafkaProducerMessageHandler<String, Object> handler =
-                new KafkaProducerMessageHandler<>(kafkaTemplate());
-        handler.setTopicExpression(
-                new org.springframework.expression.common.LiteralExpression(DLQ_TOPIC_NAME));
+        KafkaProducerMessageHandler<String, Object> handler = new KafkaProducerMessageHandler<>(kafkaTemplate());
+        handler.setTopicExpression(new LiteralExpression(DLQ_TOPIC_NAME));
         return handler;
     }
 }

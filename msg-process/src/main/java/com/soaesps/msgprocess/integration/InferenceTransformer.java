@@ -2,11 +2,9 @@ package com.soaesps.msgprocess.integration;
 
 import com.soaesps.msgprocess.DataModels.message.MsgIOTDevice;
 import com.soaesps.msgprocess.client.triton.TritonGrpcClient;
-import com.soaesps.msgprocess.config.IntegrationConfiguration;
 import com.soaesps.msgprocess.exception.MalformedFrameException;
 import com.soaesps.msgprocess.service.triton.FramePreprocessor;
 import com.soaesps.msgprocess.triton.InferenceResult;
-import com.soaesps.msgprocess.triton.TensorInput;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.integration.annotation.Transformer;
@@ -15,8 +13,11 @@ import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
-import java.util.Map;
-import java.util.function.Function;
+
+import static com.soaesps.msgprocess.config.IntegrationConfiguration.KAFKA_INPUT_CHANNEL;
+import static com.soaesps.msgprocess.config.IntegrationConfiguration.ROUTER_CHANNEL;
+import static com.soaesps.msgprocess.config.RoutingConfiguration.DLQ_HEADER_VALUE;
+import static com.soaesps.msgprocess.config.RoutingConfiguration.ROUTE_HEADER;
 
 /**
  * Single-message transformer: raw Kafka byte[] → Triton inference result.
@@ -56,8 +57,7 @@ public class InferenceTransformer {
      * listener container runs each record on a dedicated worker thread (see
      * {@code listener-concurrency}); the blocking does not freeze other records.
      */
-    @Transformer(inputChannel = IntegrationConfiguration.KAFKA_INPUT_CHANNEL,
-            outputChannel = "routingChannel")
+    @Transformer(inputChannel = KAFKA_INPUT_CHANNEL, outputChannel = ROUTER_CHANNEL)
     public Message<?> transform(Message<MsgIOTDevice> inbound) {
         String key = (String) inbound.getHeaders().get("kafka_receivedMessageKey");
         MsgIOTDevice payload = inbound.getPayload();
@@ -70,7 +70,7 @@ public class InferenceTransformer {
             return MessageBuilder.withPayload((Object) payload)
                     .copyHeaders(inbound.getHeaders())
                     .setHeader("kafka_messageKey", key)
-                    .setHeader("route", "dlq")
+                    .setHeader(ROUTE_HEADER, DLQ_HEADER_VALUE)
                     .build();
         }
 
@@ -81,14 +81,14 @@ public class InferenceTransformer {
             return MessageBuilder.withPayload((Object) result)
                     .copyHeaders(inbound.getHeaders())
                     .setHeader("kafka_messageKey", key)
-                    .setHeader("route", "success")
+                    .setHeader(ROUTE_HEADER, "success")
                     .build();
         } catch (Exception e) {
             log.error("Inference failed for frame with key={}, routing to DLQ", key, e);
             return MessageBuilder.withPayload((Object) payload)
                     .copyHeaders(inbound.getHeaders())
                     .setHeader("kafka_messageKey", key)
-                    .setHeader("route", "dlq")
+                    .setHeader(ROUTE_HEADER, DLQ_HEADER_VALUE)
                     .build();
         }
     }

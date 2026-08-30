@@ -29,12 +29,14 @@ public class MsgHeader implements Serializable {
     private String deviceUID;
 
     public MsgHeader() {}
+
     public MsgHeader(String messageId, String messageType, String timestamp, Long bodySize) {
         this.messageId = messageId;
         this.messageType = messageType;
         this.timestamp = timestamp;
-        this.bodySize = bodySize;
+        this.bodySize = bodySize != null ? bodySize : 0L;   // защита от autoboxing NPE
     }
+
     public MsgHeader(MsgHeader other) {
         this.messageId = other.messageId;
         this.messageType = other.messageType;
@@ -42,26 +44,36 @@ public class MsgHeader implements Serializable {
         this.bodySize = other.bodySize;
         this.deviceUID = other.deviceUID;
     }
+
     public void setMessageId(String messageId) { this.messageId = messageId; }
     public String getMessageId() { return this.messageId; }
+
     public void setMessageType(String messageType) { this.messageType = messageType; }
     public String getMessageType() { return this.messageType; }
+
     public void setTimeStamp(String timestamp) { this.timestamp = timestamp; }
     public String getTimeStamp() { return this.timestamp; }
+
     public void setBodySize(long bodySize) { this.bodySize = bodySize; }
     public long getBodySize() { return this.bodySize; }
+
     public void setDeviceUID(String deviceUID) {
-        if(!deviceUID.isEmpty())
-            this.deviceUID = deviceUID;
-        else
-            this.deviceUID = UUID.randomUUID().toString();
+        this.deviceUID = (deviceUID != null && !deviceUID.isEmpty())
+                ? deviceUID
+                : UUID.randomUUID().toString();
     }
+
     public String getDeviceUID() {
-        return this.deviceUID;
+        if (deviceUID == null) {
+            deviceUID = UUID.randomUUID().toString();
+        }
+        return deviceUID;
     }
+
     @Override
     public String toString() {
-        return "Message header [id=" + messageId + ", type=" + messageType + ", timestamp=" + timestamp +
-                ", body size=" + bodySize + ", device UUID" + deviceUID +"]";
+        return "Message header [id=" + messageId + ", type=" + messageType +
+                ", timestamp=" + timestamp + ", body size=" + bodySize +
+                ", device UUID" + deviceUID + "]";
     }
 }

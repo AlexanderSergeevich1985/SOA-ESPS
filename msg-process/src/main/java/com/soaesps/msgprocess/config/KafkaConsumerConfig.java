@@ -23,13 +23,15 @@ import java.util.Map;
 @Configuration
 @Import({BaseKafkaConsumerConfig.class})
 public class KafkaConsumerConfig {
+    public static final String IOT_KAFKA_CONTAINER = "iotKafkaListenerContainerFactory";
+
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServerAddress;
 
     @Value("${spring.kafka.consumer.iot-group-id}")
     private String iotConsumerGroupId;
 
-    @Value("${spring.kafka.consumer.auto-offset-reset}")
+    @Value("${spring.kafka.consumer.auto-offset-reset:latest}")
     private String consumerAutoOffsetReset;
 
     @Value("${spring.kafka.consumer.key-deserializer}")
@@ -72,7 +74,7 @@ public class KafkaConsumerConfig {
     }
 
     @Primary
-    @Bean("iotKafkaListenerContainerFactory")
+    @Bean(IOT_KAFKA_CONTAINER)
     public ConcurrentKafkaListenerContainerFactory<String, MsgIOTDevice> kafkaListenerContainerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, MsgIOTDevice> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(iotConsumerFactory());
