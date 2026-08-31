@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.soaesps.notifications.config.IntegrationConfiguration;
+import com.soaesps.notifications.service.Impl.EmailSender;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -29,6 +30,7 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -71,6 +73,9 @@ public class IntegrationConfigurationTest {
     private TestNotificationPipelineConfig.KafkaTestOutboundListener outboundListener;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @MockitoBean
+    private EmailSender emailSender;
 
     @BeforeEach
     void clearQueues() {
