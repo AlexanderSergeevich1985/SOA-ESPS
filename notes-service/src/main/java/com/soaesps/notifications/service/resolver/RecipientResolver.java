@@ -5,6 +5,8 @@ import com.soaesps.notifications.service.push.DeviceTokenService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+
+import java.util.HashSet;
 import java.util.List;
 
 @Service
@@ -48,7 +50,8 @@ public class RecipientResolver {
                 phone,
                 email,
                 telegramChatId,
-                tokens.stream().findFirst().get()
+                tokens,
+                new HashSet<>()
         );
     }
 }
