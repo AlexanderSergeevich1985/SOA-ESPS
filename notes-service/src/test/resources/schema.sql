@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS user_disabled_channels (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    channel VARCHAR(255) NOT NULL
+);
