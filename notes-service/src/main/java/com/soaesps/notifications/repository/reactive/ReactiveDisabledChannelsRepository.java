@@ -1,6 +1,6 @@
-package com.soaesps.notifications.repository;
+package com.soaesps.notifications.repository.reactive;
 
-import com.soaesps.notifications.domain.UserDisabledChannel;
+import com.soaesps.notifications.domain.reactive.UserDisabledChannel;
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import org.springframework.stereotype.Repository;

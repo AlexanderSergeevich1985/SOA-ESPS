@@ -1,4 +1,4 @@
-package com.soaesps.notifications.repository;
+package com.soaesps.notifications.repository.reactive;
 
 import io.r2dbc.spi.ConnectionFactory;
 import org.junit.jupiter.api.BeforeEach;

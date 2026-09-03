@@ -1,4 +1,4 @@
-package com.soaesps.notifications.domain;
+package com.soaesps.notifications.domain.reactive;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;

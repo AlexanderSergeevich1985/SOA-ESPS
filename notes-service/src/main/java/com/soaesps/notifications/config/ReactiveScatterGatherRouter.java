@@ -1,7 +1,7 @@
 package com.soaesps.notifications.config;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.soaesps.notifications.repository.ReactiveDisabledChannelsRepository;
+import com.soaesps.notifications.repository.reactive.ReactiveDisabledChannelsRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
