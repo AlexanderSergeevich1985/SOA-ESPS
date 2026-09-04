@@ -1,6 +1,7 @@
 package com.soaesps.notifications.config;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.soaesps.notifications.dto.InboundNotificationEvent;
 import com.soaesps.notifications.repository.reactive.ReactiveDisabledChannelsRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +18,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import static com.soaesps.notifications.config.IntegrationConstant.*;
 
@@ -29,8 +31,6 @@ import static com.soaesps.notifications.config.IntegrationConstant.*;
 public class ReactiveScatterGatherRouter {
 
     private static final Logger log = LoggerFactory.getLogger(ReactiveScatterGatherRouter.class);
-
-    public static final String REACTIVE_ROUTER_BRIDGE = "reactiveRouterBridgeChannel";
 
     private final ReactiveDisabledChannelsRepository disabledChannelsRepository;
 
@@ -61,7 +61,7 @@ public class ReactiveScatterGatherRouter {
     /**
      * Step 1: Bridge standard channel to a reactive FluxMessageChannel
      */
-    @Transformer(inputChannel = "kafkaInputChannel", outputChannel = REACTIVE_ROUTER_BRIDGE)
+    @Transformer(inputChannel = KAFKA_INPUT_CHANNEL, outputChannel = REACTIVE_ROUTER_BRIDGE)
     public Message<JsonNode> bridgeToReactiveRouter(Message<JsonNode> message) {
         return message;
     }
@@ -71,10 +71,9 @@ public class ReactiveScatterGatherRouter {
      * and evaluates active channel routing inside a non-blocking stream context.
      */
     @Router(inputChannel = REACTIVE_ROUTER_BRIDGE)
-    public Mono<List<Message<JsonNode>>> routeAllowedChannelsReactive(Message<JsonNode> message) {
-        JsonNode payload = message.getPayload();
-        Long userId = payload.get("userId").asLong();
-        String correlationId = message.getHeaders().getId().toString(); // Use message UUID as tracking ID
+    public Mono<List<Message<InboundNotificationEvent>>> routeAllowedChannelsReactive(Message<InboundNotificationEvent> message) {
+        Long userId = message.getPayload().userId();
+        String correlationId = Objects.requireNonNull(message.getHeaders().getId()).toString(); // Use message UUID as tracking ID
 
         return disabledChannelsRepository.findChannelsByUserId(userId)
                 .collectList()
@@ -85,7 +84,7 @@ public class ReactiveScatterGatherRouter {
                     if (!disabledChannels.contains("SMS")) targets.add(SMS_BRANCH_CHANNEL);
                     if (!disabledChannels.contains("PUSH")) targets.add(PUSH_BRANCH_CHANNEL);
 
-                    List<Message<JsonNode>> routedMessages = new ArrayList<>();
+                    List<Message<InboundNotificationEvent>> routedMessages = new ArrayList<>();
                     int sequenceSize = targets.size();
 
                     // If all channels are muted, immediately push to aggregator with size 0

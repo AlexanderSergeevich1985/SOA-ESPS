@@ -1,18 +1,21 @@
 package com.soaesps.notifications.config;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.soaesps.core.config.BaseKafkaConsumerConfig;
 import com.soaesps.core.Utils.CryptoHelper;
 import com.soaesps.core.component.aggregator.CorrelationStrategyI;
 import com.soaesps.core.component.aggregator.ReleaseStrategyI;
+import com.soaesps.notifications.dto.InboundNotificationEvent;
+import com.soaesps.notifications.component.InboundNotificationFilter;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.expression.common.LiteralExpression;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.*;
+import org.springframework.integration.filter.MessageFilter;
 import org.springframework.integration.annotation.*;
 import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.channel.PublishSubscribeChannel;
@@ -28,17 +31,19 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.soaesps.notifications.config.IntegrationConstant.INPUT_TOPIC_NAME;
+import static com.soaesps.notifications.config.IntegrationConstant.OUTPUT_TOPIC_NAME;
+
 @Configuration
 @ComponentScan("com.soaesps.notifications.integration")
 @EnableIntegration
 @IntegrationComponentScan("com.soaesps.notifications.integration")
-@Import(BaseKafkaConsumerConfig.class) // Imports your custom Kafka consumer beans
+@Import(BaseKafkaConsumerConfig.class) // Imports custom Kafka consumer beans
 public class IntegrationConfiguration {
 
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
 
-    // Producer properties from YAML
     @Value("${spring.kafka.producer.key-serializer}")
     private String producerKeySerializer;
 
@@ -51,46 +56,17 @@ public class IntegrationConfiguration {
     @Value("${spring.kafka.producer.retries}")
     private int producerRetries;
 
-    private static final String INPUT_TOPIC_NAME = "message_queue_inbound";
-    private static final String OUTPUT_TOPIC_NAME = "message_queue_outbound";
+    // =========================================================================
+    // CORE CORE FLOW CHANNELS
+    // =========================================================================
 
-    @Bean(IntegrationConstant.GATEWAY_CHANNEL)
-    public MessageChannel gatewayChannel() {
-        return new DirectChannel();
-    }
-
-    @Bean(IntegrationConstant.FILTER_CHANNEL)
-    public MessageChannel filterChannel() {
+    @Bean(IntegrationConstant.KAFKA_INPUT_CHANNEL)
+    public MessageChannel kafkaInputChannel() {
         return new DirectChannel();
     }
 
     @Bean(IntegrationConstant.DISCARD_FILTER_CHANNEL)
     public MessageChannel discardFilterChannel() {
-        return new DirectChannel();
-    }
-
-    @Bean(IntegrationConstant.TRANSFORMER_CHANNEL)
-    public MessageChannel transformerChannel() {
-        return new DirectChannel();
-    }
-
-    @Bean(IntegrationConstant.SIMPLE_ROUTER_CHANNEL)
-    public MessageChannel simpleRouterChannel() {
-        return new DirectChannel();
-    }
-
-    @Bean(IntegrationConstant.AGG_ROUTER_CHANNEL)
-    public MessageChannel aggRouterChannel() {
-        return new DirectChannel();
-    }
-
-    @Bean(IntegrationConstant.MESSAGE_ACTIVATOR_CHANNEL)
-    public MessageChannel activatorChannel() {
-        return new DirectChannel();
-    }
-
-    @Bean
-    public MessageChannel kafkaInputChannel() {
         return new DirectChannel();
     }
 
@@ -104,6 +80,28 @@ public class IntegrationConfiguration {
     public MessageChannel kafkaOutboundChannel() {
         return new DirectChannel();
     }
+
+    @Filter(
+            inputChannel = IntegrationConstant.KAFKA_INPUT_CHANNEL,
+            outputChannel = IntegrationConstant.REACTIVE_ROUTER_BRIDGE//, // Next step: reactive stream bridge
+            //discardChannel = IntegrationConstant.DISCARD_FILTER_CHANNEL // If type is invalid/unsupported
+    )
+    @Bean
+    public MessageFilter inboundTypeFilter(InboundNotificationFilter filter) {
+        // Spring Integration core filter component wrapping reactive checker
+        MessageFilter messageFilter = new MessageFilter(
+                message -> filter.isNotificationTypeSupported((InboundNotificationEvent) message.getPayload())
+        );
+
+        // Explicitly set the discard channel programmatically via the setter as required by the framework
+        messageFilter.setDiscardChannelName(IntegrationConstant.DISCARD_FILTER_CHANNEL);
+
+        return messageFilter;
+    }
+
+    // =========================================================================
+    // AGGREGATION & STRATEGIES
+    // =========================================================================
 
     @Bean
     public ReleaseStrategyI releaseStrategy() {
@@ -125,17 +123,14 @@ public class IntegrationConfiguration {
     // =========================================================================
     // KAFKA INBOUND CONFIGURATION (RECEIVING)
     // =========================================================================
+
     @Bean
-    public KafkaMessageDrivenChannelAdapter<String, JsonNode> kafkaInboundAdapter(
-            ConcurrentKafkaListenerContainerFactory<String, JsonNode> factory) {
+    public KafkaMessageDrivenChannelAdapter<String, InboundNotificationEvent> kafkaInboundAdapter(
+            ConcurrentKafkaListenerContainerFactory<String, InboundNotificationEvent> inNotesKafkaListenerContainerFactory) {
 
-        // Create a listener container from the shared container factory passed as argument
-        var container = factory.createContainer(INPUT_TOPIC_NAME);
+        var container = inNotesKafkaListenerContainerFactory.createContainer(INPUT_TOPIC_NAME);
+        var adapter = new KafkaMessageDrivenChannelAdapter<>(container, KafkaMessageDrivenChannelAdapter.ListenerMode.record);
 
-        KafkaMessageDrivenChannelAdapter<String, JsonNode> adapter =
-                new KafkaMessageDrivenChannelAdapter<>(container, KafkaMessageDrivenChannelAdapter.ListenerMode.record);
-
-        // Pipe the incoming payload into Spring Integration channel
         adapter.setOutputChannel(kafkaInputChannel());
         return adapter;
     }
@@ -143,17 +138,15 @@ public class IntegrationConfiguration {
     // =========================================================================
     // KAFKA OUTBOUND CONFIGURATION (SENDING)
     // =========================================================================
+
     @Bean
     public ProducerFactory<String, Object> kafkaProducerFactory() {
         Map<String, Object> props = new HashMap<>();
-
-        // Dynamically mapping properties from your exact application.yml block
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, producerKeySerializer);
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, producerValueSerializer);
         props.put(ProducerConfig.ACKS_CONFIG, producerAcks);
         props.put(ProducerConfig.RETRIES_CONFIG, producerRetries);
-
         return new DefaultKafkaProducerFactory<>(props);
     }
 
@@ -165,9 +158,8 @@ public class IntegrationConfiguration {
     @Bean
     @ServiceActivator(inputChannel = "kafkaOutboundChannel")
     public MessageHandler kafkaOutbound() {
-        KafkaProducerMessageHandler<String, Object> handler =
-                new KafkaProducerMessageHandler<>(kafkaTemplate());
-        handler.setTopicExpression(new org.springframework.expression.common.LiteralExpression(OUTPUT_TOPIC_NAME));
+        var handler = new KafkaProducerMessageHandler<>(kafkaTemplate());
+        handler.setTopicExpression(new LiteralExpression(OUTPUT_TOPIC_NAME));
         return handler;
     }
 }

@@ -14,6 +14,7 @@ import org.springframework.messaging.support.MessageBuilder;
 import java.util.List;
 
 import static com.soaesps.notifications.config.IntegrationConstant.AGGREGATOR_CHANNEL;
+import static com.soaesps.notifications.config.IntegrationConstant.KAFKA_OUTPUT_CHANNEL;
 
 @Configuration
 public class NotificationStatusAggregator {
@@ -25,7 +26,7 @@ public class NotificationStatusAggregator {
      * Fires automatically when total collected messages match the sequenceSize header.
      */
     @Aggregator(inputChannel = AGGREGATOR_CHANNEL,
-            outputChannel = "kafkaOutboundChannel")
+            outputChannel = KAFKA_OUTPUT_CHANNEL)
     public Message<ObjectNode> aggregateStatuses(List<BranchStatus> branchStatuses) {
         log.info("All parallel notification branches completed execution. Compiling final status report.");
 
@@ -35,7 +36,7 @@ public class NotificationStatusAggregator {
             return MessageBuilder.withPayload(finalReport).build();
         }
 
-        Long userId = branchStatuses.get(0).getUserId();
+        Long userId = branchStatuses.getFirst().getUserId();
         finalReport.put("userId", userId);
         finalReport.put("status", "DISPATCH_COMPLETED");
 

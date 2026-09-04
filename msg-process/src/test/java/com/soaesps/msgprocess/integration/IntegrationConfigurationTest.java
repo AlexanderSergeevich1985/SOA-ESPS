@@ -239,8 +239,6 @@ public class IntegrationConfigurationTest {
         }
 
         static class KafkaTestListener {
-
-            // FIX: Changed type to InferenceResult to match the success path payload
             private final BlockingQueue<ConsumerRecord<String, InferenceResult>> resultsQueue = new LinkedBlockingQueue<>();
             private final BlockingQueue<ConsumerRecord<String, MsgIOTDevice>> dlqQueue = new LinkedBlockingQueue<>();
 
