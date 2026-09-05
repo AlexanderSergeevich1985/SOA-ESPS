@@ -1,0 +1,25 @@
+package com.soaesps.notifications.repository.reactive;
+
+import com.soaesps.notifications.domain.reactive.NotificationTemplateRow;
+import org.springframework.data.r2dbc.repository.Query;
+import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Mono;
+
+/**
+ * Reactive repository operating with composite-key notification layout tables.
+ */
+@Repository
+public interface ReactiveNotificationTemplateRepository extends ReactiveCrudRepository<NotificationTemplateRow, Object> {
+
+    /**
+     * Fetches metadata configurations using the strict composite identifier bounds.
+     *
+     * @param notificationType The targeting notification category identifier
+     * @param channelType      The active delivery transport channel key
+     * @return A Mono emitting the complete composite row configuration states
+     */
+    @Query("SELECT notification_type, channel_type, is_external_storage, inline_text_template, minio_object_key " +
+            "FROM notification_templates WHERE notification_type = :notificationType AND channel_type = :channelType")
+    Mono<NotificationTemplateRow> findTemplateMeta(String notificationType, String channelType);
+}
