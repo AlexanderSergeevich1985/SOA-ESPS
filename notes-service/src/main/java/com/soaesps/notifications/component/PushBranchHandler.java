@@ -1,9 +1,8 @@
 package com.soaesps.notifications.component;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.soaesps.notifications.channel.FcmNotificationChannel;
 import com.soaesps.notifications.dto.BranchStatus;
-import com.soaesps.notifications.dto.UserContactRow;
-import com.soaesps.notifications.repository.reactive.ReactiveContactRepository;
+import com.soaesps.notifications.dto.OutboundRoutingEnvelope;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.integration.annotation.ServiceActivator;
@@ -21,45 +20,38 @@ import static com.soaesps.notifications.config.IntegrationConstant.PUSH_BRANCH_C
  */
 @Component
 public class PushBranchHandler {
-
     private static final Logger log = LoggerFactory.getLogger(PushBranchHandler.class);
 
-    private final ReactiveContactRepository contactRepository;
+    private final FcmNotificationChannel fcmNotificationChannel;
 
-    public PushBranchHandler(ReactiveContactRepository contactRepository) {
-        this.contactRepository = contactRepository;
+    public PushBranchHandler(FcmNotificationChannel fcmNotificationChannel) {
+        this.fcmNotificationChannel = fcmNotificationChannel;
     }
 
     @ServiceActivator(inputChannel = PUSH_BRANCH_CHANNEL,
             outputChannel = AGGREGATOR_CHANNEL)
-    public Message<BranchStatus> sendPushNotification(Message<JsonNode> message) {
-        Long userId = message.getPayload().get("userId").asLong();
-        String text = message.getPayload().has("text") ? message.getPayload().get("text").asText() : "";
+    public Message<BranchStatus> sendPushNotification(Message<OutboundRoutingEnvelope> message) {
+        OutboundRoutingEnvelope envelope = message.getPayload();
+        Long userId = envelope.userId();
 
-        log.debug("Processing PUSH branch concurrently for user ID: {}", userId);
+        log.debug("PushBranchHandler processing PUSH channel routing for user ID: {}", userId);
 
-        // Fetch all active devices for the user from the reactive contact stream
-        return contactRepository.findByUserId(userId)
-                .filter(row -> "PUSH".equals(row.contactType()))
-                .map(UserContactRow::pushToken)
-                .filter(token -> token != null && !token.isBlank())
-                .collectList() // Collect all matching tokens into a Mono<List<String>>
-                .map(tokens -> {
-                    if (tokens.isEmpty()) {
-                        log.warn("No active push tokens found for user ID: {}", userId);
-                        return new BranchStatus(userId, "PUSH", "SKIPPED_NO_CONTACT");
-                    }
+        // Guard clause: if the router discovered zero active device tokens in the database layer
+        if (envelope.destinations().isEmpty() || envelope.destinations().contains("UNKNOWN_PUSH")) {
+            log.warn("Skipping PUSH channel pipeline execution: No active device tokens found for user {}", userId);
+            return MessageBuilder.withPayload(new BranchStatus(userId, "PUSH", "SKIPPED_NO_CONTACT"))
+                    .copyHeaders(message.getHeaders())
+                    .build();
+        }
 
-                    // Dispatch notification to each registered device token
-                    for (String token : tokens) {
-                        // firebasePushSender.send(token, text);
-                        log.info("Push notification successfully sent to device token: {}", token);
-                    }
+        // Delegate the physical multicast send straight to the integrated channel bean dependency
+        boolean isDelivered = fcmNotificationChannel.send(envelope);
 
-                    return new BranchStatus(userId, "PUSH", "SUCCESS");
-                })
-                // Build messaging envelope and block until non-blocking R2DBC flow resolves
-                .map(status -> MessageBuilder.withPayload(status).copyHeaders(message.getHeaders()).build())
-                .block();
+        String executionResult = isDelivered ? "SUCCESS" : "FAILED";
+        BranchStatus branchStatus = new BranchStatus(userId, "PUSH", executionResult);
+
+        return MessageBuilder.withPayload(branchStatus)
+                .copyHeaders(message.getHeaders())
+                .build();
     }
 }

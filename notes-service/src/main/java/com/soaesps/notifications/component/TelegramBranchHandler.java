@@ -1,8 +1,8 @@
 package com.soaesps.notifications.component;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.soaesps.notifications.channel.TelegramNotificationChannel;
 import com.soaesps.notifications.dto.BranchStatus;
-import com.soaesps.notifications.repository.reactive.ReactiveContactRepository;
+import com.soaesps.notifications.dto.OutboundRoutingEnvelope;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.integration.annotation.ServiceActivator;
@@ -16,29 +16,37 @@ import static com.soaesps.notifications.config.IntegrationConstant.TELEGRAM_BRAN
 @Component
 public class TelegramBranchHandler {
     private static final Logger log = LoggerFactory.getLogger(TelegramBranchHandler.class);
-    private final ReactiveContactRepository contactRepository;
 
-    public TelegramBranchHandler(ReactiveContactRepository contactRepository) {
-        this.contactRepository = contactRepository;
+    private final TelegramNotificationChannel telegramNotificationChannel;
+
+    public TelegramBranchHandler(TelegramNotificationChannel telegramNotificationChannel) {
+        this.telegramNotificationChannel = telegramNotificationChannel;
     }
 
     @ServiceActivator(inputChannel = TELEGRAM_BRANCH_CHANNEL,
             outputChannel = AGGREGATOR_CHANNEL)
-    public Message<BranchStatus> sendTelegram(Message<JsonNode> message) {
-        Long userId = message.getPayload().get("userId").asLong();
+    public Message<BranchStatus> sendTelegram(Message<OutboundRoutingEnvelope> message) {
+        OutboundRoutingEnvelope envelope = message.getPayload();
+        Long userId = envelope.userId();
 
-        log.debug("Processing TELEGRAM branch concurrently for user: {}", userId);
+        log.debug("TelegramBranchHandler processing TELEGRAM channel routing for user ID: {}", userId);
 
-        return contactRepository.findByUserId(userId)
-                .filter(row -> "TELEGRAM".equals(row.contactType()))
-                .next()
-                .map(row -> {
-                    // tgSender.send(row.telegramChatId(), message.getPayload().get("text").asText());
-                    log.info("Telegram message successfully sent to chat: {}", row.telegramChatId());
-                    return new BranchStatus(userId, "TELEGRAM", "SUCCESS");
-                })
-                .defaultIfEmpty(new BranchStatus(userId, "TELEGRAM", "SKIPPED_NO_CONTACT"))
-                .map(status -> MessageBuilder.withPayload(status).copyHeaders(message.getHeaders()).build())
-                .block();
+        // Guard clause: if the router discovered zero active telegram chat IDs in the database layer
+        if (envelope.destinations().isEmpty() || envelope.destinations().contains("UNKNOWN_TELEGRAM")) {
+            log.warn("Skipping TELEGRAM channel pipeline execution: No active telegram configurations found for user {}", userId);
+            return MessageBuilder.withPayload(new BranchStatus(userId, "TELEGRAM", "SKIPPED_NO_CONTACT"))
+                    .copyHeaders(message.getHeaders())
+                    .build();
+        }
+
+        // Delegate the physical parallel send straight to the integrated telegramNotificationChannel bean dependency
+        boolean isDelivered = telegramNotificationChannel.send(envelope);
+
+        String executionResult = isDelivered ? "SUCCESS" : "FAILED";
+        BranchStatus branchStatus = new BranchStatus(userId, "TELEGRAM", executionResult);
+
+        return MessageBuilder.withPayload(branchStatus)
+                .copyHeaders(message.getHeaders())
+                .build();
     }
 }

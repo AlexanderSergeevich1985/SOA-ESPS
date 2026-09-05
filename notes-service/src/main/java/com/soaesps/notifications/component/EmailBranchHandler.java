@@ -1,8 +1,8 @@
 package com.soaesps.notifications.component;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.soaesps.notifications.channel.EmailNotificationChannel;
 import com.soaesps.notifications.dto.BranchStatus;
-import com.soaesps.notifications.repository.reactive.ReactiveContactRepository;
+import com.soaesps.notifications.dto.OutboundRoutingEnvelope;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.integration.annotation.ServiceActivator;
@@ -16,35 +16,37 @@ import static com.soaesps.notifications.config.IntegrationConstant.EMAIL_BRANCH_
 @Component
 public class EmailBranchHandler {
     private static final Logger log = LoggerFactory.getLogger(EmailBranchHandler.class);
-    private final ReactiveContactRepository contactRepository;
 
-    public EmailBranchHandler(ReactiveContactRepository contactRepository) {
-        this.contactRepository = contactRepository;
+    private final EmailNotificationChannel emailNotificationChannel;
+
+    public EmailBranchHandler(EmailNotificationChannel emailNotificationChannel) {
+        this.emailNotificationChannel = emailNotificationChannel;
     }
 
     @ServiceActivator(inputChannel = EMAIL_BRANCH_CHANNEL,
             outputChannel = AGGREGATOR_CHANNEL)
-    public Message<BranchStatus> sendEmail(Message<JsonNode> message) {
-        Long userId = message.getPayload().get("userId").asLong();
+    public Message<BranchStatus> sendEmail(Message<OutboundRoutingEnvelope> message) {
+        OutboundRoutingEnvelope envelope = message.getPayload();
+        Long userId = envelope.userId();
 
-        log.debug("Processing EMAIL branch concurrently for user: {}", userId);
+        log.debug("EmailBranchHandler processing EMAIL channel routing for user ID: {}", userId);
 
-        // Fetch rows stream (Flux)
-        return contactRepository.findByUserId(userId)
-                // Filter target contacts
-                .filter(row -> "EMAIL".equals(row.contactType()))
-                .next()
-                // Map the row to a successful status payload
-                .map(row -> {
-                    // emailSender.send(row.emailAddress(), message.getPayload().get("text").asText());
-                    log.info("Email successfully sent to {}", row.emailAddress());
-                    return new BranchStatus(userId, "EMAIL", "SUCCESS");
-                })
-                // Fallback if the user has no email contact configured
-                .defaultIfEmpty(new BranchStatus(userId, "EMAIL", "SKIPPED_NO_CONTACT"))
-                // Wrap into Spring Messaging container
-                .map(status -> MessageBuilder.withPayload(status).copyHeaders(message.getHeaders()).build())
-                // Now block() will resolve perfectly on Mono<Message<BranchStatus>>
-                .block();
+        // Guard clause: if the router discovered zero active email addresses in the database layer
+        if (envelope.destinations().isEmpty() || envelope.destinations().contains("UNKNOWN_EMAIL")) {
+            log.warn("Skipping EMAIL channel pipeline execution: No active email configurations found for user {}", userId);
+            return MessageBuilder.withPayload(new BranchStatus(userId, "EMAIL", "SKIPPED_NO_CONTACT"))
+                    .copyHeaders(message.getHeaders())
+                    .build();
+        }
+
+        // Delegate the physical parallel send straight to the integrated emailSender bean dependency
+        boolean isDelivered = emailNotificationChannel.send(envelope);
+
+        String executionResult = isDelivered ? "SUCCESS" : "FAILED";
+        BranchStatus branchStatus = new BranchStatus(userId, "EMAIL", executionResult);
+
+        return MessageBuilder.withPayload(branchStatus)
+                .copyHeaders(message.getHeaders())
+                .build();
     }
 }
