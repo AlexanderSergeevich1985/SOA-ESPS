@@ -1,21 +1,23 @@
 package com.soaesps.notifications.channel;
 
+import com.google.api.core.ApiFuture;
 import com.google.firebase.messaging.*;
-import com.soaesps.notifications.notifications.NotificationMessage;
-import com.soaesps.notifications.notifications.NotificationRecipient;
+import com.soaesps.notifications.dto.OutboundRoutingEnvelope;
 import com.soaesps.notifications.service.push.DeviceTokenService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 /**
- * Push notification channel via Firebase Cloud Messaging (free, unlimited).
- * Tries after Telegram (priority 10) and before Email (priority 50).
+ * Push notification channel via Firebase Cloud Messaging.
  * Fully supports multi-device delivery via FCM Multicast API.
  */
 @Component
@@ -36,61 +38,39 @@ public class FcmNotificationChannel implements NotificationChannel {
         this.deviceTokenService = deviceTokenService;
     }
 
-    @Override
-    public String id() {
-        return "push";
-    }
-
     /**
-     * Checks if the system has any active push tokens for this user.
-     * Updated to pull directly from the database to support multiple devices dynamically.
+     * Modernized non-blocking dispatch method driven by the enriched OutboundRoutingEnvelope pipeline.
+     *
+     * @param envelope Integrated delivery metadata containing destinations array, title, and body strings
+     * @return true if at least one target device token received the push event payload successfully
      */
     @Override
-    public boolean supports(NotificationRecipient r) {
-        if (r.userId() == null) {
-            return false;
-        }
-        List<String> tokens = deviceTokenService.tokensFor(r.userId());
-        return !tokens.isEmpty();
-    }
+    public boolean send(OutboundRoutingEnvelope envelope) {
+        Long userId = envelope.userId();
+        List<String> tokens = envelope.destinations();
 
-    @Override
-    public int priority() {
-        return 20;
-    }
-
-    @Override
-    public boolean send(NotificationMessage msg, NotificationRecipient r) {
-        List<String> tokens = deviceTokenService.tokensFor(r.userId());
         if (tokens.isEmpty()) {
-            log.warn("No active push tokens found for user {}", r.userId());
+            log.warn("No active push tokens supplied inside envelope for user {}", userId);
             return false;
         }
 
-        // Safe data payload mapping to prevent NullPointerException
         Map<String, String> dataPayload = new HashMap<>();
-        dataPayload.put("userId", String.valueOf(r.userId()));
-        if (msg.type() != null) {
-            dataPayload.put("type", msg.type().name());
-        }
+        dataPayload.put("userId", String.valueOf(userId));
+        dataPayload.put("channelType", envelope.channelType());
 
-        // Multicast message distributes a single payload to a collection of tokens efficiently
         MulticastMessage message = MulticastMessage.builder()
                 .addAllTokens(tokens)
-                // Top-level notification automatically handles delivery to both Android and iOS
                 .setNotification(Notification.builder()
-                        .setTitle(msg.subject())
-                        .setBody(msg.body())
+                        .setTitle(envelope.messageTitle())
+                        .setBody(envelope.messageBody())
                         .build())
                 .putAllData(dataPayload)
-                // Android-specific settings (channel ID mapping)
                 .setAndroidConfig(AndroidConfig.builder()
                         .setPriority(AndroidConfig.Priority.HIGH)
                         .setNotification(AndroidNotification.builder()
                                 .setChannelId("soa-esps-alerts")
                                 .build())
                         .build())
-                // iOS-specific settings (sound and system options, removing duplicate alert texts)
                 .setApnsConfig(ApnsConfig.builder()
                         .setAps(Aps.builder()
                                 .setSound("default")
@@ -98,26 +78,51 @@ public class FcmNotificationChannel implements NotificationChannel {
                         .build())
                 .build();
 
-        try {
-            BatchResponse response = firebaseMessaging.sendEachForMulticast(message);
-            log.debug("FCM multicast status: {} success, {} failure",
-                    response.getSuccessCount(), response.getFailureCount());
+        // Execution step: Trigger the completely non-blocking network broadcast task
+        BatchResponse response = Mono.defer(() -> {
+                    // 1. Invoke the native non-blocking async method from Google SDK
+                    ApiFuture<BatchResponse> apiFuture = firebaseMessaging.sendEachForMulticastAsync(message);
 
-            if (response.getFailureCount() > 0) {
-                handleBatchErrors(response, tokens, r.userId());
-            }
+                    // 2. Wrap ApiFuture into standard Java CompletableFuture using custom adapter logic
+                    CompletableFuture<BatchResponse> completableFuture = convertToCompletableFuture(apiFuture);
 
-            // Return true if at least one device received the notification successfully
-            return response.getSuccessCount() > 0;
-        } catch (FirebaseMessagingException e) {
-            log.error("FCM critical multicast delivery failure for user {}", r.userId(), e);
-            return false;
-        }
+                    return Mono.fromFuture(completableFuture);
+                })
+                .doOnNext(batchResponse -> {
+                    log.info("FCM async multicast complete for user {}: {} successes, {} failures",
+                            userId, batchResponse.getSuccessCount(), batchResponse.getFailureCount());
+
+                    if (batchResponse.getFailureCount() > 0) {
+                        // Offload database sync unregister calls to elastic threads to avoid locking netty
+                        Mono.fromRunnable(() -> handleBatchErrors(batchResponse, tokens, userId))
+                                .subscribeOn(Schedulers.boundedElastic())
+                                .subscribe();
+                    }
+                })
+                .onErrorResume(ex -> {
+                    log.error("FCM async network pipe delivery failure for user {}", userId, ex);
+                    return Mono.empty();
+                })
+                .block(); // Block safely within Spring Integration dedicated handler thread partition boundaries
+
+        return response != null && response.getSuccessCount() > 0;
     }
 
     /**
-     * Inspects batch responses to identify individual stale device tokens that need invalidation.
+     * Utility bridging adapter transforming legacy Google ApiFuture structures into standard CompletableFuture instances.
      */
+    private static <T> CompletableFuture<T> convertToCompletableFuture(ApiFuture<T> apiFuture) {
+        CompletableFuture<T> completableFuture = new CompletableFuture<>();
+        apiFuture.addListener(() -> {
+            try {
+                completableFuture.complete(apiFuture.get());
+            } catch (Exception ex) {
+                completableFuture.completeExceptionally(ex);
+            }
+        }, Runnable::run);
+        return completableFuture;
+    }
+
     private void handleBatchErrors(BatchResponse response, List<String> tokens, Long userId) {
         List<SendResponse> responses = response.getResponses();
         for (int i = 0; i < responses.size(); i++) {
@@ -129,14 +134,27 @@ public class FcmNotificationChannel implements NotificationChannel {
                     String deadToken = tokens.get(i);
 
                     if (code == MessagingErrorCode.UNREGISTERED || code == MessagingErrorCode.INVALID_ARGUMENT) {
-                        log.warn("FCM token is dead for user {} ({}), removing from database...", userId, code);
-                        // Automated database synchronization: removes the stale token
+                        log.warn("FCM token is dead for user {} ({}), evicting from database...", userId, code);
                         deviceTokenService.unregister(deadToken);
                     } else {
-                        log.error("FCM delivery failed for a single device token of user {} due to error: {}", userId, code);
+                        log.error("FCM delivery failed for a single device token index [{}] of user {} due to error: {}", i, userId, code);
                     }
                 }
             }
         }
+    }
+
+    @Override
+    public String id() {
+        return "push";
+    }
+
+    @Override
+    public boolean supports(OutboundRoutingEnvelope envelope) {
+        if (envelope == null || envelope.userId() == null) {
+            return false;
+        }
+        // Validates that the router actively found non-empty token fields for this execution branch
+        return !envelope.destinations().isEmpty() && !envelope.destinations().contains("UNKNOWN_PUSH");
     }
 }

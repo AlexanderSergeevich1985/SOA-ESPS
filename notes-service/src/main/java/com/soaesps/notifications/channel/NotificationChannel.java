@@ -1,8 +1,6 @@
 package com.soaesps.notifications.channel;
 
-
-import com.soaesps.notifications.notifications.NotificationMessage;
-import com.soaesps.notifications.notifications.NotificationRecipient;
+import com.soaesps.notifications.dto.OutboundRoutingEnvelope;
 
 /**
  * Abstraction for a single delivery channel (SMS, Telegram, Email, Push).
@@ -10,15 +8,29 @@ import com.soaesps.notifications.notifications.NotificationRecipient;
  */
 public interface NotificationChannel {
 
-    /** Unique channel id: "sms", "telegram", "email", "push". */
+    /**
+     * Unique channel id: "sms", "telegram", "email", "push".
+     */
     String id();
 
-    /** Whether this channel can deliver to the given recipient descriptor. */
-    boolean supports(NotificationRecipient recipient);
+    /**
+     * Priority: lower value = tried first.
+     */
+    default int priority() {
+        return 20;
+    }
 
-    /** Priority: lower value = tried first. */
-    int priority();
+    /**
+     * Whether this channel can deliver to the given recipient envelope.
+     * Evaluates if the envelope has active target destinations for this channel.
+     */
+    boolean supports(OutboundRoutingEnvelope envelope);
 
-    /** Deliver the message. Returns true on success. */
-    boolean send(NotificationMessage message, NotificationRecipient recipient);
+    /**
+     * Deliver the message title and body to all destinations packed inside the envelope.
+     *
+     * @param envelope Transactional data container carrying routing targets and Thymeleaf texts
+     * @return true on success if delivery conditions are met
+     */
+    boolean send(OutboundRoutingEnvelope envelope);
 }
