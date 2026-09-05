@@ -17,6 +17,9 @@ public record NotificationTemplateRow(
         @Column("is_external_storage")
         boolean externalStorage,
 
+        @Column("inline_title_template")
+        String inlineTitleTemplate,
+
         @Column("inline_text_template")
         String inlineTextTemplate,
 

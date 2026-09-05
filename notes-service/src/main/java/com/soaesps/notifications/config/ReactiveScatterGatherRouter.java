@@ -1,8 +1,14 @@
 package com.soaesps.notifications.config;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.soaesps.notifications.domain.reactive.EmailContactRow;
+import com.soaesps.notifications.domain.reactive.PushContactRow;
+import com.soaesps.notifications.domain.reactive.SmsContactRow;
+import com.soaesps.notifications.domain.reactive.TelegramContactRow;
 import com.soaesps.notifications.dto.InboundNotificationEvent;
-import com.soaesps.notifications.repository.reactive.ReactiveDisabledChannelsRepository;
+import com.soaesps.notifications.dto.OutboundRoutingEnvelope;
+import com.soaesps.notifications.repository.reactive.*;
+import com.soaesps.notifications.service.template.ReactiveNamedTemplateEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -14,10 +20,12 @@ import org.springframework.integration.channel.FluxMessageChannel;
 import org.springframework.integration.support.MessageBuilder;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import static com.soaesps.notifications.config.IntegrationConstant.*;
@@ -34,8 +42,26 @@ public class ReactiveScatterGatherRouter {
 
     private final ReactiveDisabledChannelsRepository disabledChannelsRepository;
 
-    public ReactiveScatterGatherRouter(ReactiveDisabledChannelsRepository disabledChannelsRepository) {
+    private final ReactiveEmailContactRepository emailContactRepository;
+    private final ReactiveSmsContactRepository smsContactRepository;
+    private final ReactivePushContactRepository pushContactRepository;
+    private final ReactiveTelegramContactRepository telegramContactRepository;
+
+    private final ReactiveNamedTemplateEngine templateEngine;
+
+
+    public ReactiveScatterGatherRouter(ReactiveDisabledChannelsRepository disabledChannelsRepository,
+                                       ReactiveEmailContactRepository emailContactRepository,
+                                       ReactiveSmsContactRepository smsContactRepository,
+                                       ReactivePushContactRepository pushContactRepository,
+                                       ReactiveTelegramContactRepository telegramContactRepository,
+                                       ReactiveNamedTemplateEngine templateEngine) {
         this.disabledChannelsRepository = disabledChannelsRepository;
+        this.emailContactRepository = emailContactRepository;
+        this.smsContactRepository = smsContactRepository;
+        this.pushContactRepository = pushContactRepository;
+        this.telegramContactRepository = telegramContactRepository;
+        this.templateEngine = templateEngine;
     }
 
     @Bean(EMAIL_BRANCH_CHANNEL)
@@ -71,40 +97,113 @@ public class ReactiveScatterGatherRouter {
      * and evaluates active channel routing inside a non-blocking stream context.
      */
     @Router(inputChannel = REACTIVE_ROUTER_BRIDGE)
-    public Mono<List<Message<InboundNotificationEvent>>> routeAllowedChannelsReactive(Message<InboundNotificationEvent> message) {
-        Long userId = message.getPayload().userId();
+    public Mono<List<Message<OutboundRoutingEnvelope>>> routeAllowedChannelsReactive(Message<InboundNotificationEvent> message) {
+        InboundNotificationEvent event = message.getPayload();
+        Long userId = event.userId();
         String correlationId = Objects.requireNonNull(message.getHeaders().getId()).toString(); // Use message UUID as tracking ID
 
         return disabledChannelsRepository.findChannelsByUserId(userId)
                 .collectList()
-                .map(disabledChannels -> {
-                    List<String> targets = new ArrayList<>();
-                    if (!disabledChannels.contains("EMAIL")) targets.add(EMAIL_BRANCH_CHANNEL);
-                    if (!disabledChannels.contains("TELEGRAM")) targets.add(TELEGRAM_BRANCH_CHANNEL);
-                    if (!disabledChannels.contains("SMS")) targets.add(SMS_BRANCH_CHANNEL);
-                    if (!disabledChannels.contains("PUSH")) targets.add(PUSH_BRANCH_CHANNEL);
+                .flatMap(disabledChannels -> {
+                    List<String> targetChannels = new ArrayList<>();
+                    if (!disabledChannels.contains("EMAIL")) targetChannels.add(EMAIL_BRANCH_CHANNEL);
+                    if (!disabledChannels.contains("TELEGRAM")) targetChannels.add(TELEGRAM_BRANCH_CHANNEL);
+                    if (!disabledChannels.contains("SMS")) targetChannels.add(SMS_BRANCH_CHANNEL);
+                    if (!disabledChannels.contains("PUSH")) targetChannels.add(PUSH_BRANCH_CHANNEL);
 
-                    List<Message<InboundNotificationEvent>> routedMessages = new ArrayList<>();
-                    int sequenceSize = targets.size();
+                    int sequenceSize = targetChannels.size();
 
-                    // If all channels are muted, immediately push to aggregator with size 0
                     if (sequenceSize == 0) {
-                        return List.of(MessageBuilder.fromMessage(message)
+                        log.warn("All messaging channels are muted for userId: {}. Terminal drop route triggered.", userId);
+                        var mutedEnvelope = new OutboundRoutingEnvelope(userId, "NONE", List.of("NONE"), List.of(Map.of()), "MUTED", "MUTED");
+                        return Mono.just(List.of(MessageBuilder.withPayload(mutedEnvelope)
                                 .setHeader("targetChannel", "NONE")
                                 .setHeader("IntegrationMessageHeaderAccessor.CORRELATION_ID", correlationId)
                                 .setHeader("IntegrationMessageHeaderAccessor.SEQUENCE_SIZE", 0)
-                                .build());
+                                .build()));
                     }
 
+                    List<Mono<Message<OutboundRoutingEnvelope>>> messageMonos = new ArrayList<>();
+
                     for (int i = 0; i < sequenceSize; i++) {
-                        routedMessages.add(MessageBuilder.fromMessage(message)
-                                .setHeader("targetChannel", targets.get(i)) // Custom route target header
-                                .setHeader("IntegrationMessageHeaderAccessor.CORRELATION_ID", correlationId)
-                                .setHeader("IntegrationMessageHeaderAccessor.SEQUENCE_NUMBER", i + 1)
-                                .setHeader("IntegrationMessageHeaderAccessor.SEQUENCE_SIZE", sequenceSize)
-                                .build());
+                        String physicalChannelName = targetChannels.get(i);
+                        String channelTypeKey = physicalChannelName.replace("BranchChannel", "").toUpperCase();
+                        int sequenceNumber = i + 1;
+
+                        // 1. Trigger template engine to render title and body exactly ONCE per channel type boundary
+                        Mono<ReactiveNamedTemplateEngine.RenderedContent> contentRenderMono = templateEngine.renderAsync(channelTypeKey, event).cache();
+
+                        // 2. Fetch ALL active contact records and collect them as a unified list array container
+                        Mono<Message<OutboundRoutingEnvelope>> channelPipelineMono = resolveTargetEnvelopes(userId, channelTypeKey)
+                                .collectList()
+                                .flatMap(targetPairs -> contentRenderMono.map(renderedContent -> {
+
+                                    // Split target pairs into separate parallel list structures matching DTO schema definition bounds
+                                    List<String> addressList = targetPairs.stream().map(TargetContactPair::destinationValue).toList();
+                                    List<Map<String, String>> metaList = targetPairs.stream().map(TargetContactPair::meta).toList();
+
+                                    // If no active endpoints exist for this user in DB, use a fallback tracer string
+                                    if (addressList.isEmpty()) {
+                                        addressList = List.of("UNKNOWN_" + channelTypeKey);
+                                    }
+
+                                    var envelope = new OutboundRoutingEnvelope(
+                                            userId,
+                                            channelTypeKey,
+                                            addressList, // Pass the consolidated list of multiple emails/tokens
+                                            metaList,
+                                            renderedContent.title(),
+                                            renderedContent.body()
+                                    );
+
+                                    return MessageBuilder.withPayload(envelope)
+                                            .setHeader("targetChannel", physicalChannelName)
+                                            .setHeader("IntegrationMessageHeaderAccessor.CORRELATION_ID", correlationId)
+                                            .setHeader("IntegrationMessageHeaderAccessor.SEQUENCE_NUMBER", sequenceNumber)
+                                            .setHeader("IntegrationMessageHeaderAccessor.SEQUENCE_SIZE", sequenceSize)
+                                            .build();
+                                }));
+
+                        messageMonos.add(channelPipelineMono);
                     }
-                    return routedMessages;
+
+                    // Merge all completed single-envelope channel monos back into a master list sequence wrapper
+                    return Flux.merge(messageMonos).collectList();
                 });
     }
+
+    /**
+     * Resolves all active multi-endpoint target pairs from isolated database configurations.
+     * Eradicates the restrictive single-record lock (.next()) to support parallel broadcasting.
+     */
+    private Flux<TargetContactPair> resolveTargetEnvelopes(Long userId, String channelType) {
+        switch (channelType.toUpperCase()) {
+            case "PUSH":
+                return pushContactRepository.findPushByUserId(userId)
+                        .filter(PushContactRow::active) // Stream all matching active devices
+                        .map(row -> new TargetContactPair(
+                                row.pushToken(),
+                                Map.of("deviceId", row.deviceId(), "deviceType", row.deviceType())
+                        ));
+            case "SMS":
+                return smsContactRepository.findSmsByUserId(userId)
+                        .filter(SmsContactRow::active)
+                        .map(row -> new TargetContactPair(row.phoneNumber(), Map.of()));
+            case "TELEGRAM":
+                return telegramContactRepository.findTelegramByUserId(userId)
+                        .filter(TelegramContactRow::active)
+                        .map(row -> new TargetContactPair(row.telegramChatId(), Map.of("username", row.telegramUsername())));
+            case "EMAIL":
+                return emailContactRepository.findEmailByUserId(userId)
+                        .filter(EmailContactRow::active)
+                        .map(row -> new TargetContactPair(row.emailAddress(), Map.of()));
+            default:
+                return Flux.empty();
+        }
+    }
+
+    /**
+     * Internal utility immutable helper record class to bind structural routing meta arrays.
+     */
+    private record TargetContactPair(String destinationValue, Map<String, String> meta) {}
 }
