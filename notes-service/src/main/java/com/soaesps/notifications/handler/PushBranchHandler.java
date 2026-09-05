@@ -1,4 +1,4 @@
-package com.soaesps.notifications.component;
+package com.soaesps.notifications.handler;
 
 import com.soaesps.notifications.channel.FcmNotificationChannel;
 import com.soaesps.notifications.dto.BranchStatus;
