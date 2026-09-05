@@ -1,4 +1,4 @@
-package com.soaesps.notifications.service.template;
+package com.soaesps.notifications.service.render;
 
 import com.soaesps.notifications.dto.InboundNotificationEvent;
 import com.soaesps.notifications.repository.reactive.ReactiveNotificationTemplateRepository;
@@ -17,20 +17,20 @@ import java.util.Locale;
  * Pulls textual configurations from PostgreSQL and layouts from MinIO by strict naming convention.
  */
 @Service
-public class ReactiveNamedTemplateEngine {
+public class ReactiveHtmlRenderService {
     /**
      * Container record for carrying both compiled title and body strings.
      */
     public record RenderedContent(String title, String body) {}
 
-    private static final Logger log = LoggerFactory.getLogger(ReactiveNamedTemplateEngine.class);
+    private static final Logger log = LoggerFactory.getLogger(ReactiveHtmlRenderService.class);
 
     private final ReactiveNotificationTemplateRepository templateRepository;
 
     private final SpringTemplateEngine thymeleafEngine;
 
-    public ReactiveNamedTemplateEngine(ReactiveNotificationTemplateRepository templateRepository,
-                                       SpringTemplateEngine thymeleafEngine) {
+    public ReactiveHtmlRenderService(ReactiveNotificationTemplateRepository templateRepository,
+                                     SpringTemplateEngine thymeleafEngine) {
         this.templateRepository = templateRepository;
         this.thymeleafEngine = thymeleafEngine;
     }

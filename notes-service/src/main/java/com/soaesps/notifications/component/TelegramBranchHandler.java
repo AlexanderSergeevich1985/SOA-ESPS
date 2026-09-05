@@ -2,7 +2,7 @@ package com.soaesps.notifications.component;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.soaesps.notifications.dto.BranchStatus;
-import com.soaesps.notifications.repository.ReactiveContactRepository;
+import com.soaesps.notifications.repository.reactive.ReactiveContactRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.integration.annotation.ServiceActivator;

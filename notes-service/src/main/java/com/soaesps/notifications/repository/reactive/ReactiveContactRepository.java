@@ -1,4 +1,4 @@
-package com.soaesps.notifications.repository;
+package com.soaesps.notifications.repository.reactive;
 
 import com.soaesps.notifications.dto.UserContactRow;
 import org.springframework.data.r2dbc.repository.Query;

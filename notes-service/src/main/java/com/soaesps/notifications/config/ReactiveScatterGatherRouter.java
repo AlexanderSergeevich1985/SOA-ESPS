@@ -8,7 +8,7 @@ import com.soaesps.notifications.domain.reactive.TelegramContactRow;
 import com.soaesps.notifications.dto.InboundNotificationEvent;
 import com.soaesps.notifications.dto.OutboundRoutingEnvelope;
 import com.soaesps.notifications.repository.reactive.*;
-import com.soaesps.notifications.service.template.ReactiveNamedTemplateEngine;
+import com.soaesps.notifications.service.render.ReactiveHtmlRenderService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -47,7 +47,7 @@ public class ReactiveScatterGatherRouter {
     private final ReactivePushContactRepository pushContactRepository;
     private final ReactiveTelegramContactRepository telegramContactRepository;
 
-    private final ReactiveNamedTemplateEngine templateEngine;
+    private final ReactiveHtmlRenderService templateEngine;
 
 
     public ReactiveScatterGatherRouter(ReactiveDisabledChannelsRepository disabledChannelsRepository,
@@ -55,7 +55,7 @@ public class ReactiveScatterGatherRouter {
                                        ReactiveSmsContactRepository smsContactRepository,
                                        ReactivePushContactRepository pushContactRepository,
                                        ReactiveTelegramContactRepository telegramContactRepository,
-                                       ReactiveNamedTemplateEngine templateEngine) {
+                                       ReactiveHtmlRenderService templateEngine) {
         this.disabledChannelsRepository = disabledChannelsRepository;
         this.emailContactRepository = emailContactRepository;
         this.smsContactRepository = smsContactRepository;
@@ -130,10 +130,10 @@ public class ReactiveScatterGatherRouter {
                         String channelTypeKey = physicalChannelName.replace("BranchChannel", "").toUpperCase();
                         int sequenceNumber = i + 1;
 
-                        // 1. Trigger template engine to render title and body exactly ONCE per channel type boundary
-                        Mono<ReactiveNamedTemplateEngine.RenderedContent> contentRenderMono = templateEngine.renderAsync(channelTypeKey, event).cache();
+                        // Trigger template engine to render title and body exactly ONCE per channel type boundary
+                        Mono<ReactiveHtmlRenderService.RenderedContent> contentRenderMono = templateEngine.renderAsync(channelTypeKey, event).cache();
 
-                        // 2. Fetch ALL active contact records and collect them as a unified list array container
+                        // Fetch ALL active contact records and collect them as a unified list array container
                         Mono<Message<OutboundRoutingEnvelope>> channelPipelineMono = resolveTargetEnvelopes(userId, channelTypeKey)
                                 .collectList()
                                 .flatMap(targetPairs -> contentRenderMono.map(renderedContent -> {
