@@ -11,6 +11,9 @@ import jakarta.validation.constraints.Size;
 
 import java.io.Serializable;
 import java.time.ZonedDateTime;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * Base MongoDB document model.
@@ -63,6 +66,21 @@ public class BaseDocument implements Serializable {
     @Field("last_operation_id")
     private long lastOperationId;
 
+    @Field("hash")
+    private String hash;
+
+    @Indexed
+    @Field("package_id")
+    private String packageId;
+
+    @Indexed
+    @Field("parent_id")
+    private String parentId;
+
+    // Добавлено: Динамические свойства документа для MongoDB
+    @Field("properties")
+    private Map<String, Object> properties = new LinkedHashMap<>();
+
     public BaseDocument() {}
 
     public BaseDocument(final BaseDocument other) {
@@ -82,6 +100,16 @@ public class BaseDocument implements Serializable {
         this.lastModifyDate = other.lastModifyDate;
         this.lastAuthId = other.lastAuthId;
         this.lastOperationId = other.lastOperationId;
+        this.hash = other.hash;
+        this.packageId = other.packageId; // Добавлено в копирование (отсутствовало в вашем конструкторе)
+        this.parentId = other.parentId;   // Добавлено в копирование (отсутствовало в вашем конструкторе)
+
+        // Исправлено: Безопасное копирование Map
+        if (other.properties != null) {
+            this.properties = new LinkedHashMap<>(other.properties);
+        } else {
+            this.properties = new LinkedHashMap<>();
+        }
     }
 
     public String getId() { return id; }
@@ -122,4 +150,42 @@ public class BaseDocument implements Serializable {
 
     public long getLastOperationId() { return lastOperationId; }
     public void setLastOperationId(long lastOperationId) { this.lastOperationId = lastOperationId; }
+
+    public String getHash() { return hash; }
+    public void setHash(String hash) { this.hash = hash; }
+
+    public String getPackageId() { return packageId; }
+    public void setPackageId(String packageId) { this.packageId = packageId; }
+    public String getParentId() { return parentId; }
+    public void setParentId(String parentId) { this.parentId = parentId; }
+
+    // Добавленные Геттер и Сеттер
+    public Map<String, Object> getProperties() { return properties; }
+    public void setProperties(Map<String, Object> properties) { this.properties = properties; }
+
+    // =========================================================================
+    // STANDARD EQUALS & HASHCODE (Business Identity Contract)
+    // =========================================================================
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        BaseDocument other = (BaseDocument) o;
+
+        if (id != null && other.id != null) {
+            return id.equals(other.id);
+        }
+
+        return Objects.equals(domain, other.domain);
+    }
+
+    @Override
+    public int hashCode() {
+        if (id != null) {
+            return id.hashCode();
+        }
+        return domain != null ? domain.hashCode() : 0;
+    }
 }
