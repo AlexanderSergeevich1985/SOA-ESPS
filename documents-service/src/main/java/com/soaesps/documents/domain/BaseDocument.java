@@ -1,4 +1,4 @@
-package com.soaesps.documentsservice.DataModels;
+package com.soaesps.documents.domain;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -11,9 +11,8 @@ import jakarta.validation.constraints.Size;
 
 import java.io.Serializable;
 import java.time.ZonedDateTime;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Base MongoDB document model.
@@ -81,6 +80,9 @@ public class BaseDocument implements Serializable {
     @Field("properties")
     private Map<String, Object> properties = new LinkedHashMap<>();
 
+    @Field("signatures")
+    private List<DocumentSignature> signatures = new ArrayList<>();
+
     public BaseDocument() {}
 
     public BaseDocument(final BaseDocument other) {
@@ -101,14 +103,22 @@ public class BaseDocument implements Serializable {
         this.lastAuthId = other.lastAuthId;
         this.lastOperationId = other.lastOperationId;
         this.hash = other.hash;
-        this.packageId = other.packageId; // Добавлено в копирование (отсутствовало в вашем конструкторе)
-        this.parentId = other.parentId;   // Добавлено в копирование (отсутствовало в вашем конструкторе)
+        this.packageId = other.packageId;
+        this.parentId = other.parentId;
 
-        // Исправлено: Безопасное копирование Map
         if (other.properties != null) {
             this.properties = new LinkedHashMap<>(other.properties);
         } else {
             this.properties = new LinkedHashMap<>();
+        }
+
+        // Deep copy of approval signatures list
+        if (other.signatures != null) {
+            this.signatures = other.signatures.stream()
+                    .map(DocumentSignature::new)
+                    .collect(Collectors.toList());
+        } else {
+            this.signatures = new ArrayList<>();
         }
     }
 
@@ -159,9 +169,11 @@ public class BaseDocument implements Serializable {
     public String getParentId() { return parentId; }
     public void setParentId(String parentId) { this.parentId = parentId; }
 
-    // Добавленные Геттер и Сеттер
     public Map<String, Object> getProperties() { return properties; }
     public void setProperties(Map<String, Object> properties) { this.properties = properties; }
+
+    public List<DocumentSignature> getSignatures() { return signatures; }
+    public void setSignatures(List<DocumentSignature> signatures) { this.signatures = signatures; }
 
     // =========================================================================
     // STANDARD EQUALS & HASHCODE (Business Identity Contract)

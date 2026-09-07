@@ -1,6 +1,6 @@
-package com.soaesps.documentsservice.service;
+package com.soaesps.documents.service;
 
-import com.soaesps.documentsservice.DataModels.BaseDocument;
+import com.soaesps.documents.domain.BaseDocument;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 

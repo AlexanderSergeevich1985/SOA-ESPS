@@ -1,7 +1,7 @@
-package com.soaesps.documentsservice.controller;
+package com.soaesps.documents.controller;
 
-import com.soaesps.documentsservice.DataModels.BaseDocument;
-import com.soaesps.documentsservice.service.DocumentsService;
+import com.soaesps.documents.domain.BaseDocument;
+import com.soaesps.documents.service.DocumentsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;

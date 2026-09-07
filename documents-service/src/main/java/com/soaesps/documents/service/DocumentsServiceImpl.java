@@ -1,9 +1,9 @@
-package com.soaesps.documentsservice.service;
+package com.soaesps.documents.service;
 
-import com.soaesps.documentsservice.DataModels.BaseDocument;
-import com.soaesps.documentsservice.repository.BulkPackageRepository;
-import com.soaesps.documentsservice.repository.HierarchicalDocumentRepository;
-import com.soaesps.documentsservice.repository.StandaloneDocumentRepository;
+import com.soaesps.documents.domain.BaseDocument;
+import com.soaesps.documents.repository.BulkPackageRepository;
+import com.soaesps.documents.repository.HierarchicalDocumentRepository;
+import com.soaesps.documents.repository.StandaloneDocumentRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Example;

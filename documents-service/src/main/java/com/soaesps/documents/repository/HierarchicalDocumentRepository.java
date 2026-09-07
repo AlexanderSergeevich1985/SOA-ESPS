@@ -1,6 +1,6 @@
-package com.soaesps.documentsservice.repository;
+package com.soaesps.documents.repository;
 
-import com.soaesps.documentsservice.DataModels.BaseDocument;
+import com.soaesps.documents.domain.BaseDocument;
 import org.springframework.data.mongodb.repository.ReactiveMongoRepository;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;

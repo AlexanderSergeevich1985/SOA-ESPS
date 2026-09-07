@@ -1,4 +1,4 @@
-package com.soaesps.documentsservice.config;
+package com.soaesps.documents.config;
 
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;

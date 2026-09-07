@@ -1,4 +1,4 @@
-package com.soaesps.documentsservice;
+package com.soaesps.documents;
 
 import feign.RequestInterceptor;
 import org.springframework.boot.SpringApplication;
