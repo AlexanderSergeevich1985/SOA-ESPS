@@ -4,6 +4,7 @@ import com.soaesps.documents.domain.BaseDocument;
 import com.soaesps.documents.repository.BulkPackageRepository;
 import com.soaesps.documents.repository.HierarchicalDocumentRepository;
 import com.soaesps.documents.repository.StandaloneDocumentRepository;
+import com.soaesps.documents.validation.DynamicDocumentValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Example;
@@ -13,24 +14,28 @@ import reactor.core.publisher.Mono;
 
 /**
  * Enterprise reactive implementation of the DocumentsService contract layer.
- * Coordinates multi-faceted business paths by routing requests to specialized fine-grained repositories.
+ * Coordinates multi-faceted business paths by routing requests to specialized fine-grained repositories
+ * and enforcing strict data-driven validation policies.
  */
 @Service("DocumentsService")
 public class DocumentsServiceImpl implements DocumentsService {
 
     private static final Logger log = LoggerFactory.getLogger(DocumentsServiceImpl.class);
 
-    // Injected distinct reactive repositories targeting the same physical MongoDB collection bounds
     private final StandaloneDocumentRepository standaloneRepository;
     private final BulkPackageRepository bulkPackageRepository;
     private final HierarchicalDocumentRepository hierarchicalDocumentRepository;
 
+    private final DynamicDocumentValidator dynamicValidator;
+
     public DocumentsServiceImpl(StandaloneDocumentRepository standaloneRepository,
                                 BulkPackageRepository bulkPackageRepository,
-                                HierarchicalDocumentRepository hierarchicalDocumentRepository) {
+                                HierarchicalDocumentRepository hierarchicalDocumentRepository,
+                                DynamicDocumentValidator dynamicValidator) {
         this.standaloneRepository = standaloneRepository;
         this.bulkPackageRepository = bulkPackageRepository;
         this.hierarchicalDocumentRepository = hierarchicalDocumentRepository;
+        this.dynamicValidator = dynamicValidator;
     }
 
     @Override
@@ -47,18 +52,37 @@ public class DocumentsServiceImpl implements DocumentsService {
 
     @Override
     public Mono<BaseDocument> save(final BaseDocument doc) {
-        log.info("Persisting reactive document state into MongoDB collection bounds for: {}", doc.getName());
+        log.info("Persisting raw unvalidated document state into MongoDB bounds for: {}", doc.getName());
         return standaloneRepository.save(doc);
     }
 
     /**
+     * Enhanced non-blocking save operation wrapped with dynamic schema validation.
+     * Use this method on hot creation and synchronization execution paths.
+     */
+    public Mono<BaseDocument> save(final BaseDocument doc, final String documentType) {
+        log.info("Executing dynamic validation step prior to saving document for type: {}", documentType);
+        return dynamicValidator.validate(documentType, doc)
+                .then(standaloneRepository.save(doc));
+    }
+
+    /**
      * Non-blockingly intercepts, duplicates copies, and updates records via fluent pipeline flows.
+     * FIX: Injected dynamic schema validation check to evaluate every mutated clone before hitting disk.
+     * Assumes document type identifier is extracted from the entity metadata name or attributes context.
      */
     public Flux<BaseDocument> update(final BaseDocument doc) {
         log.info("Initiating batch mutation update sequence for document nodes matching constraints");
         return standaloneRepository.findAll(Example.of(doc))
                 .map(BaseDocument::new) // Safely clone existing states via the copy constructor structure
-                .flatMap(standaloneRepository::save); // Parallel asynchronous write stream fan-out loops
+                .flatMap(clonedDoc -> {
+                    // Extracting the dynamic document type signature from the model parameters field
+                    String inferredType = clonedDoc.getName();
+                    log.debug("Validating cloned document mutation node for inferred type: {}", inferredType);
+
+                    return dynamicValidator.validate(inferredType, clonedDoc)
+                            .then(standaloneRepository.save(clonedDoc));
+                });
     }
 
     @Override
