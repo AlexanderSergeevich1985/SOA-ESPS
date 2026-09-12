@@ -5,6 +5,7 @@ import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * Isolated CRUD repository for managing mobile/web PUSH notification tokens.
@@ -18,4 +19,6 @@ public interface ReactivePushContactRepository extends ReactiveCrudRepository<Pu
     @Query("SELECT id, user_id, contact_type, is_active, is_primary, created_at, push_token, device_id, device_type " +
             "FROM user_contacts WHERE user_id = :userId AND contact_type = 'PUSH'")
     Flux<PushContactRow> findPushByUserId(Long userId);
+
+    Mono<Void> deleteByPushToken(String pushToken);
 }

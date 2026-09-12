@@ -3,11 +3,12 @@ package com.soaesps.notifications.channel;
 import com.google.api.core.ApiFuture;
 import com.google.firebase.messaging.*;
 import com.soaesps.notifications.dto.OutboundRoutingEnvelope;
-import com.soaesps.notifications.service.push.DeviceTokenService;
+import com.soaesps.notifications.repository.reactive.ReactivePushContactRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -27,19 +28,20 @@ public class FcmNotificationChannel implements NotificationChannel {
     private static final Logger log = LoggerFactory.getLogger(FcmNotificationChannel.class);
 
     private final FirebaseMessaging firebaseMessaging;
-    private final DeviceTokenService deviceTokenService;
+    private final ReactivePushContactRepository pushContactRepository;
 
     /**
      * Dependency injection via constructor.
      * Injects the FCM client and the token service for database synchronization.
      */
-    public FcmNotificationChannel(FirebaseMessaging firebaseMessaging, DeviceTokenService deviceTokenService) {
+    public FcmNotificationChannel(FirebaseMessaging firebaseMessaging, ReactivePushContactRepository pushContactRepository) {
         this.firebaseMessaging = firebaseMessaging;
-        this.deviceTokenService = deviceTokenService;
+        this.pushContactRepository = pushContactRepository;
     }
 
     /**
-     * Modernized non-blocking dispatch method driven by the enriched OutboundRoutingEnvelope pipeline.
+     * Dispatch method strictly driven by the synchronous NotificationChannel interface contract.
+     * Evaluates non-blocking streams and invokes .block() safely on an isolated elastic thread partition.
      *
      * @param envelope Integrated delivery metadata containing destinations array, title, and body strings
      * @return true if at least one target device token received the push event payload successfully
@@ -78,32 +80,34 @@ public class FcmNotificationChannel implements NotificationChannel {
                         .build())
                 .build();
 
-        // Execution step: Trigger the completely non-blocking network broadcast task
+        // Execution step: Trigger the pipeline and safely block inside isolated boundedElastic pool threads
         BatchResponse response = Mono.defer(() -> {
-                    // 1. Invoke the native non-blocking async method from Google SDK
+                    // Invoke the native non-blocking async method from Google SDK
                     ApiFuture<BatchResponse> apiFuture = firebaseMessaging.sendEachForMulticastAsync(message);
 
-                    // 2. Wrap ApiFuture into standard Java CompletableFuture using custom adapter logic
+                    // Wrap ApiFuture into standard Java CompletableFuture using custom adapter logic
                     CompletableFuture<BatchResponse> completableFuture = convertToCompletableFuture(apiFuture);
 
                     return Mono.fromFuture(completableFuture);
                 })
-                .doOnNext(batchResponse -> {
+                .flatMap(batchResponse -> {
                     log.info("FCM async multicast complete for user {}: {} successes, {} failures",
                             userId, batchResponse.getSuccessCount(), batchResponse.getFailureCount());
 
                     if (batchResponse.getFailureCount() > 0) {
-                        // Offload database sync unregister calls to elastic threads to avoid locking netty
-                        Mono.fromRunnable(() -> handleBatchErrors(batchResponse, tokens, userId))
-                                .subscribeOn(Schedulers.boundedElastic())
-                                .subscribe();
+                        // Securely trigger dead tokens eviction pipeline and wait for database execution logs
+                        return handleBatchErrorsReactive(batchResponse, tokens, userId)
+                                .then(Mono.just(batchResponse));
                     }
+
+                    return Mono.just(batchResponse);
                 })
                 .onErrorResume(ex -> {
                     log.error("FCM async network pipe delivery failure for user {}", userId, ex);
                     return Mono.empty();
                 })
-                .block(); // Block safely within Spring Integration dedicated handler thread partition boundaries
+                .subscribeOn(Schedulers.boundedElastic()) // Protect Netty Event Loop by offloading blocking task
+                .block(); // Block safely as forced by the 'boolean' interface return signature
 
         return response != null && response.getSuccessCount() > 0;
     }
@@ -123,25 +127,43 @@ public class FcmNotificationChannel implements NotificationChannel {
         return completableFuture;
     }
 
-    private void handleBatchErrors(BatchResponse response, List<String> tokens, Long userId) {
+    /**
+     * Internal private validation engine processing batch errors.
+     * Correctly configured to return Mono<Void> to allow proper reactive chaining pipelines.
+     */
+    private Mono<Void> handleBatchErrorsReactive(BatchResponse response, List<String> tokens, Long userId) {
         List<SendResponse> responses = response.getResponses();
-        for (int i = 0; i < responses.size(); i++) {
-            SendResponse res = responses.get(i);
-            if (!res.isSuccessful()) {
-                FirebaseMessagingException ex = res.getException();
-                if (ex != null) {
+
+        return Flux.range(0, responses.size())
+                .flatMap(i -> {
+                    SendResponse res = responses.get(i);
+                    if (res.isSuccessful()) {
+                        return Mono.empty();
+                    }
+
+                    FirebaseMessagingException ex = res.getException();
+                    if (ex == null) {
+                        return Mono.empty();
+                    }
+
                     MessagingErrorCode code = ex.getMessagingErrorCode();
                     String deadToken = tokens.get(i);
 
                     if (code == MessagingErrorCode.UNREGISTERED || code == MessagingErrorCode.INVALID_ARGUMENT) {
                         log.warn("FCM token is dead for user {} ({}), evicting from database...", userId, code);
-                        deviceTokenService.unregister(deadToken);
+
+                        return pushContactRepository.deleteByPushToken(deadToken)
+                                .doOnSuccess(v -> log.info("Successfully dropped dead push record for token context"))
+                                .onErrorResume(err -> {
+                                    log.error("Failed to unregister dead push token from database", err);
+                                    return Mono.empty();
+                                });
                     } else {
                         log.error("FCM delivery failed for a single device token index [{}] of user {} due to error: {}", i, userId, code);
+                        return Mono.empty();
                     }
-                }
-            }
-        }
+                })
+                .then();
     }
 
     @Override

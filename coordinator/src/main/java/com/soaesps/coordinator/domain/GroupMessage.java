@@ -2,8 +2,10 @@ package com.soaesps.coordinator.domain;
 
 import java.io.Serializable;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * Represents a message within a group chat or distributed system.
@@ -11,6 +13,8 @@ import lombok.Data;
  */
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class GroupMessage implements Serializable {
 
     /** Unique identifier for the message (e.g., UUID). */
