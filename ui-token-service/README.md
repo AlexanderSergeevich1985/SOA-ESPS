@@ -1,15 +1,5 @@
 # Agentic UI & Dynamic Document Validation Platform
 
-An enterprise-grade, high-throughput financial ecosystem engineered with a **Server-Driven UI (SDUI)** paradigm and **Strict Temporal Auditability**. Designed specifically for high-volume crypto exchanges and institutional OTC platforms where legal/compliance agreements (e.g., Collateral Pledges, Risk Disclosures, Term Sheets) mutate continuously based on jurisdictions, user intent, and underlying financial assets.
-
----
-
-## System Architecture Overview
-
-The platform is split into two completely isolated microservices to ensure strict separation of concerns, fault isolation, and sub-millisecond execution paths under heavy loads:
-
-# Agentic UI & Dynamic Document Validation Platform
-
 An enterprise-grade, high-throughput financial ecosystem engineered with a **Server-Driven UI (SDUI)** paradigm and **Strict Temporal Auditability**. Designed specifically for high-volume crypto exchanges and institutional OTC platforms where legal and compliance agreements (e.g., Collateral Pledges, Risk Disclosures, Term Sheets) mutate continuously based on jurisdictions, user intent, and underlying financial assets.
 
 ---
@@ -35,6 +25,7 @@ sequenceDiagram
     DocService->>DocService: 7. DynamicDocumentValidator (BigDecimal / Regex)
     DocService->>DB: 8. Persist Validated & Stamped Document
     DocService-->>Client: 9. Success Response
+```
 
 ### 1. ui-token-service (Presentation Layer)
 * **Core Tech:** Java 17, Spring WebFlux, Netty, Spring Data Reactive MongoDB, Caffeine Cache.
