@@ -126,6 +126,7 @@
         <module>scheduler-service</module>
         <module>api-gateway</module>
         <module>coordinator</module>
+        <module>ui-token-service</module>
         <!--module>aggregator</module-->
     </modules>
 
