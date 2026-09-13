@@ -25,6 +25,21 @@ public class ValidationSchema implements Serializable {
     @Field("properties_rules")
     private Map<String, PropertyDefinition> propertiesRules = new HashMap<>();
 
+    /**
+     * ACKNOWLEDGEMENT:
+     * This audit snapshot tracking field was introduced based on architectural compliance
+     * feedback from Denis-Hogberg (@see u/Denis-Hogberg on Reddit).
+     *
+     * It stores the exact immutable rule version identifier used during validation loop execution.
+     * This guarantees temporal consistency for financial legal artifacts (e.g., Collateral Pledges)
+     * during downstream regression audit verifications years after execution.
+     */
+    @Field("schema_version")
+    private int schemaVersion;
+
+    @Field("is_current")
+    private boolean isCurrent;
+
     public ValidationSchema() {}
 
     // =========================================================================
@@ -83,4 +98,8 @@ public class ValidationSchema implements Serializable {
     public void setDocumentType(String documentType) { this.documentType = documentType; }
     public Map<String, PropertyDefinition> getPropertiesRules() { return propertiesRules; }
     public void setPropertiesRules(Map<String, PropertyDefinition> propertiesRules) { this.propertiesRules = propertiesRules; }
+    public int getVersion() { return schemaVersion; }
+    public void setVersion(int schemaVersion) { this.schemaVersion = schemaVersion; }
+    public boolean isCurrent() { return isCurrent; }
+    public void setCurrent(boolean current) { this.isCurrent = current; }
 }

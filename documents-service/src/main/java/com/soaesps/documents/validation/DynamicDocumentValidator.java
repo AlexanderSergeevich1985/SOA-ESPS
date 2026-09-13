@@ -36,28 +36,23 @@ public class DynamicDocumentValidator {
                 .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "Validation failed: No active schema rules registered for document type: " + documentType)))
                 .map(schema -> {
-                    Map<String, Object> actualProps = document.getProperties();
+                    document.setSchemaVersion(schema.getVersion());
 
+                    Map<String, Object> actualProps = document.getProperties();
                     for (Map.Entry<String, ValidationSchema.PropertyDefinition> entry : schema.getPropertiesRules().entrySet()) {
                         String key = entry.getKey();
                         ValidationSchema.PropertyDefinition propDef = entry.getValue();
                         Object rawValue = actualProps.get(key);
 
-                        // Validate required constraint rules boundaries
                         boolean isBlankString = (rawValue instanceof String str && str.isBlank());
                         if (propDef.required() && (rawValue == null || isBlankString)) {
                             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                                     String.format("Validation Error: Field '%s' is strictly required for type '%s'", key, documentType));
                         }
 
-                        if (rawValue == null || isBlankString) {
-                            continue;
-                        }
+                        if (rawValue == null || isBlankString) continue;
 
-                        // Validate Type Uniformity constraints
                         validateTypeMatching(key, rawValue, propDef.type());
-
-                        // Process the entire dynamic constraints list sequentially
                         for (ValidationSchema.Constraint constraint : propDef.constraints()) {
                             executeConstraintCheck(key, rawValue, constraint);
                         }

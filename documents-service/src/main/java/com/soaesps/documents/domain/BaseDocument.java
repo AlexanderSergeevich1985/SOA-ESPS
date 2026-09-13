@@ -83,6 +83,9 @@ public class BaseDocument implements Serializable {
     @Field("signatures")
     private List<DocumentSignature> signatures = new ArrayList<>();
 
+    @Field("schema_version")
+    private int schemaVersion;
+
     public BaseDocument() {}
 
     public BaseDocument(final BaseDocument other) {
@@ -174,6 +177,9 @@ public class BaseDocument implements Serializable {
 
     public List<DocumentSignature> getSignatures() { return signatures; }
     public void setSignatures(List<DocumentSignature> signatures) { this.signatures = signatures; }
+
+    public int getSchemaVersion() { return schemaVersion; }
+    public void setSchemaVersion(int schemaVersion) { this.schemaVersion = schemaVersion; }
 
     // =========================================================================
     // STANDARD EQUALS & HASHCODE (Business Identity Contract)
