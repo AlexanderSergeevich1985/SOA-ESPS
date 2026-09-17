@@ -6,11 +6,15 @@ import com.soaesps.aggregator.llm.LlmProcessorFactory;
 import com.soaesps.aggregator.llm.SummaryReport;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.time.Instant;
 import java.util.List;
@@ -66,17 +70,54 @@ public class PeriodicReportService {
     private final ExecutorService virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
     @Scheduled(cron = "${aggregator.report.cron:0 0 */6 * * *}")
+    @SchedulerLock(name = "PeriodicReportService_generateReports", lockAtMostFor = "PT30M", lockAtLeastFor = "PT5M")
     public void generateReports() {
-        for (Long userId : jdbc.queryForList(USER_IDS_SQL, Long.class)) {
-            List<AggRow> rows = jdbc.query(ROWS_SQL, AGG_ROW_MAPPER, userId);
-            if (rows.isEmpty()) {
-                continue;
-            }
-            SummaryReport report = summarizeSafe(userId, rows);
-            adviceTemplate.send(Topics.USER_ADVICE, String.valueOf(userId),
-                    new UserAdviceEvent(UserAdviceEvent.TYPE_SUMMARY, userId, null,
-                            report.severity().name(), report.summary(), Instant.now()));
-        }
+        log.info("Starting automated reactive periodic report loop...");
+
+        List<Long> userIds = jdbc.queryForList(USER_IDS_SQL, Long.class);
+
+        // Process all users in parallel using Flux and boundedElastic scheduler
+        Flux.fromIterable(userIds)
+                .flatMap(userId -> generateSingleUserReportReactive(userId, UserAdviceEvent.TRIGGER_SCHEDULED)
+                        .subscribeOn(Schedulers.boundedElastic()))
+                .then()
+                .block(); // Wait for the whole batch to finish before closing the scheduled tick
+
+        log.info("Finished automated reactive periodic report loop.");
+    }
+
+    /**
+     * Fully reactive execution pipeline. Safe for both web endpoints and background crons.
+     */
+    public Mono<Void> generateSingleUserReportReactive(Long userId, String triggerKind) {
+        return Mono.fromCallable(() -> jdbc.query(ROWS_SQL, AGG_ROW_MAPPER, userId))
+                .subscribeOn(Schedulers.boundedElastic()) // DB query runs on separate thread pool
+                .flatMap(rows -> {
+                    if (rows.isEmpty()) {
+                        return Mono.empty();
+                    }
+
+                    // Asynchronously wrap the LLM call
+                    return Mono.fromCallable(() -> summarizeSafe(userId, rows))
+                            .subscribeOn(Schedulers.boundedElastic()) // LLM HTTP call runs on separate pool
+                            .flatMap(report -> {
+                                UserAdviceEvent event = new UserAdviceEvent(
+                                        UserAdviceEvent.TYPE_SUMMARY,
+                                        triggerKind,
+                                        userId,
+                                        null,
+                                        report.severity().name(),
+                                        report.summary(),
+                                        Instant.now()
+                                );
+
+                                // Wrap Kafka send to CompletableFuture and convert to reactive Mono
+                                return Mono.fromCompletionStage(
+                                        adviceTemplate.send(Topics.USER_ADVICE, String.valueOf(userId), event).toCompletableFuture()
+                                );
+                            });
+                })
+                .then(); // Map the result to Mono<Void>
     }
 
     /** LLM call with a deterministic fallback: a dead LLM must never kill the scheduler. */

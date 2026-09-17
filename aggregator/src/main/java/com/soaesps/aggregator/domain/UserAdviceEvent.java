@@ -16,6 +16,7 @@ import java.time.Instant;
  */
 public record UserAdviceEvent(
         String type,
+        String triggerKind,
         long userId,
         String deviceId,
         String severity,
@@ -24,4 +25,8 @@ public record UserAdviceEvent(
 ) {
     public static final String TYPE_ANOMALY = "anomaly";
     public static final String TYPE_SUMMARY = "summary";
+
+    public static final String TRIGGER_SCHEDULED = "scheduled";
+    public static final String TRIGGER_ON_DEMAND = "on-demand";
+    public static final String TRIGGER_STREAMING = "streaming";
 }

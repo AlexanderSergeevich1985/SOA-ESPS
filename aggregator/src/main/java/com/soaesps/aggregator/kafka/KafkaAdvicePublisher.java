@@ -22,7 +22,7 @@ public class KafkaAdvicePublisher implements DeviceDeps.AdvicePublisher {
     @Override
     public Mono<String> publish(long userId, String deviceId, String severity, String message) {
         String id = UUID.randomUUID().toString();
-        UserAdviceEvent event = new UserAdviceEvent("anomaly", userId, deviceId, severity, message, Instant.now());
+        UserAdviceEvent event = new UserAdviceEvent(UserAdviceEvent.TYPE_ANOMALY, UserAdviceEvent.TRIGGER_STREAMING, userId, deviceId, severity, message, Instant.now());
         return Mono.fromCompletionStage(
                 adviceTemplate.send(Topics.USER_ADVICE, String.valueOf(userId), event).toCompletableFuture()
         ).thenReturn(id);
