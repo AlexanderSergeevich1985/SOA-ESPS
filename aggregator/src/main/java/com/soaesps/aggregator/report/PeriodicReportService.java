@@ -7,6 +7,7 @@ import com.soaesps.aggregator.llm.SummaryReport;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -43,6 +44,20 @@ public class PeriodicReportService {
             limit 50
             """;
 
+    private record AggRow(String deviceId, String metricName,
+                          double avgValue, double maxValue,
+                          double avgAnomaly, double maxAnomaly,
+                          long samples) {}
+
+    private static final RowMapper<AggRow> AGG_ROW_MAPPER = (rs, i) -> new AggRow(
+            rs.getString("device_id"),
+            rs.getString("metric_name"),
+            rs.getDouble("avg_value"),
+            rs.getDouble("max_value"),
+            rs.getDouble("avg_anomaly"),
+            rs.getDouble("max_anomaly"),
+            rs.getLong("samples"));
+
     private final JdbcTemplate jdbc;
     private final KafkaTemplate<String, Object> adviceTemplate;
     private final MetricsSummaryAiService summaryAi;
@@ -50,19 +65,19 @@ public class PeriodicReportService {
     @Scheduled(cron = "${aggregator.report.cron:0 0 */6 * * *}")
     public void generateReports() {
         for (Long userId : jdbc.queryForList(USER_IDS_SQL, Long.class)) {
-            List<Object[]> rows = jdbc.queryForList(ROWS_SQL, userId);
+            List<AggRow> rows = jdbc.query(ROWS_SQL, AGG_ROW_MAPPER, userId);
             if (rows.isEmpty()) {
                 continue;
             }
             SummaryReport report = summarizeSafe(userId, rows);
             adviceTemplate.send(Topics.USER_ADVICE, String.valueOf(userId),
-                    new UserAdviceEvent("summary", userId, null,
+                    new UserAdviceEvent(UserAdviceEvent.TYPE_SUMMARY, userId, null,
                             report.severity().name(), report.summary(), Instant.now()));
         }
     }
 
     /** LLM call with a deterministic fallback: a dead LLM must never kill the scheduler. */
-    private SummaryReport summarizeSafe(Long userId, List<Object[]> rows) {
+    private SummaryReport summarizeSafe(Long userId, List<AggRow> rows) {
         try {
             return summaryAi.summarize(userId, toCsv(rows));
         } catch (Exception e) {
@@ -70,12 +85,12 @@ public class PeriodicReportService {
             return fallbackReport(rows);
         }
     }
-
     /** Compact CSV keeps the prompt small (roughly 1-2K tokens per user). */
-    private String toCsv(List<Object[]> rows) {
+    private String toCsv(List<AggRow> rows) {
         return rows.stream()
-                .map(r -> String.join(" | ", String.valueOf(r[0]), String.valueOf(r[1]),
-                        fmt(r[2]), fmt(r[3]), fmt(r[4]), String.valueOf(r[6])))
+                .map(r -> String.join(" | ", r.deviceId(), r.metricName(),
+                        fmt(r.avgValue()), fmt(r.maxValue()),
+                        fmt(r.avgAnomaly()), String.valueOf(r.samples())))
                 .collect(Collectors.joining("\n"));
     }
 
@@ -83,16 +98,15 @@ public class PeriodicReportService {
         return d == null ? "-" : String.format("%.2f", ((Number) d).doubleValue());
     }
 
-    private SummaryReport fallbackReport(List<Object[]> rows) {
-        double maxAnomaly = rows.stream()
-                .mapToDouble(r -> ((Number) r[5]).doubleValue()).max().orElse(0);
+    private SummaryReport fallbackReport(List<AggRow> rows) {
+        double maxAnomaly = rows.stream().mapToDouble(AggRow::maxAnomaly).max().orElse(0);
         SummaryReport.Severity severity = maxAnomaly > 0.6
                 ? SummaryReport.Severity.HIGH
-                : maxAnomaly > 0.3 ? SummaryReport.Severity.MEDIUM : SummaryReport.Severity.LOW;
+                : maxAnomaly > 0.3 ? SummaryReport.Severity.MEDIUM
+                : SummaryReport.Severity.LOW;
         return new SummaryReport(
                 "6-hour report",
-                "Devices reported: %d, max anomaly score: %s."
-                        .formatted(rows.size(), fmt(maxAnomaly)),
+                "Devices reported: %d, max anomaly score: %s.".formatted(rows.size(), fmt(maxAnomaly)),
                 List.of("Check the devices with the highest anomaly score."),
                 severity);
     }

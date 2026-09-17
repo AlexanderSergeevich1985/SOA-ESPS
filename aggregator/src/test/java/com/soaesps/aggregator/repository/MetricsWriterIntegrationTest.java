@@ -1,5 +1,8 @@
 package com.soaesps.aggregator.repository;
 
+import com.soaesps.aggregator.domain.DeviceStats;
+import com.soaesps.aggregator.domain.MlMetricEvent;
+import com.soaesps.aggregator.kafka.MetricsWriter;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -53,7 +56,7 @@ class MetricsWriterIntegrationTest {
                 .toList();
 
         // When: write in batch mode
-        writer.writeBatch(batch);
+        writer.write(batch);
 
         // Then: raw table has all rows
         Integer rawCount = jdbc.queryForObject(
