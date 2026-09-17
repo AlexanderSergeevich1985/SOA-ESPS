@@ -1,9 +1,12 @@
 package com.soaesps.aggregator.config;
 
 import com.soaesps.aggregator.actor.DeviceActor;
+import com.soaesps.aggregator.domain.MlMetricEvent;
+import com.soaesps.aggregator.dto.DeviceDeps;
 import org.apache.pekko.actor.typed.ActorSystem;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
+import org.apache.pekko.cluster.sharding.typed.ShardingEnvelope;
 import org.apache.pekko.cluster.sharding.typed.javadsl.ClusterSharding;
 import org.apache.pekko.cluster.sharding.typed.javadsl.Entity;
 import org.springframework.context.annotation.Bean;
@@ -21,13 +24,9 @@ public class ShardingConfiguration {
 
     /** Starts the shard region; entities are created lazily per deviceId. */
     @Bean
-    public ActorRef<DeviceActor.Command> deviceShardRegion(
-            ActorSystem<?> system,
-            DeviceHistoryStore historyStore,
-            DeviceAnalysisPipeline pipeline) {
-
-        DeviceDeps deps = new DeviceDeps(historyStore, pipeline);
-
+    public ActorRef<ShardingEnvelope<DeviceActor.Command>> deviceShardRegion(
+            ActorSystem<Void> system,
+            DeviceDeps deps) {
         return ClusterSharding.get(system).init(
                 Entity.of(DeviceActor.ENTITY_TYPE_KEY,
                         ctx -> DeviceActor.create(ctx.getEntityId(), deps)));
@@ -38,9 +37,10 @@ public class ShardingConfiguration {
      * to the actor responsible for that device.
      */
     @Bean
-    public Consumer<TelemetryEvent> telemetryIn(ActorSystem<?> system) {
-        return event -> ClusterSharding.get(system)
+    public Consumer<MlMetricEvent> telemetryIn(ActorSystem<Void> system) {
+        ClusterSharding sharding = ClusterSharding.get(system);
+        return event -> sharding
                 .entityRefFor(DeviceActor.ENTITY_TYPE_KEY, event.deviceId())
-                .tell(new DeviceActor.TelemetryReceived(event));
+                .tell(new DeviceActor.MetricReceived(event));
     }
 }

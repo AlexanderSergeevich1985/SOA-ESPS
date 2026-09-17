@@ -1,8 +1,10 @@
 package com.soaesps.aggregator.workflow;
 
 import com.soaesps.aggregator.activity.ReportActivities;
+import com.soaesps.aggregator.domain.DeviceRef;
+import com.soaesps.aggregator.domain.DeviceStats;
 import io.temporal.activity.ActivityOptions;
-import io.temporal.retry.RetryOptions;
+import io.temporal.common.RetryOptions;
 import io.temporal.spring.boot.WorkflowImpl;
 import io.temporal.workflow.Workflow;
 

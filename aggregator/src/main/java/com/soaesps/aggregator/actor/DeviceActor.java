@@ -1,6 +1,7 @@
 package com.soaesps.aggregator.actor;
 
 import com.soaesps.aggregator.domain.MlMetricEvent;
+import com.soaesps.aggregator.dto.DeviceDeps;
 import org.apache.pekko.actor.typed.Behavior;
 import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
 import org.apache.pekko.actor.typed.javadsl.ActorContext;
@@ -36,6 +37,7 @@ public final class DeviceActor extends AbstractBehavior<DeviceActor.Command> {
             // Warm up hot cache from TimescaleDB. State is fully reconstructible
             // from the DB, so passivation is free and postStop persists nothing.
             deps.metrics().recent(deviceId, HOT_WINDOW)
+                    .collectList()
                     .subscribe(events -> ctx.getSelf().tell(new HistoryLoaded(events)));
             return actor;
         });
@@ -65,8 +67,10 @@ public final class DeviceActor extends AbstractBehavior<DeviceActor.Command> {
         if (!adviceInFlight) {
             decisionFor(cmd.event()).ifPresent(severity -> {
                 adviceInFlight = true;
+                long userId = cmd.event().userId();
                 deps.advisor().adviseNow(deviceId, List.copyOf(hot), severity)
-                        .subscribe(id -> context().getSelf().tell(new AdviceSent(id)));
+                        .flatMap(message -> deps.publisher().publish(userId, deviceId, severity, message))
+                        .subscribe(id -> getContext().getSelf().tell(new AdviceSent(id)));
             });
         }
         return this;

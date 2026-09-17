@@ -1,5 +1,6 @@
 package com.soaesps.aggregator.activity;
 
+import com.soaesps.aggregator.domain.DeviceRef;
 import com.soaesps.aggregator.domain.DeviceStats;
 import io.temporal.activity.ActivityInterface;
 

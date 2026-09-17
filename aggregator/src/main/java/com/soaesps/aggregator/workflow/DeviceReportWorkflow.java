@@ -1,5 +1,6 @@
 package com.soaesps.aggregator.workflow;
 
+import com.soaesps.aggregator.domain.DeviceRef;
 import io.temporal.workflow.WorkflowInterface;
 import io.temporal.workflow.WorkflowMethod;
 

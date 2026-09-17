@@ -1,7 +1,7 @@
 package com.nukefintech.uitoken.controller;
 
-import com.nukefintech.uitokenservice.domain.UiTokenLayout;
-import com.nukefintech.uitokenservice.service.UiTokenService;
+import com.nukefintech.uitoken.domain.UiTokenLayout;
+import com.nukefintech.uitoken.service.UiTokenService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;

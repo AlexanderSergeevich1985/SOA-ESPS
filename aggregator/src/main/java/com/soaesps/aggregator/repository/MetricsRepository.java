@@ -1,5 +1,6 @@
 package com.soaesps.aggregator.repository;
 
+import com.soaesps.aggregator.domain.DeviceRef;
 import com.soaesps.aggregator.domain.DeviceStats;
 import com.soaesps.aggregator.domain.MlMetricEvent;
 import lombok.RequiredArgsConstructor;
@@ -125,12 +126,12 @@ public class MetricsRepository {
                 rs.getString("device_id"),
                 rs.getLong("user_id"),
                 rs.getString("metric_name"),
-                rs.getLong("sample_count"),
+                //rs.getLong("sample_count"),
                 rs.getDouble("avg_value"),
                 rs.getDouble("min_value"),
                 rs.getDouble("max_value"),
                 rs.getDouble("stddev_value"),
-                rs.getDouble("max_anomaly"),
-                rs.getString("dominant_state"));
+                rs.getDouble("max_anomaly"));//,
+                //rs.getString("dominant_state"))
     }
 }
