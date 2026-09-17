@@ -2,7 +2,7 @@ package com.soaesps.aggregator.report;
 
 import com.soaesps.aggregator.domain.Topics;
 import com.soaesps.aggregator.domain.UserAdviceEvent;
-import com.soaesps.aggregator.llm.MetricsSummaryAiService;
+import com.soaesps.aggregator.llm.LlmProcessorFactory;
 import com.soaesps.aggregator.llm.SummaryReport;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +14,8 @@ import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 /**
@@ -60,7 +62,8 @@ public class PeriodicReportService {
 
     private final JdbcTemplate jdbc;
     private final KafkaTemplate<String, Object> adviceTemplate;
-    private final MetricsSummaryAiService summaryAi;
+    private final LlmProcessorFactory llmFactory;
+    private final ExecutorService virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
     @Scheduled(cron = "${aggregator.report.cron:0 0 */6 * * *}")
     public void generateReports() {
@@ -79,7 +82,7 @@ public class PeriodicReportService {
     /** LLM call with a deterministic fallback: a dead LLM must never kill the scheduler. */
     private SummaryReport summarizeSafe(Long userId, List<AggRow> rows) {
         try {
-            return summaryAi.summarize(userId, toCsv(rows));
+            return llmFactory.getActiveProcessor().processPeriodicSummary(userId, toCsv(rows));
         } catch (Exception e) {
             log.warn("LLM summarization failed for user={}, falling back to template", userId, e);
             return fallbackReport(rows);

@@ -1,7 +1,7 @@
 package com.soaesps.aggregator.actor;
 
 import com.soaesps.aggregator.domain.MlMetricEvent;
-import com.soaesps.aggregator.llm.AnomalyExplanationAiService;
+import com.soaesps.aggregator.llm.LlmProcessorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -12,45 +12,38 @@ import java.util.stream.Collectors;
 
 /**
  * Turns a window of recent metric events into a human-readable advice string.
- * This is the only place where LangChain4j is invoked.
- *
- * <p>Blocking LLM call is wrapped into {@link Mono#fromCallable} on the
- * bounded-elastic scheduler so Pekko dispatcher threads are never blocked.
+ * Uses {@link LlmProcessorFactory} to dynamically resolve the underlying LLM logic.
  */
 @Service
 public class DeviceAdvisor {
 
     private static final Logger log = LoggerFactory.getLogger(DeviceAdvisor.class);
+    private final LlmProcessorFactory llmFactory;
 
-    private final AnomalyExplanationAiService ai;
-
-    public DeviceAdvisor(AnomalyExplanationAiService ai) {
-        this.ai = ai;
+    public DeviceAdvisor(LlmProcessorFactory llmFactory) {
+        this.llmFactory = llmFactory;
     }
 
     /**
      * Produces an advice message for the given device. Never throws:
      * if the LLM fails, returns a deterministic fallback template.
      */
-    public Mono<String> adviseNow(String deviceId,
-                                  List<MlMetricEvent> hotWindow,
-                                  String severity) {
+    public Mono<String> adviseNow(String deviceId, List<MlMetricEvent> hotWindow, String severity) {
         return Mono.fromCallable(() -> explainOrFallback(deviceId, hotWindow, severity))
                 .subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic());
     }
 
-    private String explainOrFallback(String deviceId,
-                                     List<MlMetricEvent> window,
-                                     String severity) {
+    private String explainOrFallback(String deviceId, List<MlMetricEvent> window, String severity) {
         MlMetricEvent last = window.getLast();
         String windowCsv = window.stream()
                 .map(e -> "%.2f".formatted(e.value()))
                 .collect(Collectors.joining(","));
         try {
-            return ai.explain(deviceId, last.metricName(),
-                    last.value(), last.anomalyScore(), windowCsv);
+            // Decoupled: routing through the strategy factory
+            return llmFactory.getActiveProcessor()
+                    .processRealtimeAnomaly(deviceId, last.metricName(), last.value(), last.anomalyScore(), windowCsv);
         } catch (Exception e) {
-            log.warn("LLM explanation failed for device={}, falling back", deviceId, e);
+            log.warn("LLM explanation failed for device={}, falling back to static template", deviceId, e);
             return "Device %s shows %s-severity anomaly on %s (score %.2f). Please check it."
                     .formatted(deviceId, severity, last.metricName(), last.anomalyScore());
         }
