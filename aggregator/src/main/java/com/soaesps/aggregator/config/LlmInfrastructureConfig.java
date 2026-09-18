@@ -22,7 +22,6 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.Locale;
 
-
 /**
  * Infrastructure configuration for LLM Memory management and RAG components.
  */
