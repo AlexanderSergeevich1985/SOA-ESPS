@@ -53,7 +53,7 @@ public class TemporalConfig {
      * Starts a background Worker listening to the 'report-queue' specified in your WorkflowImpls.
      * Registers the actual bean implementation of ReportActivities so Temporal can invoke them.
      */
-    @Bean
+    //@Bean
     public Worker reportWorker(WorkerFactory factory, ReportActivities reportActivitiesImpl) {
         // Matches taskQueues = "report-queue" inside DeviceReportWorkflowImpl
         Worker worker = factory.newWorker("report-queue");

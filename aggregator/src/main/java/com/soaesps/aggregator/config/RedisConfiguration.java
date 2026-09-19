@@ -14,22 +14,23 @@ import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactor
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.repository.configuration.EnableRedisRepositories;
 
+import java.util.List;
 import java.util.Map;
 
 @Configuration
 @EnableRedisRepositories
 public class RedisConfiguration {
-    @Value("redis.master")
+    @Value("${redis.master:master}")
     private String master;
 
-    @Value("redis.port")
+    @Value("${redis.port:6379}")
     private Integer port;
 
-    @Value("redis.factory.type")
+    @Value("${redis.factory.type:Lettuce}")
     private String type;
 
-    @Value("#{'${redis.address}'.split(',')}")
-    private Map<String, Integer> addresses;
+    @Value("#{'${redis.addresses:}'.split(',')}")
+    private List<String> addresses;
 
     @Bean
     public RedisConnectionFactory redisConnectionFactory() {
@@ -58,9 +59,15 @@ public class RedisConfiguration {
     protected RedisSentinelConfiguration sentinelConfiguration() {
         final RedisSentinelConfiguration sentinelConfig = new RedisSentinelConfiguration()
                 .master(master);
-        addresses.entrySet().stream().forEach(i -> {
-            sentinelConfig.sentinel(i.getKey(), i.getValue());
-        });
+
+        addresses.stream()
+                .filter(addr -> addr != null && !addr.isBlank())
+                .forEach(node -> {
+                    String[] parts = node.split(":");
+                    String host = parts[0].trim();
+                    int nodePort = parts.length > 1 ? Integer.parseInt(parts[1].trim()) : 26379;
+                    sentinelConfig.sentinel(host, nodePort);
+                });
 
         return sentinelConfig;
     }

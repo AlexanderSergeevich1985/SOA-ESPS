@@ -22,11 +22,11 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <spring-cloud.version>2023.0.4</spring-cloud.version>
+        <spring-cloud.version>2024.0.0</spring-cloud.version>
         <langchain4j.version>1.17.2-beta27</langchain4j.version>
         <resilience4j.version>2.2.0</resilience4j.version>
         <lombok.version>1.18.38</lombok.version>
-        <jackson.version>2.17.2</jackson.version>
+        <jackson.version>2.18.2</jackson.version>
     </properties>
 
     <dependencyManagement>

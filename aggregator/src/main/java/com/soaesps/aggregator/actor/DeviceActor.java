@@ -21,7 +21,7 @@ public final class DeviceActor extends AbstractBehavior<DeviceActor.Command> {
     private static final double TREND_SCORE = 0.7;
     private static final int TREND_LENGTH = 3;
 
-    public sealed interface Command {}
+    public sealed interface Command extends CborSerializable {}
     public record MetricReceived(MlMetricEvent event) implements Command {}
     record HistoryLoaded(List<MlMetricEvent> events) implements Command {}
     record AdviceSent(String id) implements Command {}

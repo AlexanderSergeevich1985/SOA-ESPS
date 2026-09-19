@@ -14,7 +14,6 @@ import java.util.concurrent.RecursiveAction;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-@Component
 public class LoadBalancer {
     @Autowired
     private RegTaskRepository taskRepository;

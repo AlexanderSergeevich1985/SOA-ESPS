@@ -104,11 +104,17 @@ public class LlmInfrastructureConfig {
          * @param modelName chat model name; used by providers with model-specific encodings
          */
         public TokenCountEstimator create(String provider, String modelName) {
-            String normalized = provider == null ? "" : provider.toLowerCase(Locale.ROOT);
-            return switch (normalized) {
-                case "open-ai", "openai", "azure-openai" -> openAi(modelName);
-                default -> heuristic();
-            };
+            String normalizedProvider = provider == null ? "" : provider.toLowerCase(Locale.ROOT);
+            String normalizedModel = modelName == null ? "" : modelName.toLowerCase(Locale.ROOT);
+
+            if (normalizedProvider.contains("open-ai") || normalizedProvider.contains("openai")) {
+                if (normalizedModel.contains("gpt") || normalizedModel.contains("text-davinci")) {
+                    return openAi(modelName);
+                }
+            }
+
+            // Safe universal fallback for Qwen, Llama, and other custom models
+            return heuristic();
         }
 
         /** Exact BPE tokenizer; OpenAiTokenizer already implements TokenCountEstimator. */
@@ -116,9 +122,10 @@ public class LlmInfrastructureConfig {
             return new OpenAiTokenCountEstimator(modelName);
         }
 
-        /** ~4 chars per token: good enough for memory-window trimming on local models. */
+        /** ~4 chars per token: good enough for memory-window trimming on local/custom models. */
         public TokenCountEstimator heuristic() {
             return new TokenCountEstimator() {
+                @Override
                 public int estimateTokenCountInText(String text) {
                     return text == null || text.trim().isEmpty() ? 0 : (text.length() + 3) / 4;
                 }
@@ -133,7 +140,7 @@ public class LlmInfrastructureConfig {
                 public int estimateTokenCountInMessages(Iterable<ChatMessage> iterable) {
                     if (iterable == null) return 0;
                     int totalTokens = 0;
-                    for (dev.langchain4j.data.message.ChatMessage message : iterable) {
+                    for (ChatMessage message : iterable) {
                         if (message != null) {
                             totalTokens += estimateTokenCountInText(extractText(message));
                         }

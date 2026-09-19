@@ -56,9 +56,9 @@ spring:
   # --- Data Sources Configurations (Connecting to Docker containers) ---
   datasource:
     # Connects to the TimescaleDB container via host port 5432
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/soaesps
-    username: soaesps
-    password: changeit
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/aggregator_db
+    username: ${POSTGRES_USER:default_user}
+    password: ${POSTGRES_PWD:default_pass}
     driver-class-name: org.postgresql.Driver
     # HikariCP connection pool optimization for aggressive streaming pipelines
     hikari:
@@ -72,29 +72,6 @@ spring:
 temporal:
   connection:
     target: ${TEMPORAL_HOST:localhost}:${TEMPORAL_PORT:7233}
-
-# =================================================================
-# APACHE PEKKO CLUSTER SHARDING CONFIGURATION
-# =================================================================
-pekko:
-  config: |
-    pekko {
-      actor {
-        # Strict serialization bindings ensuring cluster network safety
-        # Make sure your commands implement CborSerializable interface
-        serialization-bindings {
-          "com.soaesps.aggregator.actor.CborSerializable" = jackson-cbor
-        }
-      }
-      cluster {
-        sharding {
-          # Automatically evict idle devices from RAM after 10m to prevent leakages.
-          # Reconstruction happens free via database cold-start on the next message.
-          passivate-idle-entity.after = 10m
-          remember-entities = off
-        }
-      }
-    }
 
 # =================================================================
 # LANGCHAIN4J AI INFRASTRUCTURE (ROUTING & PROTOCOLS FOR QWEN)
