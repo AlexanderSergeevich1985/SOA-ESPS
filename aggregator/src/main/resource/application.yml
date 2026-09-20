@@ -1,22 +1,63 @@
-# =================================================================
-# SPRING CORE & NETWORKING SETTINGS
-# =================================================================
-server:
-  # Port 0 forces Spring Boot to pick a random available ephemeral port.
-  # Ideal for local multi-instance Pekko cluster testing without port conflicts.
-  port: 0
-
+# ===================================================================
+# GLOBAL APP INITIALIZATION & DEFAULT STATE
+# ===================================================================
 spring:
   application:
     name: soaesps-aggregator
+  profiles:
+    active: DEV # Default profile for local boot execution
+  cloud:
+    compatibility-verifier:
+      # Bypasses rigid release train compatibility checks for Boot 3.4.1 locally and in containers
+      enabled: false
 
-  # --- Spring Cloud Stream Configuration (Kafka Transport) ---
+# --- LangChain4j GenAI Extensible Strategy Route Parameters (Qwen 2.5) ---
+langchain4j:
+  chat-model:
+    provider: open-ai
+    model-name: qwen-2.5-coder-32b
+  embedding-model:
+    provider: open-ai
+    model-name: text-embedding-3-small
+
+# --- Redis Cache In-Memory Network Setup Bounds ---
+redis:
+  master: master
+  port: 6379
+  factory:
+    type: Lettuce
+  # Flat comma-separated array string preventing complex SpEL map conversion errors
+  addresses: localhost:26379
+
+# --- Automated 6-Hour Batch Cron Trigger Parameter ---
+aggregator:
+  report:
+    cron: "0 0 */6 * * *"
+
+# =================================================================
+# PRODUCTION MONITORING & METRICS (ACTUATOR)
+# =================================================================
+management:
+  health:
+    binders:
+      enabled: true
+
+---
+# ===================================================================
+# PROFILE: DEV / LOCAL (Combined environment for local HTTP workflow)
+# ===================================================================
+spring:
+  config:
+    activate:
+      on-profile: DEV, LOCAL
+    import: "optional:configserver:" # Blocks boot crashes if Config Server is absent locally
+
+  # FIXED: Unified single cloud block to prevent DuplicateKeyException
   cloud:
     config:
       enabled: false
       import-check:
         enabled: false
-
     function:
       definition: telemetryIn;metricsIn
     stream:
@@ -31,7 +72,7 @@ spring:
           content-type: application/json
       kafka:
         binder:
-          brokers: ${KAFKA_BROKERS:localhost:9092}
+          brokers: localhost:9092
           auto-create-topics: true
         bindings:
           metricsIn-in-0:
@@ -41,9 +82,9 @@ spring:
                 max.poll.records: 100
                 fetch.min.bytes: 102400
 
-  # --- Outbound Kafka Template Configurations ---
+  # Outbound Native Kafka Template Configurations
   kafka:
-    bootstrap-servers: ${KAFKA_BROKERS:localhost:9092}
+    bootstrap-servers: localhost:9092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -53,37 +94,20 @@ spring:
       properties:
         spring.json.trusted.packages: "com.soaesps.aggregator.domain"
 
-  # --- Data Sources Configurations (Connecting to Docker containers) ---
+  # Pure Low-Latency Direct JDBC Connection Pool targeting TimescaleDB
   datasource:
-    # Connects to the TimescaleDB container via host port 5432
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/aggregator_db
     username: ${POSTGRES_USER:default_user}
     password: ${POSTGRES_PWD:default_pass}
     driver-class-name: org.postgresql.Driver
-    # HikariCP connection pool optimization for aggressive streaming pipelines
     hikari:
       maximum-pool-size: 20
       minimum-idle: 5
       idle-timeout: 300000
       connection-timeout: 20000
 
-# --- Temporal Client Configuration ---
-# Tells the Temporal SDK where to find the Temporal Orchestrator container
-temporal:
-  connection:
-    target: ${TEMPORAL_HOST:localhost}:${TEMPORAL_PORT:7233}
-
-# =================================================================
-# LANGCHAIN4J AI INFRASTRUCTURE (ROUTING & PROTOCOLS FOR QWEN)
-# =================================================================
+# --- Cloud Qwen via ultra-fast Groq LPU API Wire Protocol ---
 langchain4j:
-  chat-model:
-    provider: open-ai
-    model-name: qwen-2.5-coder-32b
-  embedding-model:
-    provider: open-ai
-    model-name: text-embedding-3-small
-
   open-ai:
     chat-model:
       base-url: https://groq.com
@@ -95,15 +119,96 @@ langchain4j:
     embedding-model:
       api-key: ${OPENAI_API_KEY:mock-key}
 
-# =================================================================
-# PRODUCTION MONITORING & METRICS (ACTUATOR)
-# =================================================================
-management:
-  health:
-    binders:
-      # Exposes real-time Kafka cluster connection health via /actuator/health
-      enabled: true
+# --- Temporal Orchestrator local gRPC connection target channel ---
+temporal:
+  connection:
+    target: ${TEMPORAL_HOST:localhost}:${TEMPORAL_PORT:7233}
 
-aggregator:
-  report:
-    cron: "0 0 */6 * * *"
+# --- Disable Eureka client lookups globally to prevent 8761 loop crashes ---
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+server:
+  port: 0 # Ephemeral port selection prevents cluster multi-instance routing conflicts
+
+---
+# ===================================================================
+# PROFILE: DOCKER (Secure internal service-to-service cluster bridge)
+# ===================================================================
+spring:
+  config:
+    activate:
+      on-profile: DOCKER
+
+  cloud:
+    stream:
+      kafka:
+        binder:
+          brokers: kafka:9092 # Reroutes traffic inside Docker virtual network bridge
+
+  kafka:
+    bootstrap-servers: kafka:9092
+
+  datasource:
+    url: jdbc:postgresql://timescaledb:5432/aggregator_db
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+    hikari:
+      maximum-pool-size: 40
+
+redis:
+  addresses: redis-sentinel:26379
+
+temporal:
+  connection:
+    target: temporal:7233 # Targets compose container orchestrator channel
+
+server:
+  port: 8443 # Target production deployment port bounds
+
+---
+# ===================================================================
+# PROFILE: TEST (Isolated Maven engine pipeline context layout)
+# ===================================================================
+spring:
+  config:
+    activate:
+      on-profile: TEST
+  cloud:
+    config:
+      enabled: false
+      import-check:
+        enabled: false
+    stream:
+      enabled: false # Suspends network stream socket bindings during testing phases
+  kafka:
+    bootstrap-servers: mock-none:9092
+
+  # Drops Kafka and Flyway auto-configurations during isolated testing phases
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+      - org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration
+
+  # In-Memory H2 fallback profile layout simulating PostgreSQL definitions
+  datasource:
+    url: jdbc:h2:mem:soaesps_test;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+
+# --- Switches Strategy Factory to native heuristic text tokenization checks ---
+langchain4j:
+  chat-model:
+    provider: mock
+    model-name: mock-test-engine
+
+eureka:
+  client:
+    enabled: false
+
+server:
+  port: 0
