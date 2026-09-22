@@ -127,7 +127,7 @@
         <module>api-gateway</module>
         <module>coordinator</module>
         <module>ui-token-service</module>
-        <!--module>aggregator</module-->
+        <module>aggregator</module>
     </modules>
 
 </project>

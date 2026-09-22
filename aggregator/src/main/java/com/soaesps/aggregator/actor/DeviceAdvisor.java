@@ -1,6 +1,7 @@
 package com.soaesps.aggregator.actor;
 
 import com.soaesps.aggregator.domain.MlMetricEvent;
+import com.soaesps.aggregator.dto.AnomalyContext;
 import com.soaesps.aggregator.llm.LlmProcessorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,9 +40,17 @@ public class DeviceAdvisor {
                 .map(e -> "%.2f".formatted(e.value()))
                 .collect(Collectors.joining(","));
         try {
+            AnomalyContext ac = new AnomalyContext(
+                    deviceId,
+                    "UnknownModel", // Pass a model placeholder or fetch it if device metadata becomes available
+                    last.metricName(),
+                    last.value(),
+                    last.anomalyScore()
+            );
+
             // Decoupled: routing through the strategy factory
             return llmFactory.getActiveProcessor()
-                    .processRealtimeAnomaly(deviceId, last.metricName(), last.value(), last.anomalyScore(), windowCsv);
+                    .processRealtimeAnomaly(ac, windowCsv);
         } catch (Exception e) {
             log.warn("LLM explanation failed for device={}, falling back to static template", deviceId, e);
             return "Device %s shows %s-severity anomaly on %s (score %.2f). Please check it."

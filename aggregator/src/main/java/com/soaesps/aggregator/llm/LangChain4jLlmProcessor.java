@@ -1,5 +1,6 @@
 package com.soaesps.aggregator.llm;
 
+import com.soaesps.aggregator.dto.AnomalyContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -21,9 +22,9 @@ public class LangChain4jLlmProcessor implements LlmProcessor {
     }
 
     @Override
-    public String processRealtimeAnomaly(String deviceId, String metricName, double value, double anomalyScore, String windowCsv) {
-        log.debug("Executing real-time LLM call via LangChain4j for device={}", deviceId);
-        return anomalyAi.explain(deviceId, metricName, value, anomalyScore, windowCsv);
+    public String processRealtimeAnomaly(AnomalyContext ac, String windowCsv) {
+        log.debug("Executing real-time LLM call via LangChain4j for device={}", ac.deviceId());
+        return anomalyAi.explain(ac.deviceId(), ac.metricName(), ac.value(), ac.anomalyScore(), windowCsv);
     }
 
     @Override
