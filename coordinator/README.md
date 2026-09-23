@@ -1,4 +1,4 @@
-# SOA-ESPS Aggregator (Coordinator) Microservice
+# SOA-ESPS Coordinator Microservice
 
 A high-performance distributed message coordinator that ensures **Causal Consistency** and guarantees **Zero Data Loss** in geographically distributed topologies (Multi-Data Center).
 
@@ -25,39 +25,39 @@ The diagram below illustrates the architectural layers and the message path from
 ```mermaid
 graph TD
     %% Nodes Definition
-    Client[Client Request: GroupMessage] -->|1. Ingress| Accept[acceptMessage Method]
+    Client["Client Request: GroupMessage"] -->|"1. Ingress"| Accept["acceptMessage Method"]
     
-    subgraph Spring Ingress Layer
-        Accept -->|2. Check Capacity| BP{Buffer Size < 10k?}
-        BP -->|No: HTTP 429| Reject[Apply Backpressure]
-        BP -->|Yes| RedisPipeline[Redis Hash Pipeline]
-        RedisPipeline -->|3. Atomic VC Incr| InBuffer[(Concurrent Inbound Buffer)]
+    subgraph "Spring Ingress Layer"
+        Accept -->|"2. Check Capacity"| BP{"Buffer Size < 10k?"}
+        BP -->|"No: HTTP 429"| Reject["Apply Backpressure"]
+        BP -->|"Yes"| RedisPipeline["Redis Hash Pipeline"]
+        RedisPipeline -->|"3. Atomic VC Incr"| InBuffer[("Concurrent Inbound Buffer")]
     end
 
-    subgraph Dynamic Scheduled Core Loop
-        Scheduler[TaskScheduler Ticker] -->|4. Dynamic fixedDelay| ProcessIter[processIteration Method]
-        InBuffer -->|5. drainBufferAtomic| ProcessIter
+    subgraph "Dynamic Scheduled Core Loop"
+        Scheduler["TaskScheduler Ticker"] -->|"4. Dynamic fixedDelay"| ProcessIter["processIteration Method"]
+        InBuffer -->|"5. drainBufferAtomic"| ProcessIter
         
-        ProcessIter -->|6. Build Graph| DAG[CausalDagProcessor: JGraphT]
-        DAG -->|7. Topological Sort| CR[ConflictResolver: Single-Pass O(N)]
-        CR -->|8. Collapse entityKey via LWW| Replicator[RaftReplicator: Apache Ratis]
+        ProcessIter -->|"6. Build Graph"| DAG["CausalDagProcessor: JGraphT"]
+        DAG -->|"7. Topological Sort"| CR["ConflictResolver: Single-Pass O(N)"]
+        CR -->|"8. Collapse entityKey via LWW"| Replicator["RaftReplicator: Apache Ratis"]
     end
 
-    subgraph Consensus & Performance Loop
-        Replicator -->|9. async send .get(timeout)| Quorum{Quorum Reached?}
-        Quorum -->|Yes: Log Append| Commit[Update Frontier Cache]
-        Commit -->|10. Return Receipt| Receipt[DeliveryReceipt: DELIVERED]
+    subgraph "Consensus and Performance Loop"
+        Replicator -->|"9. async send with timeout"| Quorum{"Quorum Reached?"}
+        Quorum -->|"Yes: Log Append"| Commit["Update Frontier Cache"]
+        Commit -->|"10. Return Receipt"| Receipt["DeliveryReceipt: DELIVERED"]
         
-        Quorum -->|No: Timeout / IOException| Rollback[CAS Buffer Rollback & Retry]
+        Quorum -->|"No: Timeout or IOException"| Rollback["CAS Buffer Rollback and Retry"]
         
-        Interceptor[gRPC Client Interceptor] -->|11. System nanoTime| PF[NetworkParticleFilter]
-        PF -->|12. Compute stats (mean + 2*sigma)| Scheduler
+        Interceptor["gRPC Client Interceptor"] -->|"11. System nanoTime"| PF["NetworkParticleFilter"]
+        PF -->|"12. Compute stats mean plus 2 sigma"| Scheduler
     end
     
-    subgraph Emergency Infrastructure
-        Shutdown[JVM PreDestroy Signal] -->|Graceful Shutdown| WAL[drainBufferToKafka]
-        InBuffer -.->|Async Push Batch| WAL
-        WAL -->|13. Sync Block Await| Kafka[(Apache Kafka WAL Topic)]
+    subgraph "Emergency Infrastructure"
+        Shutdown["JVM PreDestroy Signal"] -->|"Graceful Shutdown"| WAL["drainBufferToKafka"]
+        InBuffer -.->|"Async Push Batch"| WAL
+        WAL -->|"13. Sync Block Await"| Kafka[("Apache Kafka WAL Topic")]
     end
 
     %% Styling
@@ -87,7 +87,7 @@ The following baseline settings are required to deploy the microservice in a Mul
 ```yaml
 spring:
   application:
-    name: soaesps-coordinator-aggregator
+    name: soaesps-coordinator
   
   # Integration with Kafka WAL for emergency buffer flushing
   kafka:
@@ -141,7 +141,7 @@ mvn clean install
 
 ### Running in Leader Profile
 ```bash
-java -jar target/coordinator-aggregator-1.0.0.jar --spring.profiles.active=prod
+java -jar target/coordinator-1.0.0.jar --spring.profiles.active=prod
 ```
 
 ---
