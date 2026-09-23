@@ -3,6 +3,7 @@ package com.soaesps.coordinator.domain;
 import lombok.Getter;
 import lombok.ToString;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Getter
 @ToString
 public class VectorClock implements Serializable {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     private final Map<String, Long> clocks;

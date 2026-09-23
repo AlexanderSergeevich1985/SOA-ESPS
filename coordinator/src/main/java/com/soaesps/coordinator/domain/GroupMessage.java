@@ -1,53 +1,69 @@
 package com.soaesps.coordinator.domain;
 
-import java.io.Serializable;
-
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.extern.jackson.Jacksonized;
+
+import java.io.Serial;
+import java.io.Serializable;
+import java.util.List;
+import java.util.Objects;
 
 /**
- * Represents a message within a group chat or distributed system.
- * Includes metadata for iteration tracking (from the article) and causal ordering.
+ * Immutable data representation of a message within the distributed system.
+ * Maximum usage of Lombok for builder pattern and seamless Jackson serialization.
  */
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class GroupMessage implements Serializable {
+@Jacksonized
+@Builder(toBuilder = true)
+public record GroupMessage(
+        String id,
+        String groupId,
+        String senderId,
+        String entityKey,
+        String content,
+        long timestamp,
+        long iterationMarker,
+        VectorClock vectorClock,
+        List<String> parentIds,
+        MessageType type,
+        String replyToId
+) implements Serializable {
 
-    /** Unique identifier for the message (e.g., UUID). */
-    private String id;
-
-    /** Identifier of the group or chat room. */
-    private String groupId;
-
-    /** Identifier of the user who sent the message. */
-    private String senderId;
-
-    /** The actual content or payload of the message. */
-    private String content;
-
-    /** Physical wall-clock timestamp of message creation. */
-    private long timestamp;
+    @Serial
+    private static final long serialVersionUID = 4L;
 
     /**
-     * Iteration marker assigned by the coordinator.
-     * Used for batch synchronization phases (Prepare/Commit).
+     * Compact constructor for canonical validation and defensive copying.
      */
-    private long iterationMarker;
+    public GroupMessage {
+        Objects.requireNonNull(id, "Message ID cannot be null");
+        Objects.requireNonNull(entityKey, "Entity key cannot be null");
+        Objects.requireNonNull(senderId, "Sender ID cannot be null");
 
-    /** Vector clock representing the causal state at the time of sending. */
-    private VectorClock vectorClock;
+        // Defensive copy to guarantee strict immutability invariants
+        parentIds = parentIds == null ? List.of() : List.copyOf(parentIds);
 
-    /** Type of operation: TEXT, EDIT, DELETE, REACTION, etc. */
-    private MessageType type;
-
-    /** Optional: ID of the message this is replying to (for threading). */
-    private String replyToId;
+        // DoS protection against unbounded vector clocks allocation (from Viktorov's paper context)
+        if (vectorClock != null && vectorClock.getClocks() != null && vectorClock.getClocks().size() > 1024) {
+            throw new IllegalArgumentException("Vector clock size exceeds DoS limit: " + vectorClock.getClocks().size());
+        }
+    }
 
     public enum MessageType {
         TEXT, EDIT, DELETE, REACTION, SYSTEM
+    }
+
+    /**
+     * Custom equality by business key only to handle deduplication correctly in concurrent buffers.
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof GroupMessage that)) return false;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 }

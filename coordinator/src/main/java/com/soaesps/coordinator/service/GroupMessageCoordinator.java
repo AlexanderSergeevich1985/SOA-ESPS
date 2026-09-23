@@ -74,14 +74,17 @@ public class GroupMessageCoordinator {
 
         // 1. Assign the current iteration marker (as per the article's model)
         long iteration = currentIteration.get();
-        message.setIterationMarker(iteration);
 
         // 2. Atomically increment and retrieve the vector clock via Redis
         VectorClock updatedClock = vectorClockService.incrementAndGet(
-                message.getGroupId(),
-                message.getSenderId()
+                message.groupId(),
+                message.senderId()
         );
-        message.setVectorClock(updatedClock);
+
+        message = message.toBuilder()
+                .vectorClock(updatedClock)
+                .iterationMarker(iteration)
+                .build();
 
         // 3. Buffer the message for the next synchronization cycle
         iterationBuffer
@@ -89,10 +92,10 @@ public class GroupMessageCoordinator {
                 .add(message);
 
         log.debug("Message {} accepted and buffered for iteration {}",
-                message.getId(), iteration);
+                message.id(), iteration);
 
         return new DeliveryReceipt(
-                message.getId(),
+                message.id(),
                 1,
                 DeliveryReceipt.DeliveryStatus.PENDING,
                 iteration
@@ -122,11 +125,11 @@ public class GroupMessageCoordinator {
 
         log.info("Starting synchronization cycle for iteration {}", iteration);
 
-        // === Prepare phase (from the article) ===
+        // === Prepare phase ===
         List<GroupMessage> ordered = causalSort(batch);
-        List<GroupMessage> resolved = resolveConflicts(ordered);
+        List<GroupMessage> resolved = conflictResolver.resolveBatch(ordered);
 
-        // === Commit phase (from the article) ===
+        // === Commit phase ===
         commitToReplicas(iteration, resolved);
 
         // === Notify phase ===
@@ -151,44 +154,20 @@ public class GroupMessageCoordinator {
     private List<GroupMessage> causalSort(List<GroupMessage> messages) {
         List<GroupMessage> sorted = new ArrayList<>(messages);
         sorted.sort((GroupMessage a, GroupMessage b) -> {
-            if (a.getVectorClock().happensBefore(b.getVectorClock())) {
+            if (a.vectorClock().happensBefore(b.vectorClock())) {
                 return -1;
             }
-            if (b.getVectorClock().happensBefore(a.getVectorClock())) {
+            if (b.vectorClock().happensBefore(a.vectorClock())) {
                 return 1;
             }
             // Concurrent events: tie-breaker using physical timestamp,
             // then senderId for determinism
-            int timeCmp = Long.compare(a.getTimestamp(), b.getTimestamp());
+            int timeCmp = Long.compare(a.timestamp(), b.timestamp());
             return timeCmp != 0
                     ? timeCmp
-                    : a.getSenderId().compareTo(b.getSenderId());
+                    : a.senderId().compareTo(b.senderId());
         });
         return sorted;
-    }
-
-    /**
-     * Resolves conflicts for messages that target the same resource
-     * (e.g., two users editing the same message concurrently).
-     * Delegates to the injected {@link ConflictResolver}.
-     *
-     * @param messages The causally sorted messages.
-     * @return The list of messages after conflict resolution.
-     */
-    private List<GroupMessage> resolveConflicts(List<GroupMessage> messages) {
-        // Group messages by a logical key (e.g., replyToId or content hash)
-        // to detect concurrent updates to the same resource.
-        // For the baseline implementation we run pairwise resolution
-        // across the entire batch.
-
-        Map<String, GroupMessage> resolvedByKey = new ConcurrentHashMap<>();
-
-        for (GroupMessage msg : messages) {
-            String key = resolveKey(msg);
-            resolvedByKey.merge(key, msg, conflictResolver::resolve);
-        }
-
-        return new ArrayList<>(resolvedByKey.values());
     }
 
     /**
@@ -204,7 +183,7 @@ public class GroupMessageCoordinator {
         // Override this logic if you need to detect edits/deletes
         // on the same original message (e.g., use replyToId or a
         // dedicated "targetMessageId" field).
-        return msg.getId();
+        return msg.id();
     }
 
     /**
@@ -216,17 +195,17 @@ public class GroupMessageCoordinator {
      */
     private void commitToReplicas(long iteration, List<GroupMessage> messages) {
         for (GroupMessage message : messages) {
-            String topic = "group.events." + message.getGroupId();
-            kafkaTemplate.send(topic, message.getId(), message)
+            String topic = "group.events." + message.groupId();
+            kafkaTemplate.send(topic, message.id(), message)
                     .whenComplete((result, ex) -> {
                         if (ex != null) {
                             log.error("Failed to replicate message {} "
                                             + "in iteration {}",
-                                    message.getId(), iteration, ex);
+                                    message.id(), iteration, ex);
                         } else {
                             log.debug("Successfully replicated message {} "
                                             + "to Kafka",
-                                    message.getId());
+                                    message.id());
                         }
                     });
         }
@@ -245,13 +224,13 @@ public class GroupMessageCoordinator {
     private void notifyClients(long iteration, List<GroupMessage> messages) {
         for (GroupMessage message : messages) {
             DeliveryReceipt receipt = new DeliveryReceipt(
-                    message.getId(),
+                    message.id(),
                     1, // replica count (update when multi-DC is live)
                     DeliveryReceipt.DeliveryStatus.DELIVERED,
                     iteration
             );
             log.debug("Delivery receipt for message {}: {}",
-                    message.getId(), receipt);
+                    message.id(), receipt);
             // TODO: push receipt to client via WebSocket / SSE / response topic
         }
     }
