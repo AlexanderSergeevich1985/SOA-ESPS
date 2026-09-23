@@ -6,6 +6,19 @@ The service acts as the core of distributed consensus, combining mathematical gr
 
 ---
 
+## 🔬 Research Foundation & Reference
+
+This software complex is a production-grade implementation and architectural extension of the following research paper:
+* **Article:** *«Implementation of the geo-replication mechanism of a distributed information-computing system»*
+* **Author:** Alexander S. Viktorov (VINITI RAS)
+* **DOI Identifier:** [10.47581/2023/TM-01/Viktorov.01](https://doi.org)
+
+The system expands the paper's core concepts of cyclic interval synchronization and dynamic window alignment driven by a **Sequential Monte Carlo (Particle Filter)** algorithm. It translates these theoretical models into a modern distributed consensus infrastructure (Apache Ratis/Raft) while guaranteeing causal strict partial ordering via localized Directed Acyclic Graphs (DAG).
+
+---
+
+---
+
 ## Architecture and Technology Stack
 
 The microservice is designed around the concept of **Hybrid Logical-Physical Consensus**:
