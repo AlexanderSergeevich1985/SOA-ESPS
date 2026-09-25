@@ -4,14 +4,11 @@ import com.soaesps.coordinator.domain.GroupMessage;
 import org.apache.ratis.client.RaftClient;
 import org.apache.ratis.protocol.Message;
 import org.apache.ratis.protocol.RaftClientReply;
-import org.apache.ratis.protocol.exceptions.RaftException;
-import org.apache.ratis.protocol.exceptions.TimeoutIOException;
 import org.apache.ratis.thirdparty.com.google.protobuf.ByteString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -65,19 +62,6 @@ public class RaftReplicator {
                 log.warn("Raft consensus pipeline rejected append operation. Exception: {}", reply.getException());
                 return false;
             }
-
-        } catch (TimeoutIOException | RaftException e) {
-            // Captured path during intense inter-datacenter network jitter or split-brain partitions
-            log.warn("Raft quorum barrier not cleared within adaptive window ({} ms). Triggers rollback routing.",
-                    timeoutWindowMs, e);
-            return false;
-        } catch (IOException e) {
-            log.error("Low-level network I/O error encountered during Raft replication transit", e);
-            return false;
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            log.error("Raft replication worker thread execution context interrupted", e);
-            return false;
         } catch (Exception e) {
             log.error("Unexpected unrecoverable exception thrown inside the replication engine", e);
             return false;

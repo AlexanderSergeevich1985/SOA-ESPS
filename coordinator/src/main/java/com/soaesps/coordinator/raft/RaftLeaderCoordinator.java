@@ -10,7 +10,6 @@ import io.micrometer.core.instrument.Timer;
 import org.apache.ratis.client.RaftClient;
 import org.apache.ratis.protocol.Message;
 import org.apache.ratis.protocol.RaftClientReply;
-import org.apache.ratis.protocol.exceptions.RaftRetryFailureException;
 import org.apache.ratis.thirdparty.com.google.protobuf.ByteString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -232,9 +231,6 @@ public class RaftLeaderCoordinator {
             // Expected during network partitions or high jitter.
             log.warn("Raft quorum not reached within {}ms (network partition or high load). Batch will be retried.",
                     predictionAlgorithm.getPrediction());
-            return false;
-        } catch (RaftRetryFailureException e) {
-            log.warn("Raft client retry exhausted. Batch will be retried on next tick.");
             return false;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

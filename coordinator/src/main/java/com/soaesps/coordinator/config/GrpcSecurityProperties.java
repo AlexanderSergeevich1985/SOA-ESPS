@@ -1,4 +1,4 @@
-package com.soaesps.coordinator.configuration;
+package com.soaesps.coordinator.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

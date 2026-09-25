@@ -1,6 +1,6 @@
 package com.soaesps.coordinator.transport;
 
-import com.soaesps.coordinator.configuration.GrpcSecurityProperties;
+import com.soaesps.coordinator.config.GrpcSecurityProperties;
 import com.soaesps.coordinator.domain.GroupMessage;
 import io.grpc.ManagedChannel;
 import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts;
