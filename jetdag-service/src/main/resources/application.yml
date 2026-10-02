@@ -8,6 +8,7 @@ spring:
   # 1. Reactive Relational Database Connectivity (R2DBC) Config
   r2dbc:
     # Formatted specifically for Spring Data Reactive PostgreSQL driver
+    #url: r2dbc:postgresql://db.atenqpnktmppsgxqtqfc.supabase.co:${DB_PORT:5432}/${POSTGRES_DB:postgres}
     url: r2dbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${POSTGRES_DB:postgres}
     username: ${POSTGRES_USER:default_user}
     password: ${POSTGRES_PWD:default_pass}
