@@ -1,0 +1,59 @@
+spring:
+  application:
+    name: jetdag-service
+
+  lifecycle:
+    timeout-per-shutdown-phase: 10s
+
+  # 1. Reactive Relational Database Connectivity (R2DBC) Config
+  r2dbc:
+    # Formatted specifically for Spring Data Reactive PostgreSQL driver
+    url: r2dbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${POSTGRES_DB:postgres}
+    username: ${POSTGRES_USER:default_user}
+    password: ${POSTGRES_PWD:default_pass}
+    pool:
+      initial-size: 5
+      max-size: 15
+
+  # 2. Automated Schema DDL Initialization on Startup
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+
+  # 3. Reactive Security OAuth2 Resource Server (JWT Validation)
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Automatically pulls JWKS public keys to verify incoming agent tokens without blocking
+          issuer-uri: https://your-identity-provider.com
+
+# 4. Custom Infrastructure Properties for Temporal Cluster Connection
+temporal:
+  server:
+    # Default local dev address, will be overridden in environment variables during docker deploy
+    host: ${TEMPORAL_HOST:localhost}
+    port: ${TEMPORAL_PORT:7233}
+    task-queue: jetdag-tasks-queue
+
+# 5. Crisp and detailed Logging Configurations for WebFlux Event Loop debugging
+logging:
+  level:
+    root: INFO
+    com.soaesps.jetdag: DEBUG
+    org.springframework.data.r2dbc: DEBUG # Logs reactive SQL queries sent to Supabase
+    reactor.netty.http.client: INFO
+
+
+
+
+
+
+
+
+
+
+
+
+# A9!zQ5_wT4kX8#vM2$p

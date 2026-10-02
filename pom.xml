@@ -128,6 +128,7 @@
         <module>coordinator</module>
         <module>ui-token-service</module>
         <module>aggregator</module>
+        <module>jetdag-service</module>
     </modules>
 
 </project>
