@@ -8,7 +8,6 @@ spring:
   # 1. Reactive Relational Database Connectivity (R2DBC) Config
   r2dbc:
     # Formatted specifically for Spring Data Reactive PostgreSQL driver
-    #url: r2dbc:postgresql://db.atenqpnktmppsgxqtqfc.supabase.co:${DB_PORT:5432}/${POSTGRES_DB:postgres}
     url: r2dbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${POSTGRES_DB:postgres}
     username: ${POSTGRES_USER:default_user}
     password: ${POSTGRES_PWD:default_pass}
@@ -20,6 +19,7 @@ spring:
   sql:
     init:
       mode: always
+      continue-on-error: true
       schema-locations: classpath:schema.sql
 
   # 3. Reactive Security OAuth2 Resource Server (JWT Validation)
@@ -45,16 +45,3 @@ logging:
     com.soaesps.jetdag: DEBUG
     org.springframework.data.r2dbc: DEBUG # Logs reactive SQL queries sent to Supabase
     reactor.netty.http.client: INFO
-
-
-
-
-
-
-
-
-
-
-
-
-# A9!zQ5_wT4kX8#vM2$p
