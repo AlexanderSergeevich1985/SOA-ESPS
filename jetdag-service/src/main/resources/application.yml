@@ -11,6 +11,8 @@ spring:
     url: r2dbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${POSTGRES_DB:postgres}
     username: ${POSTGRES_USER:default_user}
     password: ${POSTGRES_PWD:default_pass}
+    properties:
+      sslMode: require
     pool:
       initial-size: 5
       max-size: 15
@@ -44,4 +46,5 @@ logging:
     root: INFO
     com.soaesps.jetdag: DEBUG
     org.springframework.data.r2dbc: DEBUG # Logs reactive SQL queries sent to Supabase
+    io.r2dbc.postgresql: DEBUG
     reactor.netty.http.client: INFO
