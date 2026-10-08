@@ -20,10 +20,10 @@ public class UserProfile extends BaseEntity {
     @Size(min = 8, max = 100)
     private String userName;
 
-    @OneToOne(fetch = FetchType.LAZY, mappedBy = UserInfo.USER_PROFILE_PROPERTY, optional = false)
+    @OneToOne(mappedBy = UserInfo.USER_PROFILE_PROPERTY, cascade = CascadeType.ALL, fetch = FetchType.LAZY, optional = false)
     private UserInfo userInfo;
 
-    @OneToMany(mappedBy = DeviceInfo.USER_PROFILE_PROPERTY, fetch = FetchType.LAZY, cascade = { CascadeType.ALL }, orphanRemoval = true)
+    @OneToMany(mappedBy = DeviceInfo.USER_PROFILE_PROPERTY, cascade = { CascadeType.ALL }, fetch = FetchType.LAZY, orphanRemoval = true)
     @BatchSize(size = 10)
     private Set<DeviceInfo> devices;
 

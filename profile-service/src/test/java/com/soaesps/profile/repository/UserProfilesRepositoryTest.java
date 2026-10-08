@@ -97,6 +97,8 @@ class UserProfilesRepositoryTest extends BaseProfileRepositoryTest {
             device.setDeviceSoftModel("ValidSoftModel");
             device.setDeviceKeyHash("hash-xyz");
 
+            device.setUserProfile(testProfile);
+
             Set<DeviceInfo> devices = new LinkedHashSet<>();
             devices.add(device);
             testProfile.setDevices(devices);

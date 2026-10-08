@@ -2,6 +2,7 @@ package com.soaesps.profile.component;
 
 import com.soaesps.core.DataModels.security.BaseUserDetails;
 import com.soaesps.core.DataModels.user.UserProfile;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,4 +18,6 @@ public interface InServiceRouter {
     boolean createNewUser(@Valid @RequestBody UserProfile userDetails);
 
     boolean removeUser(@PathVariable String name);
+
+    boolean updateExistingUser(@NotNull UserProfile profile);
 }

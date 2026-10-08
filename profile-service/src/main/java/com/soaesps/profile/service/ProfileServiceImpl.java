@@ -1,12 +1,12 @@
 package com.soaesps.profile.service;
 
 import com.soaesps.core.DataModels.device.DeviceInfo;
+import com.soaesps.core.DataModels.user.UserInfo;
 import com.soaesps.core.DataModels.user.UserProfile;
 import com.soaesps.profile.component.InServiceRouter;
 import com.soaesps.profile.repository.UserProfilesRepository;
 
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import jakarta.validation.constraints.NotNull;
@@ -26,9 +26,6 @@ public class ProfileServiceImpl implements ProfileService {
         logger.setLevel(Level.INFO);
     }
 
-    @Autowired
-    private ProfileServiceImpl self; // Self-proxy invocation wrapper for Propagation.REQUIRES_NEW
-
     private final UserProfilesRepository repository;
     private final InServiceRouter inServiceRouter;
 
@@ -38,12 +35,14 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public UserProfile getUserProfile(final long id) {
         Optional<UserProfile> result = this.repository.findById(id);
         return result.orElseThrow(IllegalArgumentException::new);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public UserProfile getUserProfile(final String name) {
         Optional<UserProfile> result = this.repository.findByUserName(name);
         return result.orElseThrow(IllegalArgumentException::new);
@@ -51,6 +50,7 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Set<DeviceInfo> getUserDevice(final long id) {
         Optional<UserProfile> result = this.repository.findById(id);
 
@@ -58,6 +58,7 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Set<DeviceInfo> getUserDevice(final String name) {
         Optional<UserProfile> result = this.repository.findByUserName(name);
 
@@ -76,7 +77,16 @@ public class ProfileServiceImpl implements ProfileService {
 
         initUserInfo(profile);
         initUserDevices(profile);
-        this.repository.save(profile);
+
+        UserInfo transientUserInfo = profile.getUserInfo();
+        profile.setUserInfo(null);
+        this.repository.saveAndFlush(profile);
+        if (transientUserInfo != null) {
+            transientUserInfo.setId(profile.getId());
+            transientUserInfo.setUserProfile(profile);
+            profile.setUserInfo(transientUserInfo);
+            this.repository.save(profile);
+        }
 
         this.inServiceRouter.createNewUser(profile);
 
@@ -88,6 +98,7 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
     @Override
+    @Transactional
     public boolean updateProfile(@NotNull UserProfile profile) {
         final UserProfile existing = this.repository.findByUserName(profile.getUserName())
                 .orElseThrow(() -> new IllegalStateException("Failed to update user profile with name: " + profile.getUserName()));
@@ -112,6 +123,7 @@ public class ProfileServiceImpl implements ProfileService {
         }
 
         this.repository.save(existing);
+        this.inServiceRouter.updateExistingUser(existing);
         if (logger.isLoggable(Level.INFO)) {
             logger.log(Level.INFO, "profile with name {} has been updated: ", existing.getUserName());
         }
@@ -120,19 +132,20 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
     @Override
+    @Transactional
     public boolean deleteUserProfile(final long id) {
         try {
-            UserProfile existing = this.repository.getReferenceById(id);
+            UserProfile existing = this.repository.findById(id)
+                    .orElseThrow(() -> new EntityNotFoundException("Profile not found with id: " + id));
 
             final String userName = existing.getUserName();
 
-            this.inServiceRouter.removeUser(userName);
             this.repository.delete(existing);
+            this.inServiceRouter.removeUser(userName);
 
             if(logger.isLoggable(Level.INFO)) {
                 logger.log(Level.INFO, "profile with name {} has been removed: ", userName);
             }
-            this.repository.delete(existing);
 
             return true;
         } catch (EntityNotFoundException ex) {
@@ -143,6 +156,7 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<String> listAllProfiles() {
         final List<String> result = new ArrayList<>();
 

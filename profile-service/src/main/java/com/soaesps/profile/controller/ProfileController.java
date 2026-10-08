@@ -40,7 +40,6 @@ public class ProfileController {
         return profileService.getUserDevice(id);
     }
 
-    @PreAuthorize("#oauth2.clientHasRole('admin')")
     @PostMapping("/creation")
     public void createUserProfile(@Valid @RequestBody UserProfile profile) {
         profileService.createProfile(profile);

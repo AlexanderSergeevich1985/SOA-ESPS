@@ -1,4 +1,4 @@
-package com.soaesps.core.repository;
+package com.soaesps.core.repository.transaction;
 
 import com.soaesps.core.DataModels.transaction.FailedOutboxEvent;
 import org.springframework.data.jpa.repository.JpaRepository;

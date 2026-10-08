@@ -34,8 +34,9 @@ public class UserInfo extends WithIdAuditableEntity {
     private String telephone;
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @MapsId
-    @JoinColumn(name = "user_profile_id")
+    //@MapsId
+    //@JoinColumn(name = "user_profile_id")
+    @PrimaryKeyJoinColumn(name = "id", referencedColumnName = "id")
     private UserProfile userProfile;
 
     public UserInfo() {}

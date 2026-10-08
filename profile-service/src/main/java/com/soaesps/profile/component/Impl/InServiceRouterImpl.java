@@ -70,4 +70,9 @@ public class InServiceRouterImpl implements InServiceRouter {
 
         return response != null;
     }
+
+    @Override
+    public boolean updateExistingUser(UserProfile profile) {
+        return false;
+    }
 }

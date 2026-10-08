@@ -99,6 +99,7 @@ soa:
     permit-all:
       - /actuator/health/**
       - /actuator/info
+      - /profiles/creation
     internal:
       - /api/internal/**
     mtls:
@@ -155,6 +156,7 @@ soa:
       enabled: true
     permit-all:
       - /actuator/health/**
+      - /profiles/creation
     internal:
       - /api/internal/**
     mtls:

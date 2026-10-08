@@ -4,7 +4,8 @@ import com.soaesps.core.DataModels.transaction.FailedOutboxEvent;
 import com.soaesps.core.DataModels.user.UserInfo;
 import com.soaesps.core.DataModels.user.UserProfile;
 import com.soaesps.core.dto.BulkContactRegistrationMessage;
-import com.soaesps.core.repository.FailedOutboxEventRepository;
+import com.soaesps.core.dto.UserDeletionMessage;
+import com.soaesps.core.repository.transaction.FailedOutboxEventRepository;
 import com.soaesps.profile.component.InServiceRouter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.soaesps.core.dto.AuthRegistrationPayload;
@@ -12,6 +13,8 @@ import com.soaesps.core.dto.AuthRegistrationPayload;
 import jakarta.validation.constraints.NotNull;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -25,10 +28,11 @@ import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+@Primary
 @Component
 public class KafkaInServiceRouter implements InServiceRouter {
 
-    private static final Logger logger = Logger.getLogger(InServiceRouterImpl.class.getName());
+    private static final Logger logger = Logger.getLogger(KafkaInServiceRouter.class.getName());
 
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final FailedOutboxEventRepository failedOutboxRepository;
@@ -36,6 +40,7 @@ public class KafkaInServiceRouter implements InServiceRouter {
     private final ObjectMapper objectMapper;
 
     @Autowired
+    @Lazy
     private KafkaInServiceRouter self; // Self-proxy reference to execute REQUIRES_NEW transaction
 
     public KafkaInServiceRouter(KafkaTemplate<String, String> kafkaTemplate,
@@ -126,7 +131,96 @@ public class KafkaInServiceRouter implements InServiceRouter {
 
     @Override
     public boolean removeUser(String name) {
-        return false;
+        if (name == null || name.isBlank()) {
+            return false;
+        }
+
+        final String routingKey = name;
+        // Instantiate the standardized deletion message contract from the common library
+        UserDeletionMessage deletionMessage = UserDeletionMessage.forUser(name);
+
+        // Serialize the structural object container into an operational JSON block
+        final String deleteEventJson;
+        try {
+            deleteEventJson = objectMapper.writeValueAsString(deletionMessage);
+        } catch (Exception e) {
+            throw new RuntimeException("SOA deletion contract infrastructure serialization failed", e);
+        }
+
+        // Register post-commit event publisher to protect RDBMS resources
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                // Connection instance returned to the pool safely before triggering I/O streams
+                taskExecutor.execute(() -> {
+
+                    // Signal the auth cluster to instantly revoke credentials and tokens
+                    kafkaTemplate.send("auth-registration-events", routingKey, deleteEventJson)
+                            .whenComplete((result, ex) -> {
+                                if (ex != null) {
+                                    logger.log(Level.SEVERE, "Auth node cluster write failure on drop lifecycle. Moving to outbox.", ex);
+                                    self.saveToFailedOutbox(routingKey, "AUTH_DELETION_FAILED", deleteEventJson);
+                                } else {
+                                    logger.log(Level.INFO, "Deletion event context dispatched to auth domain for key: " + routingKey);
+                                }
+                            });
+
+                    // Signal the notes/notifications cluster to purge or archive related configurations
+                    kafkaTemplate.send("user-notification-events", routingKey, deleteEventJson)
+                            .whenComplete((result, ex) -> {
+                                if (ex != null) {
+                                    logger.log(Level.SEVERE, "Notes node cluster write failure on drop lifecycle. Moving to outbox.", ex);
+                                    self.saveToFailedOutbox(routingKey, "BULK_NOTIFICATION_DELETION_FAILED", deleteEventJson);
+                                } else {
+                                    logger.log(Level.INFO, "Deletion event context dispatched to notes domain for key: " + routingKey);
+                                }
+                            });
+                });
+            }
+        });
+
+        return true;
+    }
+
+    @Override
+    public boolean updateExistingUser(@NotNull final UserProfile profile) {
+        final String routingKey = profile.getUserName();
+
+        UserInfo userInfo = profile.getUserInfo();
+        String email = userInfo != null ? userInfo.getEmail() : null;
+        String telephone = userInfo != null ? userInfo.getTelephone() : null;
+
+        BulkContactRegistrationMessage updateMessage = BulkContactRegistrationMessage.fromEmailAndPhone(
+                profile.getUserName(),
+                email,
+                telephone
+        );
+
+        final String updateJson;
+        try {
+            updateJson = objectMapper.writeValueAsString(updateMessage);
+        } catch (Exception e) {
+            throw new RuntimeException("SOA infrastructure update contract serialization failed", e);
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                taskExecutor.execute(() -> {
+                    kafkaTemplate.send("user-notification-events", routingKey, updateJson)
+                            .whenComplete((result, ex) -> {
+                                if (ex != null) {
+                                    logger.log(Level.SEVERE, "Notes node cluster write drop experienced during update. Initiating fallback outbox routing.", ex);
+                                    self.saveToFailedOutbox(routingKey, "BULK_NOTIFICATION_UPDATE_FAILED", updateJson);
+                                } else {
+                                    logger.log(Level.INFO, "Event context successfully routed via message broker for update domain: " + routingKey);
+                                }
+                            });
+                });
+            }
+        });
+
+        return true;
     }
 
     @Override

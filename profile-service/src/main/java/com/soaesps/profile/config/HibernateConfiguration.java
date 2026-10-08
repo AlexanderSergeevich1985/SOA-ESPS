@@ -21,7 +21,7 @@ import javax.sql.DataSource;
 // Unified scanning package mapping for domain entities and modern data models
 @EntityScan(basePackages = {"com.soaesps.profile"})
 // Configures automated Spring Data JPA repository layer mapping orchestration
-@EnableJpaRepositories(basePackages = {"com.soaesps.profile.repository"})
+@EnableJpaRepositories(basePackages = {"com.soaesps.profile.repository", "com.soaesps.core.repository.transaction"})
 public class HibernateConfiguration extends BaseHibernateConfiguration {
 
     /**
@@ -38,7 +38,8 @@ public class HibernateConfiguration extends BaseHibernateConfiguration {
         // Scan all required packages for JPA entities
         em.setPackagesToScan(
                 "com.soaesps.core.DataModels.device",
-                "com.soaesps.core.DataModels.user"
+                "com.soaesps.core.DataModels.user",
+                "com.soaesps.core.DataModels.transaction"
         );
 
         em.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
