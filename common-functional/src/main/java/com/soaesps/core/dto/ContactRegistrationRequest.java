@@ -1,4 +1,4 @@
-package com.soaesps.notifications.dto;
+package com.soaesps.core.dto;
 
 import java.util.Map;
 

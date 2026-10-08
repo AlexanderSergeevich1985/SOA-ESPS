@@ -11,8 +11,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Set;
+import java.util.LinkedHashSet;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -97,7 +97,7 @@ class UserProfilesRepositoryTest extends BaseProfileRepositoryTest {
             device.setDeviceSoftModel("ValidSoftModel");
             device.setDeviceKeyHash("hash-xyz");
 
-            List<DeviceInfo> devices = new ArrayList<>();
+            Set<DeviceInfo> devices = new LinkedHashSet<>();
             devices.add(device);
             testProfile.setDevices(devices);
 
@@ -112,8 +112,9 @@ class UserProfilesRepositoryTest extends BaseProfileRepositoryTest {
             assertThat(retrievedProfile).isNotNull();
             assertThat(retrievedProfile.getDevices()).hasSize(1);
 
-            DeviceInfo retrievedDevice = retrievedProfile.getDevices().get(0);
-            assertThat(retrievedDevice.getId()).isNotNull();
+            DeviceInfo retrievedDevice = retrievedProfile.getDevices().stream().findFirst().orElse(null);
+            assertThat(retrievedDevice).isNotNull();
+            assertThat(retrievedDevice.getDeviceUUID()).isNotNull();
             assertThat(retrievedDevice.getDeviceType()).isEqualTo("ValidDeviceType");
         }
     }

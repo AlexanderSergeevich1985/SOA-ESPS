@@ -1,6 +1,6 @@
 package com.soaesps.notifications.service;
 
-import com.soaesps.notifications.dto.ContactRegistrationRequest;
+import com.soaesps.core.dto.ContactRegistrationRequest;
 import com.soaesps.notifications.dto.ContactResponseDto;
 import com.soaesps.notifications.dto.UserContactsProfileSummary;
 import com.soaesps.notifications.domain.reactive.*;

@@ -51,8 +51,8 @@ class DeviceInfoRepositoryTest extends BaseProfileRepositoryTest {
         void saveRetrieveDelete() throws Exception {
             // When: Save
             DeviceInfo saved = deviceInfoRepository.save(testDevice);
-            assertThat(saved.getId()).isNotNull();
-            Long id = saved.getId();
+            assertThat(saved.getDeviceUUID()).isNotNull();
+            String id = saved.getDeviceUUID();
 
             // Force Hibernate to execute the INSERT SQL immediately
             entityManager.flush();
@@ -84,14 +84,14 @@ class DeviceInfoRepositoryTest extends BaseProfileRepositoryTest {
             entityManager.clear();
 
             // When: update
-            DeviceInfo retrieved = deviceInfoRepository.findById(saved.getId()).orElseThrow();
+            DeviceInfo retrieved = deviceInfoRepository.findById(saved.getDeviceUUID()).orElseThrow();
             retrieved.setDeviceType("UpdatedType");
             retrieved.setDeviceSoftModel("UpdatedSoft");
             deviceInfoRepository.saveAndFlush(retrieved);
             entityManager.clear();
 
             // Then: verify update
-            DeviceInfo updated = deviceInfoRepository.findById(saved.getId()).orElseThrow();
+            DeviceInfo updated = deviceInfoRepository.findById(saved.getDeviceUUID()).orElseThrow();
             assertThat(updated.getDeviceType()).isEqualTo("UpdatedType");
             assertThat(updated.getDeviceSoftModel()).isEqualTo("UpdatedSoft");
         }
@@ -115,7 +115,7 @@ class DeviceInfoRepositoryTest extends BaseProfileRepositoryTest {
 
             // Then
             assertThat(found).isNotNull();
-            assertThat(found.getId()).isEqualTo(testDevice.getId());
+            assertThat(found.getDeviceUUID()).isEqualTo(testDevice.getDeviceUUID());
         }
 
         @ParameterizedTest

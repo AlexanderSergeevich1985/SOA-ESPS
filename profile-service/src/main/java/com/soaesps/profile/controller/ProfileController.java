@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import java.security.Principal;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/profiles")
@@ -29,15 +30,16 @@ public class ProfileController {
     }
 
     @GetMapping("/currentuserdevice")
-    public List<DeviceInfo> getUserDevice(Principal principal) {
+    public Set<DeviceInfo> getUserDevice(Principal principal) {
         return profileService.getUserDevice(principal.getName());
     }
 
     @PreAuthorize("#oauth2.hasScope('user_'.concat(#id).concat('_view')) or #oauth2.clientHasRole('admin')")
     @GetMapping("/{id}")
-    public List<DeviceInfo> getUserDevice(@PathVariable("id") long id) {
+    public Set<DeviceInfo> getUserDevice(@PathVariable("id") long id) {
         return profileService.getUserDevice(id);
     }
+
     @PreAuthorize("#oauth2.clientHasRole('admin')")
     @PostMapping("/creation")
     public void createUserProfile(@Valid @RequestBody UserProfile profile) {
@@ -52,7 +54,10 @@ public class ProfileController {
 
     @PutMapping("/current")
     public void updateUserProfile(Principal principal, @Valid @RequestBody UserProfile profile) {
-        profileService.updateProfile(principal.getName(), profile);
+        if (!principal.getName().equals(profile.getUserName())) {
+            throw new IllegalArgumentException("Unable to update profile");
+        }
+        profileService.updateProfile(profile);
     }
 
     @PreAuthorize("#oauth2.clientHasRole('admin')")

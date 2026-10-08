@@ -45,7 +45,7 @@ spring:
     config:
       label: master
       discovery:
-        enabled: true
+        enabled: false
         service-id: config-server
     bus:
       enabled: true

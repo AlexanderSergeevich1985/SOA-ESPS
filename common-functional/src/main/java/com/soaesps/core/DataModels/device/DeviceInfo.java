@@ -1,25 +1,30 @@
 package com.soaesps.core.DataModels.device;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.soaesps.core.DataModels.BaseEntity;
+import com.soaesps.core.DataModels.AuditableEntity;
+import com.soaesps.core.DataModels.user.UserProfile;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import java.io.Serializable;
 import java.security.Principal;
 import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Entity
 @Table(name = "DEVICES_INFO")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-public class DeviceInfo extends BaseEntity implements Principal, Serializable {
+public class DeviceInfo extends AuditableEntity implements Principal, Serializable {
+    public static final String USER_PROFILE_PROPERTY = "userProfile";
 
-    @Column(name = "device_uuid", nullable = false, unique = true)
+    @Id
+    @Column(name = "device_uuid", nullable = false, unique = true, updatable = false)
     private String deviceUUID;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_profile_id", nullable = false)
+    private UserProfile userProfile;
 
     @Column(name = "device_type")
     @Size(min = 8, max = 40)
@@ -45,6 +50,15 @@ public class DeviceInfo extends BaseEntity implements Principal, Serializable {
 
     public void setDeviceUUID(@Nonnull String deviceUUID) {
         this.deviceUUID = Objects.requireNonNull(deviceUUID);
+    }
+
+    @Nonnull
+    public UserProfile getUserProfile() {
+        return userProfile;
+    }
+
+    public void setUserProfile(@Nonnull UserProfile userProfile) {
+        this.userProfile = userProfile;
     }
 
     @Nullable
@@ -107,5 +121,16 @@ public class DeviceInfo extends BaseEntity implements Principal, Serializable {
                 ", type=" + deviceType +
                 ", softModel=" + deviceSoftModel +
                 ", keyHash=" + (deviceKeyHash != null ? "***" : "null") + '}';
+    }
+
+    @Nonnull
+    public DeviceInfo copyStateFrom(@Nonnull DeviceInfo source) {
+        Objects.requireNonNull(source, "Source DeviceInfo must not be null");
+
+        this.setDeviceType(source.getDeviceType());
+        this.setDeviceSoftModel(source.getDeviceSoftModel());
+        this.setDeviceKeyHash(source.getDeviceKeyHash());
+
+        return this;
     }
 }

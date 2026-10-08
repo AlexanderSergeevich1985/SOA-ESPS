@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface DeviceInfoRepository extends JpaRepository<DeviceInfo, Long> {
+public interface DeviceInfoRepository extends JpaRepository<DeviceInfo, String> {
 
     /** Lookup by business key (deviceUUID). Case-insensitive to match equals(). */
     Optional<DeviceInfo> findByDeviceUUIDIgnoreCase(String deviceUUID);

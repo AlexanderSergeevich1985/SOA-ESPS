@@ -1,6 +1,7 @@
 package com.soaesps.profile.component;
 
 import com.soaesps.core.DataModels.security.BaseUserDetails;
+import com.soaesps.core.DataModels.user.UserProfile;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -13,7 +14,7 @@ import java.io.IOException;
 public interface InServiceRouter {
     UserDetails getUserDetailsByName(@PathVariable String name) throws IOException;
 
-    boolean createNewUser(@Valid @RequestBody BaseUserDetails userDetails);
+    boolean createNewUser(@Valid @RequestBody UserProfile userDetails);
 
     boolean removeUser(@PathVariable String name);
 }

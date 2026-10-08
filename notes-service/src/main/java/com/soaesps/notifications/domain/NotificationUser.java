@@ -3,8 +3,8 @@ package com.soaesps.notifications.domain;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
  * Root aggregate holding explicit notification preferences and polymorphic user contacts.
@@ -21,7 +21,7 @@ public class NotificationUser {
      * Polymorphic collection mapping all active communication endpoints via single-table.
      */
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<UserContact> contacts = new ArrayList<>();
+    private Set<UserContact> contacts = new LinkedHashSet<>();
 
     /**
      * Notification channels manually muted or disabled by the user (e.g., ["EMAIL", "SMS"]).
@@ -30,7 +30,7 @@ public class NotificationUser {
     @CollectionTable(name = "user_disabled_channels", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "channel", length = 8)
     @Size(max = 8, message = "Channel code length exceeds max length")
-    private List<String> disabledChannels = new ArrayList<>();
+    private Set<String> disabledChannels = new LinkedHashSet<>();
 
     public NotificationUser() {}
 
@@ -44,19 +44,19 @@ public class NotificationUser {
         this.userId = userId;
     }
 
-    public List<UserContact> getContacts() {
+    public Set<UserContact> getContacts() {
         return contacts;
     }
 
-    public void setContacts(List<UserContact> contacts) {
+    public void setContacts(Set<UserContact> contacts) {
         this.contacts = contacts;
     }
 
-    public List<String> getDisabledChannels() {
+    public Set<String> getDisabledChannels() {
         return disabledChannels;
     }
 
-    public void setDisabledChannels(List<String> disabledChannels) {
+    public void setDisabledChannels(Set<String> disabledChannels) {
         this.disabledChannels = disabledChannels;
     }
 

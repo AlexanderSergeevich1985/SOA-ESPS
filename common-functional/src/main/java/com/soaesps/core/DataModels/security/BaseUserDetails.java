@@ -18,7 +18,7 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Entity
@@ -39,7 +39,7 @@ public class BaseUserDetails extends BaseEntity implements UserDetails {
             inverseJoinColumns = { @JoinColumn(name = "role_id") }
     )
     @BatchSize(size = 20)
-    private List<Role> authorities;
+    private Set<Role> authorities;
 
     @Column(nullable = false)
     @Size(min = 8, max = 40)
@@ -83,7 +83,7 @@ public class BaseUserDetails extends BaseEntity implements UserDetails {
             this.authorities = authorities.stream()
                     .filter(Role.class::isInstance)
                     .map(Role.class::cast)
-                    .collect(Collectors.toList());
+                    .collect(Collectors.toSet());
         }
     }
 

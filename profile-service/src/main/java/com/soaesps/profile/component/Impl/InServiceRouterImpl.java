@@ -2,6 +2,7 @@ package com.soaesps.profile.component.Impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.soaesps.core.DataModels.security.BaseUserDetails;
+import com.soaesps.core.DataModels.user.UserProfile;
 import com.soaesps.core.integration.IntegrationConstant;
 import com.soaesps.profile.component.InServiceRouter;
 import com.soaesps.profile.service.ProfileServiceImpl;
@@ -49,7 +50,7 @@ public class InServiceRouterImpl implements InServiceRouter {
     }
 
     @Override
-    public boolean createNewUser(@Valid @RequestBody BaseUserDetails userDetails) {
+    public boolean createNewUser(@Valid @RequestBody UserProfile userDetails) {
         final byte[] response = (byte []) rabbitTemplate.
                 convertSendAndReceive(
                         IntegrationConstant.Exchanges.USER_DETAILS_OUEUE.getExchangeName(),

@@ -1,8 +1,8 @@
 package com.soaesps.core.DataModels.user;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.soaesps.core.DataModels.BaseEntity;
 
+import com.soaesps.core.DataModels.WithIdAuditableEntity;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
@@ -11,7 +11,7 @@ import jakarta.validation.constraints.Email;
 @Entity
 @Table(name = "USERS_INFO")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-public class UserInfo extends BaseEntity {
+public class UserInfo extends WithIdAuditableEntity {
     public static final String USER_PROFILE_PROPERTY = "userProfile";
 
     @Column(name = "first_name", length = 40)
@@ -34,6 +34,7 @@ public class UserInfo extends BaseEntity {
     private String telephone;
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @MapsId
     @JoinColumn(name = "user_profile_id")
     private UserProfile userProfile;
 
@@ -91,5 +92,14 @@ public class UserInfo extends BaseEntity {
 
     public void setTelephone(@Nullable String telephone) {
         this.telephone = telephone;
+    }
+
+    @Nonnull
+    public UserProfile getUserProfile() {
+        return userProfile;
+    }
+
+    public void setUserProfile(@Nonnull UserProfile userProfile) {
+        this.userProfile = userProfile;
     }
 }

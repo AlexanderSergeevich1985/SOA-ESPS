@@ -10,7 +10,7 @@ import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name="USER_PROFILES")
@@ -23,14 +23,9 @@ public class UserProfile extends BaseEntity {
     @OneToOne(fetch = FetchType.LAZY, mappedBy = UserInfo.USER_PROFILE_PROPERTY, optional = false)
     private UserInfo userInfo;
 
-    @ManyToMany(fetch = FetchType.LAZY, cascade = { CascadeType.ALL })
-    @JoinTable(
-            name = "USER_DEVICES",
-            joinColumns = { @JoinColumn(name = "user_profile_id") },
-            inverseJoinColumns = { @JoinColumn(name = "device_id") }
-    )
+    @OneToMany(mappedBy = DeviceInfo.USER_PROFILE_PROPERTY, fetch = FetchType.LAZY, cascade = { CascadeType.ALL }, orphanRemoval = true)
     @BatchSize(size = 10)
-    private List<DeviceInfo> devices;
+    private Set<DeviceInfo> devices;
 
     @Transient
     private BaseUserDetails userDetails;
@@ -55,11 +50,11 @@ public class UserProfile extends BaseEntity {
         this.userInfo = userInfo;
     }
 
-    public List<DeviceInfo> getDevices() {
+    public Set<DeviceInfo> getDevices() {
         return devices;
     }
 
-    public void setDevices(List<DeviceInfo> devices) {
+    public void setDevices(Set<DeviceInfo> devices) {
         this.devices = devices;
     }
 
