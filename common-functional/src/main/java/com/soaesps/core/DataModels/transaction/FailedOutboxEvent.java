@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "failed_outbox_events")
+@Table(name = "FAILED_OUTBOX_EVENTS")
 public class FailedOutboxEvent {
 
     @Id
