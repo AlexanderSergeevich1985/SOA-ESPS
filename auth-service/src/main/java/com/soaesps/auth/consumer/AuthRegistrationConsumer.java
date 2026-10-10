@@ -1,5 +1,6 @@
 package com.soaesps.auth.consumer;
 
+import com.soaesps.auth.service.BaseUserDetailsService;
 import com.soaesps.core.DataModels.transaction.InboxMessage;
 import com.soaesps.core.dto.AuthRegistrationPayload;
 
@@ -25,10 +26,11 @@ public class AuthRegistrationConsumer {
     private static final Logger logger = LoggerFactory.getLogger(AuthRegistrationConsumer.class);
 
     private final InboxMessageRepository inboxRepository;
-    // private final UserCredentialsService credentialsService;
+    private final BaseUserDetailsService userDetailsService;
 
-    public AuthRegistrationConsumer(InboxMessageRepository inboxRepository) {
+    public AuthRegistrationConsumer(InboxMessageRepository inboxRepository, BaseUserDetailsService userDetailsService) {
         this.inboxRepository = inboxRepository;
+        this.userDetailsService = userDetailsService;
     }
 
     /**
@@ -53,7 +55,7 @@ public class AuthRegistrationConsumer {
         logger.info("Received auth event. MessageId: {}, UserKey: {}", messageId, routingKey);
 
         try {
-            // 1. Check if the message has already been processed (Deduplication Step)
+            // Check if the message has already been processed (Deduplication Step)
             if (inboxRepository.existsById(messageId)) {
                 logger.warn("Inbox pattern trigger: Message with ID '{}' already processed. " +
                         "Skipping business logic and committing offset.", messageId);
@@ -61,10 +63,10 @@ public class AuthRegistrationConsumer {
                 return;
             }
 
-            // 2. Delegate to a transactional method that saves both business entities and the Inbox log
+            // Delegate to a transactional method that saves both business entities and the Inbox log
             processBusinessDataAndLogInbox(payload, messageId);
 
-            // 3. Securely advance the broker offset once data layer execution completes
+            // Securely advance the broker offset once data layer execution completes
             ack.acknowledge();
             logger.info("Successfully processed event and committed Kafka offset for message: {}", messageId);
 
@@ -82,7 +84,7 @@ public class AuthRegistrationConsumer {
     protected void processBusinessDataAndLogInbox(AuthRegistrationPayload payload, String messageId) {
         // Execute primary domain business adjustments
         logger.info("Persisting security credentials record for user: {}", payload.username());
-        // credentialsService.createCredentials(payload);
+        userDetailsService.createUserAccount(payload);
 
         // Explicitly write the tracking log inside the same transactional workspace
         InboxMessage inboxLog = new InboxMessage(messageId);

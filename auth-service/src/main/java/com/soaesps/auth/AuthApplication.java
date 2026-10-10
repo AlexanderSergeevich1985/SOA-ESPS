@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.UUID;
 
 @SpringBootApplication
-@EnableDiscoveryClient
+//@EnableDiscoveryClient
 @EnableMethodSecurity
 public class AuthApplication {
 

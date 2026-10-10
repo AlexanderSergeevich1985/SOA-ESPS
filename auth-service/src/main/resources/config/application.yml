@@ -10,6 +10,8 @@ spring:
     compatibility-verifier:
       # Bypasses the release train version mismatch check between Boot 3.4.1 and Cloud
       enabled: false
+    discovery:
+      enabled: false
 
 ---
 # ===================================================================

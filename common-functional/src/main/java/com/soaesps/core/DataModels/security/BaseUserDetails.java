@@ -22,7 +22,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Entity
-@Table(name = "t_user_details")
+@Table(name = "T_USER_DETAILS")
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.TRANSACTIONAL, region = "STATIC_DATA")
 @NamedQueries({
@@ -30,6 +30,15 @@ import java.util.stream.Collectors;
                 query="SELECT ud FROM BaseUserDetails ud WHERE ud.username = :username")
 })
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+@AttributeOverride(
+        name = "id",
+        column = @Column(name = "id", nullable = false)
+)
+@SequenceGenerator(
+        name = "user_details_seq_gen",
+        sequenceName = "t_user_details_id_seq",
+        allocationSize = 1 // Set to 1 for precise safe evaluation synchronization inside MVP container topology
+)
 public class BaseUserDetails extends BaseEntity implements UserDetails {
 
     @ManyToMany(fetch = FetchType.LAZY, cascade = { CascadeType.ALL })

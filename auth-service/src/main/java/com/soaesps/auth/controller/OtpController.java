@@ -1,19 +1,23 @@
 package com.soaesps.auth.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import com.soaesps.auth.service.security.OtpVerificationService;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+
 import jakarta.servlet.http.HttpSession;
 
 @Controller
 public class OtpController {
 
-    @Autowired
-    private com.soaesps.auth.service.security.OtpVerificationService otpService; // Your OTP check logic provider
+    private final OtpVerificationService otpService; // Your OTP check logic provider
+
+    public OtpController(OtpVerificationService otpService) {
+        this.otpService = otpService;
+    }
 
     @PostMapping("/login/otp/verify")
     public String verifyOtp(@RequestParam("code") String code, HttpSession session) {

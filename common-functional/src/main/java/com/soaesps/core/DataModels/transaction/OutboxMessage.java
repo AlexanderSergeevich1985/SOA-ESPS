@@ -127,6 +127,10 @@ public class OutboxMessage {
         return retryCount;
     }
 
+    public void setRetryCount(int retryCount) {
+        this.retryCount = retryCount;
+    }
+
     /**
      * Gets the timestamp when the message was created.
      * @return the creation timestamp

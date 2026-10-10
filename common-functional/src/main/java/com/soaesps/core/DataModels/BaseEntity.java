@@ -2,8 +2,9 @@ package com.soaesps.core.DataModels;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import com.soaesps.core.Utils.DateTimeHelper;
 import com.soaesps.core.Utils.convertor.hibernate.TimestampConverter;
-import org.hibernate.annotations.GenericGenerator;
 
 import jakarta.persistence.*;
 import java.time.ZonedDateTime;
@@ -44,7 +45,7 @@ public abstract class BaseEntity {
      */
     @PrePersist
     protected void onCreate() {
-        ZonedDateTime now = ZonedDateTime.now();
+        ZonedDateTime now = DateTimeHelper.getCurrentTimeWithTimeZone("UTC");
         this.creationTime = now;
         this.modificationTime = now;
     }
@@ -54,7 +55,7 @@ public abstract class BaseEntity {
      */
     @PreUpdate
     protected void onUpdate() {
-        this.modificationTime = ZonedDateTime.now();
+        this.modificationTime = DateTimeHelper.getCurrentTimeWithTimeZone("UTC");
     }
 
     // Getters and Setters remain unchanged

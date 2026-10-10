@@ -5,7 +5,6 @@ import com.soaesps.auth.service.security.AccessTokenFactory;
 import com.soaesps.auth.service.security.OtpVerificationService;
 import com.soaesps.core.DataModels.security.BaseOAuth2AccessToken;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -25,14 +24,17 @@ import java.util.Map;
 @RequestMapping("/login/otp")
 public class MfaRestController {
 
-    @Autowired
-    private AccessTokenFactory tokenProvider;
+    private final AccessTokenFactory tokenProvider;
 
-    @Autowired
-    private OtpVerificationService otpService;
+    private final OtpVerificationService otpService;
 
-    @Autowired
-    private ObjectMapper mapper;
+    private final ObjectMapper mapper;
+
+    public MfaRestController(AccessTokenFactory tokenProvider, OtpVerificationService otpService, ObjectMapper mapper) {
+        this.tokenProvider = tokenProvider;
+        this.otpService = otpService;
+        this.mapper = mapper;
+    }
 
     /**
      * Validates the submitted OTP token and generates full operational OAuth2 tokens upon success.
