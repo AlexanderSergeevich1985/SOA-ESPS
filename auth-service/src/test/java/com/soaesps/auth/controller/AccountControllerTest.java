@@ -172,7 +172,7 @@ class AccountControllerTest {
 
         @Test
         void shouldReturnOk_WhenAnonymousUserRegisters() throws Exception {
-            Mockito.doReturn(1L).when(userDetailsService).createUserAccount(Mockito.any());
+            Mockito.doReturn(1L).when(userDetailsService).createUserAccount((BaseUserDetails) any());
             String content = JsonUtil.toString(getTestUserDetails());
 
             mockMvc.perform(post("/accounts/create")

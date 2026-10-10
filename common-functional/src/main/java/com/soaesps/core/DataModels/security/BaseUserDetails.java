@@ -29,6 +29,10 @@ import java.util.stream.Collectors;
         @NamedQuery(name = "UserDetails.FindByUserName",
                 query="SELECT ud FROM BaseUserDetails ud WHERE ud.username = :username")
 })
+@NamedEntityGraph(
+        name = "User.authorities",
+        attributeNodes = @NamedAttributeNode("authorities")
+)
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @AttributeOverride(
         name = "id",
@@ -51,7 +55,7 @@ public class BaseUserDetails extends BaseEntity implements UserDetails {
     private Set<Role> authorities;
 
     @Column(nullable = false)
-    @Size(min = 8, max = 40)
+    @Size(min = 8, max = 100)
     @JsonProperty("password")
     private String password;
 

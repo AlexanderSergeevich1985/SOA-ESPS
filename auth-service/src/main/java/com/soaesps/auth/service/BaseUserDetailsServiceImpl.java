@@ -10,15 +10,16 @@ import com.soaesps.core.exception.UserAlreadyExistAuthException;
 import com.soaesps.core.security.checker.BaseUserDetailsChecker;
 import com.soaesps.core.security.util.SecurityHelper;
 
-import org.slf4j.Logger;
-
-import org.slf4j.LoggerFactory;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -35,10 +36,12 @@ public class BaseUserDetailsServiceImpl implements BaseUserDetailsService {
 
     private final BaseUserDetailsChecker baseUserDetailsChecker;
     private final UserDetailsRepository repository;
+    private final PasswordEncoder passwordEncoder;
 
-    public BaseUserDetailsServiceImpl(BaseUserDetailsChecker baseUserDetailsChecker, UserDetailsRepository repository) {
+    public BaseUserDetailsServiceImpl(BaseUserDetailsChecker baseUserDetailsChecker, UserDetailsRepository repository, PasswordEncoder passwordEncoder) {
         this.baseUserDetailsChecker = baseUserDetailsChecker;
         this.repository = repository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -81,7 +84,7 @@ public class BaseUserDetailsServiceImpl implements BaseUserDetailsService {
         BaseUserDetails userDetailsEntity = new BaseUserDetails();
         userDetailsEntity.setUsername(payload.username());
 
-        userDetailsEntity.setPassword(payload.password());
+        userDetailsEntity.setPassword(passwordEncoder.encode(payload.password()));
 
         // Map baseline configuration metadata for active new identities
         userDetailsEntity.setEnabled(true);

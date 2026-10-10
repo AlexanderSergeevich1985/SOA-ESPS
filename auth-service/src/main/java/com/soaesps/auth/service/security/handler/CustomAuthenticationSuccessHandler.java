@@ -1,18 +1,27 @@
 package com.soaesps.auth.service.security.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import com.soaesps.core.DataModels.security.BaseUserDetails;
+
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.oauth2.core.AuthorizationGrantType;
-import org.springframework.security.oauth2.core.OAuth2AccessToken;
-import org.springframework.security.oauth2.core.OAuth2RefreshToken;
+import org.springframework.security.oauth2.core.*;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
+import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2ClientAuthenticationToken;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
+import org.springframework.security.oauth2.server.authorization.context.AuthorizationServerContext;
+import org.springframework.security.oauth2.server.authorization.context.AuthorizationServerContextHolder;
+import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.token.DefaultOAuth2TokenContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
@@ -56,10 +65,7 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
         // Step 1: Check if the custom user entity has MFA/2FA enabled globally
-        boolean isMfaEnabled = false;
-        if (userDetails instanceof com.soaesps.core.DataModels.security.BaseUserDetails) {
-            isMfaEnabled = ((com.soaesps.core.DataModels.security.BaseUserDetails) userDetails).isMfaEnabled();
-        }
+        boolean isMfaEnabled = userDetails instanceof BaseUserDetails bud && bud.isMfaEnabled();
 
         if (isMfaEnabled) {
             // Step 2: Handle 2FA intercept flow. Generate a temporary handshake session token.
@@ -77,44 +83,108 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
 
             mapper.writeValue(response.getWriter(), mfaResponse);
         } else {
-            RegisteredClient registeredClient = clientRepository.findByClientId("browser");
-            if (registeredClient == null) {
-                throw new IllegalStateException("OAuth2 client 'browser' must be registered in AuthApplication.");
+            RegisteredClient registeredClient = null;
+            Authentication clientAuth = SecurityContextHolder.getContext().getAuthentication();
+
+            if (clientAuth instanceof OAuth2ClientAuthenticationToken) {
+                registeredClient = ((OAuth2ClientAuthenticationToken) clientAuth).getRegisteredClient();
+            } else {
+                String clientId = request.getParameter("client_id");
+                if (clientId == null) {
+                    clientId = request.getHeader("client_id");
+                }
+                if (clientId != null) {
+                    registeredClient = clientRepository.findByClientId(clientId);
+                }
             }
 
-            // Step 3.1: Build standard token contexts required by modern Spring Security
+            // Fallback logic. If no client was specified (e.g. raw curl request), apply default profile.
+            if (registeredClient == null) {
+                registeredClient = clientRepository.findByClientId("browser");
+            }
+
+            if (registeredClient == null) {
+                throw new OAuth2AuthenticationException(
+                        new OAuth2Error(
+                                OAuth2ErrorCodes.INVALID_CLIENT,
+                                "Missing or invalid OAuth2 client identifier. The application must provide a valid client_id parameter.",
+                                null
+                        )
+                );
+            }
+
+            // Step 3: Fetch metadata parameters from global server deployment architecture
+            AuthorizationServerContext serverContext = AuthorizationServerContextHolder.getContext();
+            if (serverContext == null) {
+                final String issuerUri = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort();
+                serverContext = new AuthorizationServerContext() {
+                    @Override
+                    public String getIssuer() {
+                        return issuerUri;
+                    }
+                    @Override
+                    public AuthorizationServerSettings getAuthorizationServerSettings() {
+                        return AuthorizationServerSettings.builder().issuer(issuerUri).build();
+                    }
+                };
+            }
+
+            UsernamePasswordAuthenticationToken userPrincipal =
+                    new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+
+            // Step 4: Configure explicit generation payload boundaries using active client criteria
             OAuth2TokenContext accessTokenContext = DefaultOAuth2TokenContext.builder()
                     .registeredClient(registeredClient)
-                    .principal(authentication)
-                    //.tokenType(org.springframework.security.oauth2.server.authorization.token.OAuth2TokenType.ACCESS_TOKEN)
-                    .authorizationGrantType(AuthorizationGrantType.PASSWORD)
+                    .principal(userPrincipal)
+                    .tokenType(OAuth2TokenType.ACCESS_TOKEN)
+                    .authorizationServerContext(serverContext)
+                    .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                     .build();
 
             OAuth2TokenContext refreshTokenContext = DefaultOAuth2TokenContext.builder()
                     .registeredClient(registeredClient)
-                    .principal(authentication)
-                    //.tokenType(org.springframework.security.oauth2.server.authorization.token.OAuth2TokenType.REFRESH_TOKEN)
-                    .authorizationGrantType(AuthorizationGrantType.PASSWORD)
+                    .principal(userPrincipal)
+                    .tokenType(OAuth2TokenType.REFRESH_TOKEN)
+                    .authorizationServerContext(serverContext)
+                    .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
                     .build();
 
-            // Step 3.2: Issue cryptographically safe token entities using standard generation pipeline
-            OAuth2AccessToken accessToken = (OAuth2AccessToken) tokenGenerator.generate(accessTokenContext);
-            OAuth2RefreshToken refreshToken = (OAuth2RefreshToken) tokenGenerator.generate(refreshTokenContext);
+            OAuth2Token generatedAccessToken = tokenGenerator.generate(accessTokenContext);
+            OAuth2Token generatedRefreshToken  = tokenGenerator.generate(refreshTokenContext);
 
-            // Step 3.3: Register and persist the issued authorization tokens into the server database context
+            // Step 6: Map to dedicated OAuth2 token wrapper classes safely avoiding ClassCastException
+            OAuth2AccessToken accessToken;
+            if (generatedAccessToken instanceof Jwt jwt) {
+                accessToken = new OAuth2AccessToken(
+                        OAuth2AccessToken.TokenType.BEARER,
+                        jwt.getTokenValue(),
+                        jwt.getIssuedAt(),
+                        jwt.getExpiresAt(),
+                        accessTokenContext.getAuthorizedScopes()
+                );
+            } else if (generatedAccessToken instanceof OAuth2AccessToken token) {
+                accessToken = token;
+            } else {
+                accessToken = null;
+            }
+
+            OAuth2RefreshToken refreshToken = generatedRefreshToken instanceof OAuth2RefreshToken token ? token : null;
+
+            // Step 6: Register and persist the issued authorization tokens into the server database context
             OAuth2Authorization.Builder authorizationBuilder = OAuth2Authorization.withRegisteredClient(registeredClient)
                     .principalName(authentication.getName())
-                    .authorizationGrantType(AuthorizationGrantType.PASSWORD);
+                    .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE);
 
             if (accessToken != null) {
-                authorizationBuilder.token(accessToken, (metadata) -> metadata.put(OAuth2Authorization.Token.CLAIMS_METADATA_NAME, accessToken.getTokenType().getValue()));
+                authorizationBuilder.token(accessToken, (metadata) ->
+                        metadata.put(OAuth2Authorization.Token.CLAIMS_METADATA_NAME, accessToken.getTokenType().getValue()));
             }
             if (refreshToken != null) {
                 authorizationBuilder.token(refreshToken);
             }
             authorizationService.save(authorizationBuilder.build());
 
-            // Step 3.4: Construct the final payload for the frontend client mapping
+            // Step 7: Construct the final payload for the frontend client mapping
             final Map<String, Object> tokenMap = new HashMap<>();
             tokenMap.put("access_token", accessToken != null ? accessToken.getTokenValue() : "");
             tokenMap.put("refresh_token", refreshToken != null ? refreshToken.getTokenValue() : "");

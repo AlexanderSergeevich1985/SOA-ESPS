@@ -2,6 +2,7 @@ package com.soaesps.auth.config;
 
 import com.soaesps.auth.repository.OAuth2TokenRepository;
 import com.soaesps.auth.service.security.AccessTokenFactory;
+import com.soaesps.core.config.BaseAuthorizationServerConfiguration;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -29,7 +30,7 @@ import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 @EnableWebSecurity
 @EnableMethodSecurity
 @ComponentScan({"com.soaesps.core.security"})
-@Import(com.soaesps.core.config.BaseAuthorizationServerConfiguration.class)
+@Import(BaseAuthorizationServerConfiguration.class)
 public class SecurityConfiguration {
 
     @Autowired
