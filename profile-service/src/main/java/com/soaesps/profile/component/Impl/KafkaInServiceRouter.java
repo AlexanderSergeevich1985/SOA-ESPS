@@ -16,7 +16,6 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
-
 import java.io.IOException;
 import java.util.Objects;
 import java.util.logging.Logger;

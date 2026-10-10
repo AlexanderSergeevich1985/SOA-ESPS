@@ -1,7 +1,6 @@
 package com.soaesps.profile.component.Impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.soaesps.core.DataModels.security.BaseUserDetails;
 import com.soaesps.core.DataModels.user.UserProfile;
 import com.soaesps.core.integration.IntegrationConstant;
 import com.soaesps.profile.component.InServiceRouter;
@@ -9,6 +8,7 @@ import com.soaesps.profile.service.ProfileServiceImpl;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,6 +19,12 @@ import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+@ConditionalOnProperty(
+        prefix = "app.rabbitmq",
+        name = "enabled",
+        havingValue = "true",
+        matchIfMissing = false
+)
 @Component
 public class InServiceRouterImpl implements InServiceRouter {
     static private final Logger logger;

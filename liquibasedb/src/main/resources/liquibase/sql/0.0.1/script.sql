@@ -45,8 +45,7 @@ CREATE TABLE IF NOT EXISTS SOA_ESPS.USERS_INFO (
   last_name VARCHAR(70) NOT NULL,
   birthday TIMESTAMP(6) without time zone,
   email VARCHAR NOT NULL,
-  telephone VARCHAR(35) NOT NULL,
-  user_profile_id INTEGER references USER_PROFILES(ID)
+  telephone VARCHAR(35) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS SOA_ESPS.EXECUTOR_NODE (

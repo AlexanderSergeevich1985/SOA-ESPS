@@ -1,6 +1,9 @@
 package com.soaesps.core.DataModels.transaction;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -17,7 +20,7 @@ public class FailedOutboxEvent {
     @Column(nullable = false)
     private String eventType;
 
-    @Lob
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(nullable = false)
     private String payload;
 
