@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
  * <p>Templates are stored as objects in a configurable bucket,
  * with the template name used as the object key.
  */
-@Repository
+@Repository("minioTemplateRepository")
 @ConditionalOnProperty(name = "storage.type", havingValue = "minio")
 public class MinioTemplateRepository implements TemplateRepository {
 

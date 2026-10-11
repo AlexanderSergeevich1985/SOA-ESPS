@@ -1,9 +1,10 @@
 package com.soaesps.notifications.service.render;
 
 import com.soaesps.notifications.exception.HtmlRenderException;
-import org.springframework.beans.factory.annotation.Qualifier;
+
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
+
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.exceptions.TemplateProcessingException;
@@ -17,7 +18,7 @@ public class HtmlRenderService {
 
     private final TemplateEngine templateEngine;
 
-    public HtmlRenderService(@Qualifier("emailTemplateEngine") TemplateEngine templateEngine) {
+    public HtmlRenderService(TemplateEngine templateEngine) {//@Qualifier("emailTemplateEngine")
         this.templateEngine = templateEngine;
     }
 

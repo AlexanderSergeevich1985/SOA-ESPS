@@ -9,14 +9,14 @@ import org.thymeleaf.templatemode.TemplateMode;
 
 import java.nio.charset.StandardCharsets;
 
-@Configuration
+//@Configuration
 public class EmailTemplateConfiguration {
 
     /**
      * Dedicated engine for email/notification templates only.
      * Web views keep using the auto-configured Thymeleaf engine.
      */
-    @Bean("emailTemplateEngine")
+    //@Bean("emailTemplateEngine")
     public SpringTemplateEngine emailTemplateEngine(ApplicationContext ctx) {
         SpringResourceTemplateResolver resolver = new SpringResourceTemplateResolver();
         resolver.setApplicationContext(ctx);

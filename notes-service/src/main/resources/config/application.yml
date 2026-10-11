@@ -8,6 +8,15 @@ spring:
     # Restoring your original default active profile
     active: DEV
 
+  cloud:
+    compatibility-verifier:
+      # Bypasses the release train version mismatch check between Boot 3.4.1 and Cloud
+      enabled: false
+    discovery:
+      enabled: false
+    bus:
+      enabled: false
+
   kafka: # URL of the running Kafka broker(s)
       bootstrap-servers: localhost:9092
 
@@ -31,10 +40,9 @@ spring:
         # Deserializer class for message values
         value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
 
-# Active storage engine selection (options: mongo / minio)
-# If missing or set to 'mongo', MongoDB implementation triggers by default.
+# Active storage engine selection (options: minio)
 storage:
-  type: mongo
+  type: minio
 
 notification:
   telegram:
@@ -44,8 +52,8 @@ notification:
 # This block is required ONLY when storage.type is set to 'minio'
 minio:
   url: http://localhost:9000
-  access-key: ${MINIO_ACCESS_KEY:admin}
-  secret-key: ${MINIO_SECRET_KEY:supersecretkey}
+  access-key: ${MINIO_ACCESS_KEY:minioadmin}
+  secret-key: ${MINIO_SECRET_KEY:minioadmin}
   bucket-name: html-templates
 
 mail:
@@ -78,6 +86,19 @@ spring:
       on-profile: DEV
     import: "optional:configserver:http://${CONFIG_USER_NAME}:${CONFIG_SERVICE_PASSWORD}@localhost:8888"
 
+  cloud:
+    consul:
+      host: host.docker.internal
+      port: 8500
+      discovery:
+        enabled: true
+        register: true
+        instance-id: ${spring.application.name}:${random.value}
+        health-check-path: /actuator/health
+        health-check-interval: 10s
+        prefer-ip-address: true
+        #ip-address: host.docker.internal
+
   datasource:
     url: jdbc:postgresql://localhost:5432/notifications_sql_db
     username: ${POSTGRES_USER:default_user}
@@ -96,23 +117,6 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: https://auth.soa-esps.ru
-
-  rabbitmq:
-    host: localhost
-    port: 5672
-    username: guest
-    password: guest
-    listener:
-      direct:
-        consumers-per-queue: 2
-
-  data:
-    mongodb:
-      host: localhost
-      port: 27017
-      database: templates
-      username: ${MONGO_USER:default_user}
-      password: ${MONGO_PWD:default_pass}
 
 server:
   port: 8443
@@ -147,20 +151,6 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: https://auth.soa-esps.ru
-
-  rabbitmq:
-    host: rabbitmq
-    port: 5672
-    username: ${RABBITMQ_USER:guest}
-    password: ${RABBITMQ_PASSWORD:guest}
-
-  data:
-    mongodb:
-      host: mongodb
-      port: 27017
-      database: templates
-      username: ${MONGO_USER}
-      password: ${MONGO_PASSWORD}
 
 server:
   port: 8443
@@ -203,7 +193,6 @@ spring:
     exclude:
       - org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration
       - org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration
-      - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
 
 server:
   port: 0

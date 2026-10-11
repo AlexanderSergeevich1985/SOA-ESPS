@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package com.soaesps.notifications.grpc.notes;
+
+option java_multiple_files = true;
+option java_package = "com.soaesps.notifications.grpc.notes.notification";
+
+// The reactive notification delivery service definition
+service NotificationGrpcService {
+  rpc SendNotification (NotificationRequest) returns (NotificationResponse);
+}
+
+message NotificationRequest {
+  string recipient = 1;
+  string templateName = 2;
+  string channelType = 3; // e.g., "TELEGRAM", "SMS"
+  string payloadJson = 4;
+}
+
+message NotificationResponse {
+  boolean isSuccess = 1;
+  string trackingId = 2;
+  string errorMessage = 3;
+}

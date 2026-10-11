@@ -4,7 +4,7 @@ import java.util.List;
 
 /**
  * Persistence abstraction for HTML notification templates.
- * Implementations may be backed by MongoDB, MinIO, the local filesystem,
+ * Implementations may be backed by PostgresSQL, MinIO, the local filesystem,
  * or any other store selected at runtime via the {@code storage.type} property.
  *
  * <p>Template names are logical keys (e.g. "emails/welcome.html").

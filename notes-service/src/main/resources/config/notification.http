@@ -1,0 +1,6 @@
+### Test Token Verification via gRPC pipeline
+GRPC localhost:9090/com.soaesps.notifications.grpc.NotificationGrpcController/VerifyToken
+
+{
+  "token": "your_oauth_token_here"
+}

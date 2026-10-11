@@ -11,6 +11,8 @@ spring:
       # Bypasses the release train version mismatch check between Boot 3.4.1 and Cloud
       enabled: false
     discovery:
+      enabled: true
+    bus:
       enabled: false
 
 ---
@@ -22,6 +24,19 @@ spring:
     activate:
       on-profile: DEV
     import: "optional:configserver:http://${CONFIG_USER_NAME:admin}:${CONFIG_SERVICE_PASSWORD:admin}@localhost:8888"
+
+  cloud:
+    consul:
+      host: localhost
+      port: 8500
+      discovery:
+        enabled: true
+        register: true
+        instance-id: ${spring.application.name}:${random.value}
+        health-check-path: /actuator/health
+        health-check-interval: 10s
+        prefer-ip-address: true
+        ip-address: host.docker.internal
 
   datasource:
     driver-class-name: org.postgresql.Driver

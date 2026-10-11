@@ -24,7 +24,7 @@ import java.util.List;
  * MinIO-backed ultra-performance non-blocking implementation of {@link ReactiveTemplateRepository}.
  * Active when {@code storage.type=minio}. Uses MinioAsyncClient under the hood.
  */
-@Repository
+@Repository("reactMinioTemplateRepository")
 @ConditionalOnProperty(name = "storage.type", havingValue = "minio")
 public class ReactiveMinioTemplateRepository implements ReactiveTemplateRepository {
 

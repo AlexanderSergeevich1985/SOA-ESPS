@@ -13,7 +13,7 @@
     <groupId>com.nukefintech.soaesps</groupId>
     <artifactId>notes-service</artifactId>
     <version>1.0-SNAPSHOT</version>
-    <packaging>war</packaging>
+    <packaging>jar</packaging>
     <name>notes-service</name>
 
     <properties>
@@ -21,7 +21,11 @@
         <spring-cloud.version>2024.0.0</spring-cloud.version>
         <htmlflow.version>5.0.2</htmlflow.version>
         <flapdoodle.version>4.11.0</flapdoodle.version>
-        <jackson.version>2.17.2</jackson.version>
+        <jackson.version>2.18.2</jackson.version>
+        <os-maven-plugin.version>1.7.1</os-maven-plugin.version>
+        <protobuf-plugin.version>0.6.1</protobuf-plugin.version>
+        <protobuf.version>3.25.3</protobuf.version>
+        <grpc.version>1.66.0</grpc.version>
     </properties>
 
     <dependencyManagement>
@@ -42,9 +46,15 @@
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-config-server</artifactId>
         </dependency>
+
+        <!-- Consul Client -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-bus-amqp</artifactId>
+            <artifactId>spring-cloud-starter-consul-discovery</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
         <!-- ==================== Spring Boot Starters ==================== -->
@@ -73,14 +83,6 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-mongodb</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-amqp</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         <dependency>
@@ -93,10 +95,6 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-integration</artifactId>
         </dependency>
         <dependency>
@@ -104,15 +102,41 @@
             <artifactId>spring-kafka</artifactId>
         </dependency>
 
+        <!-- Provides WebClient infrastructure for SMS and Telegram notification channels -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+
         <!-- ==================== Spring Integration ==================== -->
+
+        <!-- Core gRPC server starter for Spring Boot -->
         <dependency>
-            <groupId>org.springframework.integration</groupId>
-            <artifactId>spring-integration-amqp</artifactId>
+            <groupId>net.devh</groupId>
+            <artifactId>grpc-server-spring-boot-starter</artifactId>
+            <version>3.1.0.RELEASE</version>
         </dependency>
+
+        <!-- Required for working with protobuf types in Java -->
         <dependency>
-            <groupId>org.springframework.integration</groupId>
-            <artifactId>spring-integration-mongodb</artifactId>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java-util</artifactId>
+            <version>3.25.3</version>
         </dependency>
+
+        <!-- ==================== Database Drivers ==================== -->
+        <!-- Standard blocking JDBC driver for JPA/Hibernate operations -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <!-- Reactive R2DBC driver for asynchronous repositories framework implementation -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>r2dbc-postgresql</artifactId>
+        </dependency>
+
 
         <!-- ==================== Third-party Libraries ==================== -->
         <dependency>
@@ -177,12 +201,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>de.flapdoodle.embed</groupId>
-            <artifactId>de.flapdoodle.embed.mongo</artifactId>
-            <version>${flapdoodle.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.springframework.integration</groupId>
             <artifactId>spring-integration-kafka</artifactId>
         </dependency>
@@ -234,6 +252,14 @@
     </dependencies>
 
     <build>
+        <extensions>
+            <!-- Detects OS architecture properties required by the protobuf compiler -->
+            <extension>
+                <groupId>kr.motd.maven</groupId>
+                <artifactId>os-maven-plugin</artifactId>
+                <version>${os-maven-plugin.version}</version>
+            </extension>
+        </extensions>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
@@ -258,6 +284,28 @@
                     <argLine>-Dnet.bytebuddy.experimental=true</argLine>
                 </configuration>
             </plugin-->
+
+            <!-- Protobuf Plugin to compile .proto files into Java stubs -->
+            <plugin>
+                <groupId>org.xolstice.maven.plugins</groupId>
+                <artifactId>protobuf-maven-plugin</artifactId>
+                <version>${protobuf-plugin.version}</version>
+                <configuration>
+                    <protocArtifact>com.google.protobuf:protoc:${protobuf.version}:exe:${os.detected.classifier}</protocArtifact>
+                    <pluginId>grpc-java</pluginId>
+                    <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
+                    <outputDirectory>${project.build.directory}/generated-sources/protobuf/java</outputDirectory>
+                    <clearOutputDirectory>false</clearOutputDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>compile</goal>
+                            <goal>compile-custom</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>

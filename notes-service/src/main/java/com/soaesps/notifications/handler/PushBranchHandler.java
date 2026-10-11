@@ -3,8 +3,11 @@ package com.soaesps.notifications.handler;
 import com.soaesps.notifications.channel.FcmNotificationChannel;
 import com.soaesps.notifications.dto.BranchStatus;
 import com.soaesps.notifications.dto.OutboundRoutingEnvelope;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
@@ -19,6 +22,7 @@ import static com.soaesps.notifications.config.IntegrationConstant.PUSH_BRANCH_C
  * dispatches payloads, and notifies the centralized aggregator.
  */
 @Component
+@ConditionalOnProperty(name = "notification.push.enabled", havingValue = "true")
 public class PushBranchHandler {
     private static final Logger log = LoggerFactory.getLogger(PushBranchHandler.class);
 

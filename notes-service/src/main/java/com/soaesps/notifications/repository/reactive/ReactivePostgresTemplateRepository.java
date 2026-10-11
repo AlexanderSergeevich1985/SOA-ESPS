@@ -10,8 +10,7 @@ import reactor.core.publisher.Mono;
  * PostgreSQL-backed fully reactive implementation of {@link ReactiveTemplateRepository}.
  * Activated when {@code storage.type=postgres}. Maps logical file names to relational tables.
  */
-@Repository
-@ConditionalOnProperty(name = "storage.type", havingValue = "postgres")
+@Repository("reactPostgresTemplateRepository")
 public class ReactivePostgresTemplateRepository implements ReactiveTemplateRepository {
 
     private final ReactiveNotificationTemplateRepository r2dbcRepository;

@@ -1,6 +1,7 @@
 package com.soaesps.notifications.config;
 
 import io.minio.MinioAsyncClient;
+import io.minio.MinioClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -19,9 +20,17 @@ public class MinioConfig {
     @Value("${minio.secret-key}")
     private String secretKey;
 
-    @Bean
-    public MinioAsyncClient minioClient() {
+    @Bean("minioAsyncClient")
+    public MinioAsyncClient minioAsyncClient() {
         return MinioAsyncClient.builder()
+                .endpoint(minioUrl)
+                .credentials(accessKey, secretKey)
+                .build();
+    }
+
+    @Bean("minioClient")
+    public MinioClient minioClient() {
+        return MinioClient.builder()
                 .endpoint(minioUrl)
                 .credentials(accessKey, secretKey)
                 .build();

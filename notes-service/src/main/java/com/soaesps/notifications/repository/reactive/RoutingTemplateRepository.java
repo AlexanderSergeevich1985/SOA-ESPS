@@ -22,8 +22,8 @@ public class RoutingTemplateRepository implements ReactiveTemplateRepository {
     private final ReactiveTemplateRepository minioRepository;
 
     public RoutingTemplateRepository(
-            @Qualifier("postgresTemplateRepository") ReactiveTemplateRepository postgresRepository,
-            @Qualifier("minioTemplateRepository") ReactiveTemplateRepository minioRepository) {
+            @Qualifier("reactPostgresTemplateRepository") ReactiveTemplateRepository postgresRepository,
+            @Qualifier("reactMinioTemplateRepository") ReactiveTemplateRepository minioRepository) {
         this.postgresRepository = postgresRepository;
         this.minioRepository = minioRepository;
     }
