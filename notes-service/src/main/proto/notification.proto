@@ -1,9 +1,9 @@
 syntax = "proto3";
 
-package com.soaesps.notifications.grpc.notes;
+package com.soaesps.notifications.grpc;
 
 option java_multiple_files = true;
-option java_package = "com.soaesps.notifications.grpc.notes.notification";
+option java_package = "com.soaesps.notifications.grpc.notification";
 
 // The reactive notification delivery service definition
 service NotificationGrpcService {
@@ -18,7 +18,7 @@ message NotificationRequest {
 }
 
 message NotificationResponse {
-  boolean isSuccess = 1;
+  bool isSuccess = 1;
   string trackingId = 2;
   string errorMessage = 3;
 }

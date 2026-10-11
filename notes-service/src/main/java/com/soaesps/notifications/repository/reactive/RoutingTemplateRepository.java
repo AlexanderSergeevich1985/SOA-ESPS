@@ -13,7 +13,7 @@ import reactor.core.publisher.Mono;
  * Automatically delegates execution paths to MinIO or PostgreSQL based on the file extension layout rules.
  */
 @Primary // Tells Spring to inject this routing router implementation by default everywhere
-@Repository
+@Repository("reactRoutingRepository")
 public class RoutingTemplateRepository implements ReactiveTemplateRepository {
 
     private static final Logger log = LoggerFactory.getLogger(RoutingTemplateRepository.class);

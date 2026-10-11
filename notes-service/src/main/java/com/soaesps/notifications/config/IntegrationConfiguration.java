@@ -13,6 +13,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.expression.common.LiteralExpression;
+import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.*;
 import org.springframework.integration.filter.MessageFilter;
@@ -161,5 +162,24 @@ public class IntegrationConfiguration {
         var handler = new KafkaProducerMessageHandler<>(kafkaTemplate());
         handler.setTopicExpression(new LiteralExpression(OUTPUT_TOPIC_NAME));
         return handler;
+    }
+
+    // Channel for incoming gRPC requests
+    @Bean
+    public MessageChannel grpcNotificationInputChannel() {
+        return new DirectChannel(); // Use ExecutorChannel if asynchronous input is required
+    }
+
+    // Example: Route messages to the same reactive scatter-gather router as Kafka messages,
+    // or create a separate processing branch using the same components.
+    @Bean
+    public IntegrationFlow grpcNotificationFlow(
+            ReactiveScatterGatherRouter reactiveScatterGatherRouter) { // Or your MessageGateway
+
+        return IntegrationFlow.from("grpcNotificationInputChannel")
+                // Add identical filters or transformers here as done for Kafka
+                // .filter(...)
+                .handle(reactiveScatterGatherRouter) // Or .gateway(messageGateway::processMessage)
+                .get();
     }
 }

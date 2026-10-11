@@ -4,6 +4,7 @@ import com.soaesps.notifications.exception.InvalidTemplateException;
 import com.soaesps.notifications.repository.reactive.ReactiveTemplateRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -33,7 +34,7 @@ public class ReactiveTemplateService {
     private final int maxHtmlSizeBytes;
 
     public ReactiveTemplateService(
-            ReactiveTemplateRepository templateRepository,
+            @Qualifier("reactRoutingRepository") ReactiveTemplateRepository templateRepository,
             @Value("${notification.templates.max-size-bytes:524288}") int maxHtmlSizeBytes) {
         this.templateRepository = templateRepository;
         this.maxHtmlSizeBytes = maxHtmlSizeBytes;
