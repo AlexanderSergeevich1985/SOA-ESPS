@@ -1,11 +1,11 @@
 package com.soaesps.notifications.integration;
 
+import com.soaesps.notifications.config.IntegrationConstant;
 import com.soaesps.notifications.grpc.notification.NotificationRequest;
-import com.soaesps.notifications.grpc.notification.NotificationResponse;
 import org.springframework.integration.annotation.MessagingGateway;
 import reactor.core.publisher.Mono;
 
-@MessagingGateway(defaultRequestChannel = "grpcNotificationInputChannel")
+@MessagingGateway(defaultRequestChannel = IntegrationConstant.GRPC_INPUT_CHANNEL)
 public interface GrpcNotificationGateway {
 
     /**
@@ -15,5 +15,5 @@ public interface GrpcNotificationGateway {
      * @param request the incoming gRPC notification request
      * @return a Mono emitting the notification response
      */
-    Mono<NotificationResponse> processNotification(NotificationRequest request);
+    Mono<Void> processNotification(NotificationRequest request);
 }

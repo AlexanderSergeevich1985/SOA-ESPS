@@ -16,7 +16,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.annotation.Router;
 import org.springframework.integration.annotation.Transformer;
 import org.springframework.integration.channel.DirectChannel;
-import org.springframework.integration.channel.FluxMessageChannel;
+import org.springframework.integration.dsl.MessageChannels;
 import org.springframework.integration.support.MessageBuilder;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
@@ -81,7 +81,7 @@ public class ReactiveScatterGatherRouter {
      */
     @Bean(REACTIVE_ROUTER_BRIDGE)
     public MessageChannel reactiveRouterBridgeChannel() {
-        return new FluxMessageChannel();
+        return MessageChannels.flux().getObject();
     }
 
     /**
@@ -177,29 +177,24 @@ public class ReactiveScatterGatherRouter {
      * Eradicates the restrictive single-record lock (.next()) to support parallel broadcasting.
      */
     private Flux<TargetContactPair> resolveTargetEnvelopes(Long userId, String channelType) {
-        switch (channelType.toUpperCase()) {
-            case "PUSH":
-                return pushContactRepository.findPushByUserId(userId)
-                        .filter(PushContactRow::active) // Stream all matching active devices
-                        .map(row -> new TargetContactPair(
-                                row.pushToken(),
-                                Map.of("deviceId", row.deviceId(), "deviceType", row.deviceType())
-                        ));
-            case "SMS":
-                return smsContactRepository.findSmsByUserId(userId)
-                        .filter(SmsContactRow::active)
-                        .map(row -> new TargetContactPair(row.phoneNumber(), Map.of()));
-            case "TELEGRAM":
-                return telegramContactRepository.findTelegramByUserId(userId)
-                        .filter(TelegramContactRow::active)
-                        .map(row -> new TargetContactPair(row.telegramChatId(), Map.of("username", row.telegramUsername())));
-            case "EMAIL":
-                return emailContactRepository.findEmailByUserId(userId)
-                        .filter(EmailContactRow::active)
-                        .map(row -> new TargetContactPair(row.emailAddress(), Map.of()));
-            default:
-                return Flux.empty();
-        }
+        return switch (channelType.toUpperCase()) {
+            case "PUSH" -> pushContactRepository.findPushByUserId(userId)
+                    .filter(PushContactRow::active) // Stream all matching active devices
+                    .map(row -> new TargetContactPair(
+                            row.pushToken(),
+                            Map.of("deviceId", row.deviceId(), "deviceType", row.deviceType())
+                    ));
+            case "SMS" -> smsContactRepository.findSmsByUserId(userId)
+                    .filter(SmsContactRow::active)
+                    .map(row -> new TargetContactPair(row.phoneNumber(), Map.of()));
+            case "TELEGRAM" -> telegramContactRepository.findTelegramByUserId(userId)
+                    .filter(TelegramContactRow::active)
+                    .map(row -> new TargetContactPair(row.telegramChatId(), Map.of("username", row.telegramUsername())));
+            case "EMAIL" -> emailContactRepository.findEmailByUserId(userId)
+                    .filter(EmailContactRow::active)
+                    .map(row -> new TargetContactPair(row.emailAddress(), Map.of()));
+            default -> Flux.empty();
+        };
     }
 
     /**

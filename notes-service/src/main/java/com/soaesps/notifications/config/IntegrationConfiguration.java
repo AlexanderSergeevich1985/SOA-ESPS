@@ -1,12 +1,17 @@
 package com.soaesps.notifications.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.soaesps.core.config.BaseKafkaConsumerConfig;
 import com.soaesps.core.Utils.CryptoHelper;
 import com.soaesps.core.component.aggregator.CorrelationStrategyI;
 import com.soaesps.core.component.aggregator.ReleaseStrategyI;
 import com.soaesps.notifications.dto.InboundNotificationEvent;
 import com.soaesps.notifications.component.InboundNotificationFilter;
+import com.soaesps.notifications.grpc.notification.NotificationRequest;
+
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -31,6 +36,7 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import static com.soaesps.notifications.config.IntegrationConstant.INPUT_TOPIC_NAME;
 import static com.soaesps.notifications.config.IntegrationConstant.OUTPUT_TOPIC_NAME;
@@ -56,6 +62,9 @@ public class IntegrationConfiguration {
 
     @Value("${spring.kafka.producer.retries}")
     private int producerRetries;
+
+    @Autowired
+    private ObjectMapper mapper;
 
     // =========================================================================
     // CORE CORE FLOW CHANNELS
@@ -164,22 +173,75 @@ public class IntegrationConfiguration {
         return handler;
     }
 
+    // =========================================================================
+    // GRPC INBOUND CONFIGURATION (RECEIVING)
+    // =========================================================================
+
     // Channel for incoming gRPC requests
-    @Bean
+    @Bean(IntegrationConstant.GRPC_INPUT_CHANNEL)
     public MessageChannel grpcNotificationInputChannel() {
         return new DirectChannel(); // Use ExecutorChannel if asynchronous input is required
     }
 
-    // Example: Route messages to the same reactive scatter-gather router as Kafka messages,
-    // or create a separate processing branch using the same components.
-    @Bean
-    public IntegrationFlow grpcNotificationFlow(
-            ReactiveScatterGatherRouter reactiveScatterGatherRouter) { // Or your MessageGateway
+    /*@Bean
+    public GrpcAuthenticationReader grpcAuthenticationReader() {
+        return new AnonymousAuthenticationReader("anonymous_grpc_key");
+    }*/
 
-        return IntegrationFlow.from("grpcNotificationInputChannel")
-                // Add identical filters or transformers here as done for Kafka
-                // .filter(...)
-                .handle(reactiveScatterGatherRouter) // Or .gateway(messageGateway::processMessage)
+    @Bean
+    public IntegrationFlow grpcInboundFlow(InboundNotificationFilter filter) {
+        return IntegrationFlow.from(IntegrationConstant.GRPC_INPUT_CHANNEL)
+                .transform(this::mapGrpcToInboundEvent)
+                .filter(
+                        filter::isNotificationTypeSupported,
+                        c -> c.discardChannel(IntegrationConstant.DISCARD_FILTER_CHANNEL)
+                )
+                .channel(IntegrationConstant.REACTIVE_ROUTER_BRIDGE)
                 .get();
+    }
+
+    private InboundNotificationEvent mapGrpcToInboundEvent(Object payload) {
+        //log.info("Starting mapping execution for incoming gRPC payload");
+        try {
+            // Extract gRPC request even if wrapped in a Spring Integration Message container
+            NotificationRequest request = getNotificationRequest(payload);
+
+            // Extract and parse the nested raw JSON string into a dynamic parameters Map
+            String jsonPayload = request.getPayloadJson();
+            Map<String, Object> parsedParameters = new HashMap<>();
+
+            if (!jsonPayload.isEmpty() && !jsonPayload.equals("{}")) {
+                // Safely deserialize dynamic JSON into a Map, matching the record's "parameters" type
+                parsedParameters = mapper.readValue(
+                        jsonPayload,
+                        new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {}
+                );
+            }
+
+            // Construct the immutable InboundNotificationEvent record using gRPC metadata
+
+            //log.info("Mapping execution successfully finished for event type: {}", event.notificationType());
+            return new InboundNotificationEvent(
+                    UUID.randomUUID().toString(),            // notificationId
+                    null,                                              // userId (can be parsed from recipient if needed)
+                    request.getTemplateName(),                         // notificationType (mapped from templateName)
+                    parsedParameters                                   // parameters (dynamic data for templates)
+            );
+        } catch (Exception e) {
+            //log.error("Critical mapping failure occurred inside mapGrpcToInboundEvent processing node!", e);
+            throw new org.springframework.messaging.MessagingException("Pipeline transformation mapping error: " + e.getMessage(), e);
+        }
+    }
+
+    private static @NotNull NotificationRequest getNotificationRequest(Object payload) {
+        NotificationRequest request;
+        if (payload instanceof Message) {
+            request = (NotificationRequest) ((Message<?>) payload).getPayload();
+        } else if (payload instanceof NotificationRequest) {
+            request = (NotificationRequest) payload;
+        } else {
+            throw new IllegalArgumentException("Unsupported payload type in integration pipeline: " + payload.getClass().getName());
+        }
+        return request;
     }
 }
