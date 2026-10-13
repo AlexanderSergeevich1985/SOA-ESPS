@@ -19,11 +19,13 @@
 package com.soaesps.payments.service;
 
 import com.soaesps.payments.DataModels.Transactions.BaseCheck;
-import com.soaesps.payments.DataModels.Transactions.BaseClientBill;
-import com.soaesps.payments.DataModels.Transactions.BaseTransaction;
+import com.soaesps.payments.dto.ClientBillDto;
+import com.soaesps.payments.dto.TransactionDto;
+
+import java.util.Optional;
 
 public interface PaymentsService {
-    BaseClientBill transferMoney(BaseTransaction transaction);
-    BaseClientBill cashCheck(BaseCheck check);
-    BaseClientBill refreshBill(String billId);
+    Optional<ClientBillDto> transferMoney(TransactionDto transaction);
+    Optional<ClientBillDto> cashCheck(BaseCheck check);
+    Optional<ClientBillDto> refreshBill(String billId);
 }

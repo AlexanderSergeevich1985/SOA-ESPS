@@ -112,7 +112,7 @@ class ServerBillsRepositoryTest extends BasePaymentsRepositoryTest {
             entityManager.clear();
 
             // When: Execute the custom finder method using java.util.UUID
-            Optional<BaseServerBill> found = serverBillsRepository.findByServerBillDesc_Uuid(testBillUuid);
+            Optional<BaseServerBill> found = serverBillsRepository.findAndLockByServerBillDesc_Uuid(testBillUuid);
 
             // Then: Verify it returns the correct matching entity
             assertThat(found).isPresent();
@@ -124,7 +124,7 @@ class ServerBillsRepositoryTest extends BasePaymentsRepositoryTest {
         @DisplayName("Should return empty Optional when searching for non-existent embedded UUID")
         void findByServerBillDesc_Uuid_shouldReturnEmptyForUnknownUuid() {
             // When: Search for a random UUID that was never persisted
-            Optional<BaseServerBill> found = serverBillsRepository.findByServerBillDesc_Uuid(UUID.randomUUID());
+            Optional<BaseServerBill> found = serverBillsRepository.findAndLockByServerBillDesc_Uuid(UUID.randomUUID());
 
             // Then: Verify that it safely returns an empty Optional
             assertThat(found).isEmpty();

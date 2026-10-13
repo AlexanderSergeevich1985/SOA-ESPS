@@ -22,45 +22,43 @@ import com.soaesps.core.Utils.CryptoHelper;
 import com.soaesps.core.Utils.DateTimeHelper;
 import com.soaesps.payments.DataModels.Transactions.*;
 
+import com.soaesps.payments.dto.TransactionDto;
 import jakarta.annotation.Nonnull;
-import javax.crypto.Cipher;
+
 import java.math.BigDecimal;
 import java.security.PrivateKey;
 import java.security.Signature;
 import java.util.Arrays;
+import java.util.Optional;
 
 /**
  * Utility class for cryptographic verification and generation of transaction/check entities.
  */
 public class BaseTransactionChecker {
     public static final String ISSUER_ID = "Internet Banking Open Source Organization";
+    private static final String SIGNATURE_ALGORITHM = "SHA256withRSA";
 
     /**
      * Signs a check descriptor using the payer's private key and encrypts it for the payee.
      */
     public static byte[] signCheck(@Nonnull final CheckDesc checkDesc, @Nonnull final PrivateKey privateKey) throws Exception {
-        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-        cipher.init(Cipher.ENCRYPT_MODE, CryptoHelper.bytesToPublicKey(checkDesc.getPayeePublicKey()));
-
-        Signature privateSignature = Signature.getInstance("SHA256withRSA");
+        Signature privateSignature = Signature.getInstance(SIGNATURE_ALGORITHM);
         privateSignature.initSign(privateKey);
 
-        // WARNING: RSA can only encrypt small amounts of data (key_size_bytes - 11).
-        // If serialized checkDesc exceeds this limit, IllegalBlockSizeException will be thrown.
-        privateSignature.update(cipher.doFinal(CryptoHelper.serializeObject(checkDesc)));
+        // Sign the serialized bytes of the check description directly
+        privateSignature.update(CryptoHelper.serializeObject(checkDesc));
         return privateSignature.sign();
     }
 
     /**
      * Verifies the signature of a check descriptor using the payer's public key.
+     * Fixed: Removed improper Cipher ENCRYPT_MODE usage from the verification phase.
      */
     public static boolean verifyCheck(@Nonnull final CheckDesc checkDesc, @Nonnull final byte[] signature) throws Exception {
-        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-        cipher.init(Cipher.ENCRYPT_MODE, CryptoHelper.bytesToPublicKey(checkDesc.getPayeePublicKey()));
-
-        Signature publicSignature = Signature.getInstance("SHA256withRSA");
+        Signature publicSignature = Signature.getInstance(SIGNATURE_ALGORITHM);
         publicSignature.initVerify(CryptoHelper.bytesToPublicKey(checkDesc.getPayerPublicKey()));
-        publicSignature.update(cipher.doFinal(CryptoHelper.serializeObject(checkDesc)));
+
+        publicSignature.update(CryptoHelper.serializeObject(checkDesc));
         return publicSignature.verify(signature);
     }
 
@@ -77,7 +75,7 @@ public class BaseTransactionChecker {
      * Verifies the signature of a transaction descriptor.
      */
     public static boolean verifyTransaction(@Nonnull final TransactionDesc transactionDesc, @Nonnull final byte[] signature) throws Exception {
-        Signature publicSignature = Signature.getInstance("SHA256withRSA");
+        Signature publicSignature = Signature.getInstance(SIGNATURE_ALGORITHM);
         publicSignature.initVerify(CryptoHelper.bytesToPublicKey(transactionDesc.getPayerPublicKey()));
         publicSignature.update(CryptoHelper.serializeObject(transactionDesc));
         return publicSignature.verify(signature);
@@ -100,40 +98,34 @@ public class BaseTransactionChecker {
         clientBillDesc.setUuid(clientBill.getServerBillDesc().getUuid());
         clientBillDesc.setIssuerId(ISSUER_ID);
         clientBillDesc.setServerPublicKey(clientBill.getServerBillDesc().getPublicKey());
-        clientBillDesc.setEncodedSharedSecret(clientBill.getServerBillDesc().getSharedSecret());
 
-        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-        // Assuming clientBillDesc.getPublicKey() returns the server's public key intended for the client
-        cipher.init(Cipher.ENCRYPT_MODE, CryptoHelper.bytesToPublicKey(clientBillDesc.getPublicKey()));
-
-        Signature privateSignature = Signature.getInstance("SHA256withRSA");
+        // Create the digital signature of the server over the public descriptor
+        Signature privateSignature = Signature.getInstance(SIGNATURE_ALGORITHM);
         privateSignature.initSign(CryptoHelper.bytesToPrivateKey(clientBill.getServerBillDesc().getPrivateKey()));
-        privateSignature.update(cipher.doFinal(CryptoHelper.serializeObject(clientBillDesc)));
+        privateSignature.update(CryptoHelper.serializeObject(clientBillDesc));
+        byte[] billSignature = privateSignature.sign();
 
         BaseClientBill result = new BaseClientBill();
-        clientBillDesc.setEncodedSharedSecret(""); // Clear sensitive data before returning
         result.setCreationTime(DateTimeHelper.getCurrentTimeWithTimeZone("UTC"));
         result.setClientBillDesc(clientBillDesc);
-        result.setBillSignature(privateSignature.sign());
+        result.setBillSignature(billSignature);
         return result;
     }
 
     /**
      * Transfers money between two server bills and generates a new client bill for the payer.
-     * Note: This method lacks @Transactional annotation. Balance updates won't be persisted
-     * automatically unless called within an active Spring transaction context.
      */
-    public static BaseClientBill transferMoney(@Nonnull final BaseServerBill payerBill, @Nonnull final BaseServerBill payeeBill, final BigDecimal amount) throws Exception {
+    public static Optional<BaseClientBill> transferMoney(@Nonnull final BaseServerBill payerBill, @Nonnull final BaseServerBill payeeBill, final BigDecimal amount) throws Exception {
         BigDecimal payerBalance = payerBill.getServerBillDesc().getAccountBalance();
         BigDecimal payeeBalance = payeeBill.getServerBillDesc().getAccountBalance();
 
-        if (payerBalance.compareTo(amount) >= 0) {
-            payerBill.getServerBillDesc().setAccountBalance(payerBalance.subtract(amount));
-            payeeBill.getServerBillDesc().setAccountBalance(payeeBalance.add(amount));
-        } else {
-            // TODO: Consider throwing a custom InsufficientFundsException instead of silently failing
+        if (payerBalance.compareTo(amount) < 0) {
+            throw new IllegalArgumentException("Transfer aborted: Insufficient funds on payer balance.");
         }
 
-        return generateClientBill(payerBill);
+        payerBill.getServerBillDesc().setAccountBalance(payerBalance.subtract(amount));
+        payeeBill.getServerBillDesc().setAccountBalance(payeeBalance.add(amount));
+
+        return Optional.of(generateClientBill(payerBill));
     }
 }
