@@ -18,7 +18,8 @@ public class IntegrationConstant {
     public static final String RECIPIENT_ROUTER_CHANNEL = "recipientRouterChannel";
 
     public static final String KAFKA_INPUT_CHANNEL = "kafkaInputChannel";
-    public static final String GRPC_INPUT_CHANNEL = "grpcNotificationInputChannel";
+    public static final String GRPC_NOTIFY_INPUT_CHANNEL = "grpcNotificationInputChannel";
+    public static final String GRPC_REGISTRATION_INPUT_CHANNEL = "grpcRegistrationInputChannel";
 
     public static final String INPUT_TOPIC_NAME = "message_queue_inbound";
     public static final String OUTPUT_TOPIC_NAME = "message_queue_outbound";

@@ -1,24 +1,57 @@
 syntax = "proto3";
 
-package com.soaesps.notifications.grpc;
+package com.soaesps.notifications.grpc.service;
 
 option java_multiple_files = true;
-option java_package = "com.soaesps.notifications.grpc.notification";
+option java_package = "com.soaesps.notifications.grpc.service";
 
-// The reactive notification delivery service definition
+// Service handling both atomic user persistence and standalone routing events
 service NotificationGrpcService {
+
+  // Use case 1: Register a new contact in DB and trigger a welcome notification atomically
+  rpc RegisterAndNotify (RegistrationRequest) returns (NotificationResponse);
+
+  // Use case 2: Send a standalone notification using an existing contact channel
   rpc SendNotification (NotificationRequest) returns (NotificationResponse);
 }
 
-message NotificationRequest {
-  string recipient = 1;
-  string templateName = 2;
-  string channelType = 3; // e.g., "TELEGRAM", "SMS"
-  string payloadJson = 4;
+// Composite inbound payload for registration actions coupled with template triggering
+message RegistrationRequest {
+  int64 user_id = 1;
+  ContactDetails contact_details = 2;
+  NotificationDetails notification_details = 3;
 }
 
+// Standalone inbound payload for routing plain notifications without database writes
+message NotificationRequest {
+  int64 user_id = 1;
+
+  // Target routing endpoint (e.g., "user@example.com", "+12345678", "chat_id_123")
+  string recipient = 2;
+
+  // Communication channel type: "EMAIL", "TELEGRAM", "SMS", "PUSH"
+  string channel_type = 3;
+
+  // Reusable template processing model
+  NotificationDetails notification_details = 4;
+}
+
+// Database configuration model for new contact registration
+message ContactDetails {
+  string type = 1;
+  bool is_primary = 2;
+  map<string, string> contact_meta = 3;
+}
+
+// Template rendering model for layout contextual parsing
+message NotificationDetails {
+  string template_name = 1;
+  map<string, string> template_payload = 2;
+}
+
+// Unified transmission response status model
 message NotificationResponse {
-  bool isSuccess = 1;
-  string trackingId = 2;
-  string errorMessage = 3;
+  bool is_success = 1;
+  string tracking_id = 2;
+  string error_message = 3;
 }

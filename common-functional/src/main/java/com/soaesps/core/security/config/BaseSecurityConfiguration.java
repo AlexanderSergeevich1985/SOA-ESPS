@@ -1,7 +1,11 @@
 package com.soaesps.core.security.config;
 
+import com.soaesps.core.security.filter.TraceIdFilter;
+
 import feign.RequestInterceptor;
+
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -24,6 +28,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.access.channel.ChannelProcessingFilter;
 
 /**
  * Standard dual-authentication security configuration for all SOA-ESPS microservices.
@@ -45,6 +50,33 @@ public class BaseSecurityConfiguration {
     @Bean
     public MtlsUserDetailsService mtlsUserDetailsService(SoaSecurityProperties properties) {
         return new MtlsUserDetailsService(properties.getMtls().getServiceRole());
+    }
+
+    @Bean
+    public TraceIdFilter traceIdFilter() {
+        return new TraceIdFilter();
+    }
+
+    @Bean
+    public FilterRegistrationBean<TraceIdFilter> registration(TraceIdFilter filter) {
+        FilterRegistrationBean<TraceIdFilter> registration = new  FilterRegistrationBean<>(filter);
+
+        // This disables the filter execution in the global servlet chain
+        registration.setEnabled(false);
+        return registration;
+    }
+
+    /**
+     * Feign interceptor to automatically forward the active Trace ID to downstream microservices.
+     */
+    @Bean
+    public RequestInterceptor requestTraceIdInterceptor() {
+        return requestTemplate -> {
+            String traceId = org.slf4j.MDC.get("traceId");
+            if (traceId != null && !traceId.isEmpty()) {
+                requestTemplate.header("X-Trace-Id", traceId);
+            }
+        };
     }
 
     /**
@@ -97,9 +129,14 @@ public class BaseSecurityConfiguration {
     @org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean(name = "customSecurityFilterChain")
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    SoaSecurityProperties properties,
-                                                   MtlsUserDetailsService mtlsUserDetailsService) throws Exception {
+                                                   MtlsUserDetailsService mtlsUserDetailsService,
+                                                   TraceIdFilter traceIdFilter) throws Exception {
 
         http
+                // Add TraceIdFilter at the very beginning of the Spring Security filter chain.
+                // This ensures that every log message generated during the security evaluation
+                // (including authentication errors) will contain the correct Trace ID.
+                .addFilterBefore(traceIdFilter, ChannelProcessingFilter.class)
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 

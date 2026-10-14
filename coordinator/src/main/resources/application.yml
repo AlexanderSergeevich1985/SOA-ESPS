@@ -1,0 +1,336 @@
+# =============================================================================
+# SOA-ESPS Coordinator Aggregator - Application Configuration
+# Production-ready configuration for Multi-Data Center deployment
+# =============================================================================
+
+spring:
+  application:
+    name: soaesps-coordinator
+
+  # ---------------------------------------------------------------------------
+  # Server Configuration
+  # ---------------------------------------------------------------------------
+  server:
+    port: 8080
+    shutdown: graceful
+    servlet:
+      context-path: /api
+
+  # ---------------------------------------------------------------------------
+  # Graceful Shutdown Configuration
+  # ---------------------------------------------------------------------------
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+  # ---------------------------------------------------------------------------
+  # Kafka Configuration (WAL + Message Replication)
+  # ---------------------------------------------------------------------------
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka-cluster.soaesps.internal:9092}
+
+    producer:
+      acks: all
+      retries: 3
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+        compression.type: lz4
+        linger.ms: 5
+        batch.size: 32768
+        buffer.memory: 67108864  # 64MB
+
+    consumer:
+      group-id: soaesps-coordinator-group
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.soaesps.coordinator.*
+        max.poll.records: 500
+        session.timeout.ms: 30000
+        heartbeat.interval.ms: 10000
+
+    listener:
+      type: batch
+      concurrency: 3
+      ack-mode: manual_immediate
+
+  # ---------------------------------------------------------------------------
+  # Redis Configuration (Distributed Vector Clocks)
+  # ---------------------------------------------------------------------------
+  data:
+    redis:
+      host: ${REDIS_HOST:redis-master.soaesps.internal}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 0
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 64
+          max-idle: 32
+          min-idle: 8
+          max-wait: 2000ms
+        cluster:
+          refresh:
+            adaptive: true
+            period: 60s
+
+  # ---------------------------------------------------------------------------
+  # Jackson Configuration
+  # ---------------------------------------------------------------------------
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+      fail-on-empty-beans: false
+    deserialization:
+      fail-on-unknown-properties: false
+    default-property-inclusion: non_null
+
+# =============================================================================
+# Apache Ratis (Raft Consensus) Configuration
+# =============================================================================
+raft:
+  server:
+    id: ${RAFT_SERVER_ID:coordinator-1}
+    port: ${RAFT_SERVER_PORT:9876}
+    client-port: ${RAFT_CLIENT_PORT:9877}
+    data-dir: ${RAFT_DATA_DIR:/var/lib/soaesps/raft}
+
+  group:
+    id: ${RAFT_GROUP_ID:soa-esps-group}
+    members: ${RAFT_MEMBERS:coordinator-1,coordinator-2,coordinator-3}
+
+# =============================================================================
+# gRPC Security Configuration (Inter-Server Replication)
+# =============================================================================
+grpc:
+  security:
+    enabled: ${GRPC_SECURITY_ENABLED:true}
+    trust-cert-collection-file-path: ${GRPC_TRUST_CERT:/var/private/ssl/ca.crt}
+    client-cert-chain-file-path: ${GRPC_CLIENT_CERT:/var/private/ssl/coordinator.crt}
+    client-private-key-file-path: ${GRPC_CLIENT_KEY:/var/private/ssl/coordinator.key}
+    server:
+      port: ${GRPC_SERVER_PORT:9090}
+      max-inbound-message-size: 4194304  # 4MB
+
+# =============================================================================
+# Management & Observability (Micrometer + OpenTelemetry)
+# =============================================================================
+management:
+  server:
+    port: 9091
+
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics,circuitbreakers,circuitbreakerevents
+      base-path: /actuator
+
+  endpoint:
+    health:
+      show-details: when-authorized
+      show-components: always
+      group:
+        readiness:
+          include: readinessState,raftHealth,redisHealth,kafkaHealth
+        liveness:
+          include: livenessState
+
+  health:
+    redis:
+      enabled: true
+    kafka:
+      enabled: true
+
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      environment: ${ENVIRONMENT:production}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        raft.replication.duration: true
+        dag.causal.sort.duration: true
+      slo:
+        http.server.requests: 50ms,100ms,250ms,500ms,1s
+    export:
+      prometheus:
+        enabled: true
+        step: 10s
+        descriptions: true
+
+  tracing:
+    enabled: ${TRACING_ENABLED:true}
+    sampling:
+      probability: ${TRACING_SAMPLE_RATE:0.1}  # 10% in prod, 100% in dev
+    propagation:
+      type: W3C,B3
+
+  otlp:
+    tracing:
+      endpoint: ${OTLP_ENDPOINT:http://jaeger:4317}
+      timeout: 5s
+
+# =============================================================================
+# Resilience4j (Circuit Breakers + Retry)
+# =============================================================================
+resilience4j:
+  circuitbreaker:
+    instances:
+      redis:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 5s
+        failureRateThreshold: 50
+        slowCallRateThreshold: 80
+        slowCallDurationThreshold: 2s
+        eventConsumerBufferSize: 10
+        recordExceptions:
+          - org.springframework.dao.QueryTimeoutException
+          - java.net.ConnectException
+          - io.lettuce.core.RedisException
+
+      kafka:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        slowCallDurationThreshold: 3s
+        recordExceptions:
+          - org.apache.kafka.common.errors.TimeoutException
+          - org.apache.kafka.common.errors.NetworkException
+
+      raft:
+        registerHealthIndicator: true
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 40
+        waitDurationInOpenState: 15s
+        recordExceptions:
+          - org.apache.ratis.protocol.exceptions.RaftRetryFailureException
+          - java.util.concurrent.TimeoutException
+
+  retry:
+    instances:
+      redis:
+        maxAttempts: 3
+        waitDuration: 100ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - org.springframework.dao.QueryTimeoutException
+          - java.net.SocketTimeoutException
+
+      kafka:
+        maxAttempts: 3
+        waitDuration: 200ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - org.apache.kafka.common.errors.TimeoutException
+
+  ratelimiter:
+    instances:
+      default:
+        limitForPeriod: 100
+        limitRefreshPeriod: 1m
+        timeoutDuration: 0ms
+      premium:
+        limitForPeriod: 1000
+        limitRefreshPeriod: 1m
+        timeoutDuration: 0ms
+
+  bulkhead:
+    instances:
+      threadPool:
+        maxConcurrentCalls: 50
+        maxWaitDuration: 10ms
+
+  timelimiter:
+    instances:
+      default:
+        timeoutDuration: 5s
+        cancelRunningFuture: true
+
+# =============================================================================
+# SOA-ESPS Application-Specific Configuration
+# =============================================================================
+soaesps:
+  coordinator:
+    # Inbound message buffer
+    buffer:
+      max-size: 10000
+      drain-timeout-seconds: 5
+
+    # Iteration scheduler
+    scheduler:
+      initial-delay-ms: 100
+      min-tick-ms: 50
+      max-tick-ms: 2000
+
+    # Kafka WAL topic for emergency drain
+    kafka:
+      wal-topic: soa-esps-coordinator-wal
+      receipt-topic: soa-esps-delivery-receipts
+
+    # Vector Clock DoS protection
+    vector-clock:
+      max-size: 1024
+      redis-key-prefix: "vc:"
+
+    # Particle Filter (Network RTT Prediction)
+    particle-filter:
+      num-particles: 100
+      process-noise-sigma: 2.0
+      measurement-noise-sigma: 5.0
+      regularization-sigma: 1.0
+      ess-threshold-ratio: 0.5
+      safety-multiplier: 2.0  # mean + 2*sigma
+
+    # DAG Processing
+    dag:
+      frontier-cache-ttl-hours: 24
+      frontier-cache-max-size: 100000
+
+    # Raft Replication
+    raft:
+      snapshot-threshold: 10000
+      snapshot-retention: 3
+      replication-timeout-ms: 5000
+
+    # Rate Limiting (Bucket4j)
+    rate-limiting:
+      enabled: true
+      default-limit: 100
+      premium-limit: 1000
+      refill-duration-minutes: 1
+      max-tracked-clients: 10000
+
+# =============================================================================
+# Logging Configuration
+# =============================================================================
+logging:
+  level:
+    root: INFO
+    com.soaesps.coordinator: DEBUG
+    org.apache.ratis: WARN
+    org.apache.kafka: WARN
+    io.lettuce: WARN
+    org.springframework.kafka: WARN
+    io.github.resilience4j: INFO
+  pattern:
+    console: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [trace=%X{traceId:-},span=%X{spanId:-}] - %msg%n'
+    file: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [trace=%X{traceId:-},span=%X{spanId:-}] - %msg%n'
+  file:
+    name: /var/log/soaesps/coordinator.log
+    max-size: 100MB
+    max-history: 30
+    total-size-cap: 3GB

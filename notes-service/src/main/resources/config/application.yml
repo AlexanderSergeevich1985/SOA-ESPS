@@ -78,6 +78,11 @@ mail:
 logo:
   path: "images/logo.png" # Path to your logo in src/main/resources
 
+logging:
+  pattern:
+    # Logging pattern for the console output including the dynamic traceId variable
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%X{traceId}] %logger{36} - %msg%n"
+
 ---
 # ===================================================================
 # PROFILE: DEV (Your exact local development environment)

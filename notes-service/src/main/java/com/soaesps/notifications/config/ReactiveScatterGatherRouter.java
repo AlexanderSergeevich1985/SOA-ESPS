@@ -65,16 +65,16 @@ public class ReactiveScatterGatherRouter {
     }
 
     @Bean(EMAIL_BRANCH_CHANNEL)
-    public MessageChannel emailBranchChannel() { return new DirectChannel(); }
+    public MessageChannel emailBranchChannel() { return MessageChannels.flux().getObject(); }
 
     @Bean(TELEGRAM_BRANCH_CHANNEL)
-    public MessageChannel telegramBranchChannel() { return new DirectChannel(); }
+    public MessageChannel telegramBranchChannel() { return MessageChannels.flux().getObject(); }
 
     @Bean(SMS_BRANCH_CHANNEL)
-    public MessageChannel smsBranchChannel() { return new DirectChannel(); }
+    public MessageChannel smsBranchChannel() { return MessageChannels.flux().getObject(); }
 
     @Bean(PUSH_BRANCH_CHANNEL)
-    public MessageChannel pushBranchChannel() { return new DirectChannel(); }
+    public MessageChannel pushBranchChannel() { return MessageChannels.flux().getObject(); }
 
     /**
      * Reactive internal bridge channel to switch standard flows to Project Reactor streams.

@@ -24,7 +24,7 @@ public class InboundNotificationFilter {
     private final ReactiveNotificationTypeRepository typeRepository;
 
     // AtomicReference holding an unmodifiable Set for lock-free read operations during high throughput
-    private final AtomicReference<Set<String>> supportedTypesCache = new AtomicReference<>(Collections.emptySet());
+    private final AtomicReference<Set<String>> supportedTypesCache = new AtomicReference<>(null);
 
     public InboundNotificationFilter(ReactiveNotificationTypeRepository typeRepository) {
         this.typeRepository = typeRepository;

@@ -1,11 +1,11 @@
 package com.soaesps.payments.mapper;
 
 import com.soaesps.payments.DataModels.Transactions.BaseClientBill;
-import com.soaesps.payments.DataModels.Transactions.ClientBillDesc;
 import com.soaesps.payments.dto.ClientBillDto;
+
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.Named;
+
 import java.util.Base64;
 
 @Mapper(componentModel = "spring", uses = {ClientBillDescMapper.class})

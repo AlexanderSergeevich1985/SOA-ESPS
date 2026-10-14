@@ -37,7 +37,7 @@ public class ValidationSchemaService {
      * @param documentType Dynamic type identifier descriptor (e.g., "CREDIT_DEAL", "PASSPORT")
      * @return Mono emitting the cached validation schema, or empty if it does not exist
      */
-    @Cacheable(value = CACHE_NAME, key = CACHE_NAME_KEY)
+    @Cacheable(value = CACHE_NAME, key = CACHE_NAME_KEY, sync = true)
     public Mono<ValidationSchema> getSchema(String documentType) {
         String cleanType = documentType.toUpperCase();
         log.info("[Validation-Cache-Miss] Downloading fresh schema mapping from MongoDB for: {}", cleanType);
@@ -46,7 +46,7 @@ public class ValidationSchemaService {
                 .cache(); // Memorizes the reactive pipeline stream signals inside the active JVM heap
     }
 
-    @Cacheable(value = HISTORICAL_CACHE_NAME, key = HISTORICAL_CACHE_NAME_KEY)
+    @Cacheable(value = HISTORICAL_CACHE_NAME, key = HISTORICAL_CACHE_NAME_KEY, sync = true)
     public Mono<ValidationSchema> getHistoricalSchema(String documentType, int version) {
         String cleanType = documentType.toUpperCase();
         log.info("[Validation-Cache-Miss] Requesting EXPLICIT HISTORICAL schema for: {} (v{})", cleanType, version);

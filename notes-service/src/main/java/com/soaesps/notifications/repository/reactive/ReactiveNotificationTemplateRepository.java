@@ -21,7 +21,7 @@ public interface ReactiveNotificationTemplateRepository extends ReactiveCrudRepo
      * @param channelType      The active delivery transport channel key
      * @return A Mono emitting the complete composite row configuration states
      */
-    @Cacheable(value = "templates", key = "#notificationType + '_' + #channelType")
+    @Cacheable(value = "templates", key = "#notificationType + '_' + #channelType", sync = true)
     @Query("SELECT notification_type, channel_type, is_external_storage, inline_text_template, minio_object_key " +
             "FROM notification_templates WHERE notification_type = :notificationType AND channel_type = :channelType")
     Mono<NotificationTemplateRow> findTemplateMeta(String notificationType, String channelType);

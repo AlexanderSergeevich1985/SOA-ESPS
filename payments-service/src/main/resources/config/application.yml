@@ -34,6 +34,11 @@ soaesps:
   config-server:
     client: http://localhost:8080/config/
 
+logging:
+  pattern:
+    # Logging pattern for the console output including the dynamic traceId variable
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%X{traceId}] %logger{36} - %msg%n"
+
 ---
 # ===================================================================
 # PROFILE: DEV (Local development - Clean HTTP, No SSL overhead)

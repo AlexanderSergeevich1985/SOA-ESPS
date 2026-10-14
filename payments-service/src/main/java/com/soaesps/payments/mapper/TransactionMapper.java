@@ -2,9 +2,8 @@ package com.soaesps.payments.mapper;
 
 import com.soaesps.payments.DataModels.Transactions.BaseTransaction;
 import com.soaesps.payments.dto.TransactionDto;
+
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.Named;
 
 import java.sql.Timestamp;
 import java.time.ZoneId;
