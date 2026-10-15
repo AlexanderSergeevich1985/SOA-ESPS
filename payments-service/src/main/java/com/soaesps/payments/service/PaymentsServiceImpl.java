@@ -60,7 +60,10 @@ public class PaymentsServiceImpl implements PaymentsService {
     public Optional<ClientBillDto> transferMoney(final TransactionDto dto) {
         BaseTransaction transaction = transactionMapper.toEntity(dto);
         UUID payerUuid = UUID.fromString(transaction.getTransactionDescriptor().getPayerId());
-        UUID payeeUuid = UUID.fromString(transaction.getTransactionDescriptor().getPayerId());
+        UUID payeeUuid = UUID.fromString(transaction.getTransactionDescriptor().getPayeeId());
+        if (payerUuid.equals(payeeUuid)) {
+            throw new IllegalArgumentException("Sender and receiver UUIDs must be different.");
+        }
 
         /*
          * To prevent Deadlocks, we must always acquire database locks in a strict deterministic order.
@@ -101,6 +104,9 @@ public class PaymentsServiceImpl implements PaymentsService {
     public Optional<ClientBillDto> cashCheck(final BaseCheck check) {
         UUID payerUuid = UUID.fromString(check.getCheckDesc().getPayerId());
         UUID payeeUuid = UUID.fromString(check.getCheckDesc().getPayeeId());
+        if (payerUuid.equals(payeeUuid)) {
+            throw new IllegalArgumentException("Sender and receiver UUIDs must be different.");
+        }
 
         /*
          * To prevent Deadlocks, we must always acquire database locks in a strict deterministic order.
