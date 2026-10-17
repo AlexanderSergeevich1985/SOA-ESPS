@@ -13,6 +13,8 @@ import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
+
 import static com.soaesps.notifications.config.IntegrationConstant.AGGREGATOR_CHANNEL;
 import static com.soaesps.notifications.config.IntegrationConstant.PUSH_BRANCH_CHANNEL;
 
@@ -36,7 +38,7 @@ public class PushBranchHandler {
             outputChannel = AGGREGATOR_CHANNEL)
     public Message<BranchStatus> sendPushNotification(Message<OutboundRoutingEnvelope> message) {
         OutboundRoutingEnvelope envelope = message.getPayload();
-        Long userId = envelope.userId();
+        UUID userId = envelope.userId();
 
         log.debug("PushBranchHandler processing PUSH channel routing for user ID: {}", userId);
 

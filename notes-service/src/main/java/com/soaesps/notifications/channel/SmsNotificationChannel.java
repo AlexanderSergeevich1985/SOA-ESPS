@@ -12,6 +12,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * High-performance non-blocking SMS notification channel powered by WebClient.
@@ -43,7 +44,7 @@ public class SmsNotificationChannel implements NotificationChannel {
 
     @Override
     public boolean send(OutboundRoutingEnvelope envelope) {
-        Long userId = envelope.userId();
+        UUID userId = envelope.userId();
         List<String> phoneNumbers = envelope.destinations();
 
         // SMS usually drops the custom subject title and delivers only a clean flat message body text
@@ -61,7 +62,7 @@ public class SmsNotificationChannel implements NotificationChannel {
     /**
      * Executes an isolated non-blocking HTTP POST request to the remote SMS provider gateway API.
      */
-    private Mono<Boolean> executeSmsPostRequest(String phoneNumber, String text, Long userId) {
+    private Mono<Boolean> executeSmsPostRequest(String phoneNumber, String text, UUID userId) {
         return webClient.post()
                 .uri(smsApiUrl)
                 .header("Authorization", "Bearer " + apiKey)

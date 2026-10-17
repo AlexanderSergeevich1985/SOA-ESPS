@@ -21,6 +21,7 @@ import reactor.core.scheduler.Schedulers;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Modernized, non-blocking email delivery engine driven by the Spring Cache and Thymeleaf ecosystem.
@@ -54,7 +55,7 @@ public class EmailNotificationChannel implements NotificationChannel {
      */
     @Override
     public boolean send(OutboundRoutingEnvelope envelope) {
-        Long userId = envelope.userId();
+        UUID userId = envelope.userId();
         List<String> emailAddresses = envelope.destinations();
 
         try {

@@ -17,23 +17,31 @@ service NotificationGrpcService {
 
 // Composite inbound payload for registration actions coupled with template triggering
 message RegistrationRequest {
-  int64 user_id = 1;
-  ContactDetails contact_details = 2;
+  string user_id = 1;
+  repeated ContactDetails contact_details = 2;
   NotificationDetails notification_details = 3;
 }
 
 // Standalone inbound payload for routing plain notifications without database writes
 message NotificationRequest {
-  int64 user_id = 1;
+  string user_id = 1;
 
   // Target routing endpoint (e.g., "user@example.com", "+12345678", "chat_id_123")
   string recipient = 2;
 
   // Communication channel type: "EMAIL", "TELEGRAM", "SMS", "PUSH"
-  string channel_type = 3;
+  ChannelType channel_type = 3;
 
   // Reusable template processing model
   NotificationDetails notification_details = 4;
+}
+
+enum ChannelType {
+  CHANNEL_TYPE_UNSPECIFIED = 0;
+  EMAIL = 1;
+  TELEGRAM = 2;
+  SMS = 3;
+  PUSH = 4;
 }
 
 // Database configuration model for new contact registration

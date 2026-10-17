@@ -25,6 +25,8 @@ import org.springframework.test.context.ContextConfiguration;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
+import java.util.UUID;
+
 /**
  * Integration data tests for ReactiveDisabledChannelsRepository using Spring Data R2DBC.
  * Validates non-blocking SQL queries and reactive stream behavior via StepVerifier.
@@ -79,7 +81,7 @@ class ReactiveDisabledChannelsRepositoryTest {
     @DisplayName("Should successfully retrieve all muted channels for a specific user ID")
     void shouldFindChannelsByUserId() {
         // Given: Seed test records into the single-table schema using non-blocking SQL execution
-        Long testUserId = 777L;
+        UUID testUserId = UUID.randomUUID();
 
         databaseClient.sql("INSERT INTO user_disabled_channels (user_id, channel) VALUES (:userId, :channel)")
                 .bind("userId", testUserId)
@@ -106,7 +108,7 @@ class ReactiveDisabledChannelsRepositoryTest {
     @DisplayName("Should return an empty stream when no disabled channels exist for the given user ID")
     void shouldReturnEmptyStreamWhenUserHasNoDisabledChannels() {
         // Given: Target user has no records inside the database table
-        Long nonExistentUserId = 999L;
+        UUID nonExistentUserId = UUID.randomUUID();
 
         // When: Fetch muted configurations from R2DBC engine
         Flux<String> emptyFlux = repository.findChannelsByUserId(nonExistentUserId);

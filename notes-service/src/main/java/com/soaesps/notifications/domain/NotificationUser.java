@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Size;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Root aggregate holding explicit notification preferences and polymorphic user contacts.
@@ -15,7 +16,7 @@ public class NotificationUser {
 
     @Id
     @Column(name = "user_id")
-    private Long userId;
+    private UUID userId;
 
     /**
      * Polymorphic collection mapping all active communication endpoints via single-table.
@@ -36,11 +37,11 @@ public class NotificationUser {
 
     // --- Getters and Setters ---
 
-    public Long getUserId() {
+    public UUID getUserId() {
         return userId;
     }
 
-    public void setUserId(Long userId) {
+    public void setUserId(UUID userId) {
         this.userId = userId;
     }
 

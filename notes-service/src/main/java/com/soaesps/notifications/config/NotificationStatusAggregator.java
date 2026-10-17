@@ -3,15 +3,19 @@ package com.soaesps.notifications.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import com.soaesps.notifications.dto.BranchStatus;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.annotation.Aggregator;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 
 import java.util.List;
+import java.util.UUID;
 
 import static com.soaesps.notifications.config.IntegrationConstant.AGGREGATOR_CHANNEL;
 import static com.soaesps.notifications.config.IntegrationConstant.KAFKA_OUTPUT_CHANNEL;
@@ -36,8 +40,8 @@ public class NotificationStatusAggregator {
             return MessageBuilder.withPayload(finalReport).build();
         }
 
-        Long userId = branchStatuses.getFirst().getUserId();
-        finalReport.put("userId", userId);
+        UUID userId = branchStatuses.getFirst().getUserId();
+        finalReport.put("userId", userId.toString());
         finalReport.put("status", "DISPATCH_COMPLETED");
 
         ArrayNode details = finalReport.putArray("dispatchDetails");

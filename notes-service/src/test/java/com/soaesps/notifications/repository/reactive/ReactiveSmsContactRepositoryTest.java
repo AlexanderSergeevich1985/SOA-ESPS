@@ -11,6 +11,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,7 +48,7 @@ class ReactiveSmsContactRepositoryTest extends BaseReactiveRepositoryTest {
         // Given: An immutable Record instance with null ID to signal an INSERT operation
         SmsContactRow newSms = new SmsContactRow(
                 null,
-                333L,
+                UUID.randomUUID(),
                 "SMS",
                 true,
                 true,
@@ -73,7 +74,7 @@ class ReactiveSmsContactRepositoryTest extends BaseReactiveRepositoryTest {
     @DisplayName("Should successfully retrieve only SMS contacts and filter out other channel types")
     void shouldFindOnlySmsContactsByUserId() {
         // Given: Seed mixed contact types (SMS and TELEGRAM) to verify proper isolation by discriminator
-        Long testUserId = 555L;
+        UUID testUserId = UUID.randomUUID();
 
         databaseClient.sql("INSERT INTO user_contacts (user_id, contact_type, phone_number, is_active, is_primary) " +
                         "VALUES (:userId, 'SMS', '+79991112233', true, true)")
@@ -110,7 +111,7 @@ class ReactiveSmsContactRepositoryTest extends BaseReactiveRepositoryTest {
     @DisplayName("Should return an empty stream when no SMS records match the target user id")
     void shouldReturnEmptyFluxWhenUserHasNoSmsContacts() {
         // Given: User exists with a TELEGRAM contact, but has no SMS record configured
-        Long targetUserId = 444L;
+        UUID targetUserId = UUID.randomUUID();
         databaseClient.sql("INSERT INTO user_contacts (user_id, contact_type, telegram_chat_id, is_active, is_primary) " +
                         "VALUES (:userId, 'TELEGRAM', '123456789', true, true)")
                 .bind("userId", targetUserId)

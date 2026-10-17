@@ -10,6 +10,8 @@ import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
+
 import static com.soaesps.notifications.config.IntegrationConstant.AGGREGATOR_CHANNEL;
 import static com.soaesps.notifications.config.IntegrationConstant.SMS_BRANCH_CHANNEL;
 
@@ -32,7 +34,7 @@ public class SmsBranchHandler {
             outputChannel = AGGREGATOR_CHANNEL)
     public Message<BranchStatus> sendSms(Message<OutboundRoutingEnvelope> message) {
         OutboundRoutingEnvelope envelope = message.getPayload();
-        Long userId = envelope.userId();
+        UUID userId = envelope.userId();
 
         log.debug("SmsBranchHandler processing SMS channel routing for user ID: {}", userId);
 

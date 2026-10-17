@@ -9,8 +9,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.test.annotation.DirtiesContext;
 
-import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -56,7 +59,7 @@ class NotificationUserRepositoryTest extends BaseNotificationRepositoryTest {
             // When: Save aggregate root and its single-table polymorphic graph
             NotificationUser saved = notificationUserRepository.saveAndFlush(testUser);
             assertThat(saved.getUserId()).isNotNull();
-            Long userId = saved.getUserId();
+            UUID userId = saved.getUserId();
 
             entityManager.clear();
 
@@ -69,7 +72,7 @@ class NotificationUserRepositoryTest extends BaseNotificationRepositoryTest {
             assertThat(retrievedUser).isNotNull();
             assertThat(retrievedUser.getDisabledChannels()).containsExactly("SMS");
 
-            List<UserContact> contacts = retrievedUser.getContacts();
+            Set<UserContact> contacts = retrievedUser.getContacts();
             assertThat(contacts).hasSize(2);
 
             // Polymorphic assertions ensuring classes inside SINGLE_TABLE are parsed properly
@@ -147,8 +150,8 @@ class NotificationUserRepositoryTest extends BaseNotificationRepositoryTest {
     private NotificationUser createTestUser() {
         NotificationUser user = new NotificationUser();
         // Mimicking business requirements for explicit IDs from external services
-        user.setUserId(9999L);
-        user.setDisabledChannels(new ArrayList<>(List.of("SMS")));
+        user.setUserId(UUID.randomUUID());
+        user.setDisabledChannels(new LinkedHashSet<>(List.of("SMS")));
 
         EmailContact email = new EmailContact();
         email.setEmailAddress("test@soaesps.com");

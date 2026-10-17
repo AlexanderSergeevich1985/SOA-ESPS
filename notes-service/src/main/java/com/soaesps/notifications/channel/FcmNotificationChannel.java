@@ -15,6 +15,7 @@ import reactor.core.scheduler.Schedulers;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -48,7 +49,7 @@ public class FcmNotificationChannel implements NotificationChannel {
      */
     @Override
     public boolean send(OutboundRoutingEnvelope envelope) {
-        Long userId = envelope.userId();
+        UUID userId = envelope.userId();
         List<String> tokens = envelope.destinations();
 
         if (tokens.isEmpty()) {
@@ -131,7 +132,7 @@ public class FcmNotificationChannel implements NotificationChannel {
      * Internal private validation engine processing batch errors.
      * Correctly configured to return Mono<Void> to allow proper reactive chaining pipelines.
      */
-    private Mono<Void> handleBatchErrorsReactive(BatchResponse response, List<String> tokens, Long userId) {
+    private Mono<Void> handleBatchErrorsReactive(BatchResponse response, List<String> tokens, UUID userId) {
         List<SendResponse> responses = response.getResponses();
 
         return Flux.range(0, responses.size())

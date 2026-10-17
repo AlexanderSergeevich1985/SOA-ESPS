@@ -11,6 +11,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 /**
  * Integration data tests for ReactiveEmailContactRepository using Spring Data R2DBC.
@@ -44,7 +45,7 @@ class ReactiveEmailContactRepositoryTest extends BaseReactiveRepositoryTest {
         // Given: An immutable Record instance with null ID to signal an INSERT operation
         EmailContactRow newEmail = new EmailContactRow(
                 null,
-                111L,
+                UUID.randomUUID(),
                 "EMAIL",
                 true,
                 true,
@@ -70,7 +71,7 @@ class ReactiveEmailContactRepositoryTest extends BaseReactiveRepositoryTest {
     @DisplayName("Should successfully retrieve only EMAIL contacts and filter out other channel types")
     void shouldFindOnlyEmailContactsByUserId() {
         // Given: Seed mixed contact types (EMAIL and SMS) to verify proper isolation by discriminator
-        Long testUserId = 777L;
+        UUID testUserId = UUID.randomUUID();
 
         databaseClient.sql("INSERT INTO user_contacts (user_id, contact_type, email_address, is_active, is_primary) " +
                         "VALUES (:userId, 'EMAIL', 'user-primary@example.com', true, true)")
@@ -107,7 +108,7 @@ class ReactiveEmailContactRepositoryTest extends BaseReactiveRepositoryTest {
     @DisplayName("Should return an empty stream when no email records match the target user id")
     void shouldReturnEmptyFluxWhenUserHasNoEmailContacts() {
         // Given: User exists with an SMS contact, but has no EMAIL record configured
-        Long targetUserId = 888L;
+        UUID targetUserId = UUID.randomUUID();
         databaseClient.sql("INSERT INTO user_contacts (user_id, contact_type, phone_number, is_active, is_primary) " +
                         "VALUES (:userId, 'SMS', '+1234567890', true, true)")
                 .bind("userId", targetUserId)

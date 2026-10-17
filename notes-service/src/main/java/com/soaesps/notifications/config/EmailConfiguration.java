@@ -1,5 +1,6 @@
 package com.soaesps.notifications.config;
 
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,7 +20,7 @@ public class EmailConfiguration {
     @Value("${mail.port}")
     private int port;
 
-    @Value("${mail.smtp.socketFactory.port}")
+    @Value("${mail.smtp.socketFactory.port:587}")
     private int socketPort;
 
     @Value("${mail.smtp.auth}")
@@ -34,30 +35,23 @@ public class EmailConfiguration {
     @Value("${mail.smtp.debug}")
     private boolean debug;
 
-    @Value("${mail.smtp.socketFactory.fallback}")
+    @Value("${mail.smtp.socketFactory.fallback:false}")
     private boolean fallback;
 
     @Value("${mail.from}")
     private String from;
 
-    @Value("${mail.username}")
+    @Value("${mail.username:name}")
     private String username;
 
-    @Value("${mail.password}")
+    @Value("${mail.password:password}")
     private String password;
 
     @Bean
     public JavaMailSender javaMailSender() {
         final JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
 
-        final Properties mailProperties = new Properties();
-        mailProperties.put("mail.smtp.auth", auth);
-        mailProperties.put("mail.smtp.starttls.enable", starttls);
-        mailProperties.put("mail.smtp.starttls.required", startlls_required);
-        mailProperties.put("mail.smtp.socketFactory.port", socketPort);
-        mailProperties.put("mail.smtp.debug", debug);
-        mailProperties.put("mail.smtp.socketFactory.class", "jakarta.net.ssl.SSLSocketFactory");
-        mailProperties.put("mail.smtp.socketFactory.fallback", fallback);
+        final Properties mailProperties = getProperties();
 
         mailSender.setJavaMailProperties(mailProperties);
         mailSender.setHost(host);
@@ -67,5 +61,17 @@ public class EmailConfiguration {
         mailSender.setPassword(password);
 
         return mailSender;
+    }
+
+    private @NotNull Properties getProperties() {
+        final Properties mailProperties = new Properties();
+        mailProperties.put("mail.smtp.auth", auth);
+        mailProperties.put("mail.smtp.starttls.enable", starttls);
+        mailProperties.put("mail.smtp.debug", debug);
+        //mailProperties.put("mail.smtp.socketFactory.class", "jakarta.net.ssl.SSLSocketFactory");
+        //mailProperties.put("mail.smtp.starttls.required", startlls_required);
+        //mailProperties.put("mail.smtp.socketFactory.port", socketPort);
+        //mailProperties.put("mail.smtp.socketFactory.fallback", fallback);
+        return mailProperties;
     }
 }

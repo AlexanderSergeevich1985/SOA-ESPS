@@ -18,6 +18,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -43,7 +44,7 @@ class EmailNotificationChannelTest {
     @DisplayName("Should successfully route and deliver pre-compiled HTML layouts to multi-endpoint BCC recipients")
     void testSendThroughGreenMail() throws MessagingException, IOException {
         // Arrange: Setup data contracts matching our modernized OutboundRoutingEnvelope design
-        Long userId = 777L;
+        UUID userId = UUID.randomUUID();
         String toEmail = "alekssergeevich1985@gmail.com";
         String subject = "Unit test with GreenMail";
         String text = "Hello from the embedded server!";

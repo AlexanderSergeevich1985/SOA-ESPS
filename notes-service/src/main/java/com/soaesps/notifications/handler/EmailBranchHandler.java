@@ -3,12 +3,16 @@ package com.soaesps.notifications.handler;
 import com.soaesps.notifications.channel.EmailNotificationChannel;
 import com.soaesps.notifications.dto.BranchStatus;
 import com.soaesps.notifications.dto.OutboundRoutingEnvelope;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
+
+import java.util.UUID;
 
 import static com.soaesps.notifications.config.IntegrationConstant.AGGREGATOR_CHANNEL;
 import static com.soaesps.notifications.config.IntegrationConstant.EMAIL_BRANCH_CHANNEL;
@@ -27,7 +31,7 @@ public class EmailBranchHandler {
             outputChannel = AGGREGATOR_CHANNEL)
     public Message<BranchStatus> sendEmail(Message<OutboundRoutingEnvelope> message) {
         OutboundRoutingEnvelope envelope = message.getPayload();
-        Long userId = envelope.userId();
+        UUID userId = envelope.userId();
 
         log.debug("EmailBranchHandler processing EMAIL channel routing for user ID: {}", userId);
 

@@ -11,6 +11,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 /**
  * Integration data tests for ReactivePushContactRepository using Spring Data R2DBC.
@@ -44,7 +45,7 @@ class ReactivePushContactRepositoryTest extends BaseReactiveRepositoryTest {
         // Given: An immutable Record instance with null ID to signal an INSERT operation
         PushContactRow newPush = new PushContactRow(
                 null,
-                222L,
+                UUID.randomUUID(),
                 "PUSH",
                 true,
                 false,
@@ -74,7 +75,7 @@ class ReactivePushContactRepositoryTest extends BaseReactiveRepositoryTest {
     @DisplayName("Should successfully retrieve only PUSH contacts and filter out other channel types")
     void shouldFindOnlyPushContactsByUserId() {
         // Given: Seed mixed contact types (PUSH and EMAIL) to verify proper isolation by discriminator
-        Long testUserId = 888L;
+        UUID testUserId = UUID.randomUUID();
 
         databaseClient.sql("INSERT INTO user_contacts (user_id, contact_type, push_token, device_id, device_type, is_active, is_primary) " +
                         "VALUES (:userId, 'PUSH', 'fcm-token-primary', 'dev-01', 'IOS', true, true)")
@@ -115,7 +116,7 @@ class ReactivePushContactRepositoryTest extends BaseReactiveRepositoryTest {
     @DisplayName("Should return an empty stream when no push records match the target user id")
     void shouldReturnEmptyFluxWhenUserHasNoPushContacts() {
         // Given: User exists with an EMAIL contact, but has no PUSH record configured
-        Long targetUserId = 999L;
+        UUID targetUserId = UUID.randomUUID();
         databaseClient.sql("INSERT INTO user_contacts (user_id, contact_type, email_address, is_active, is_primary) " +
                         "VALUES (:userId, 'EMAIL', 'test@example.com', true, true)")
                 .bind("userId", targetUserId)

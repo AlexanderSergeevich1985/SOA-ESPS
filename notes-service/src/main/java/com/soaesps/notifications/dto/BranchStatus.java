@@ -1,17 +1,19 @@
 package com.soaesps.notifications.dto;
 
+import java.util.UUID;
+
 public class BranchStatus {
-    private final Long userId;
+    private final UUID userId;
     private final String channelName;
     private final String resultStatus;
 
-    public BranchStatus(Long userId, String channelName, String resultStatus) {
+    public BranchStatus(UUID userId, String channelName, String resultStatus) {
         this.userId = userId;
         this.channelName = channelName;
         this.resultStatus = resultStatus;
     }
 
-    public Long getUserId() { return userId; }
+    public UUID getUserId() { return userId; }
     public String getChannelName() { return channelName; }
     public String getResultStatus() { return resultStatus; }
 }

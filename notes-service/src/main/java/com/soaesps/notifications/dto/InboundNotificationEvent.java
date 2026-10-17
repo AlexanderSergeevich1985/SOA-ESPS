@@ -2,7 +2,9 @@ package com.soaesps.notifications.dto;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
+
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Contract for incoming Kafka notification payloads.
@@ -13,7 +15,7 @@ public record InboundNotificationEvent(
         String notificationId,
 
         @Column("user_id")
-        Long userId,
+        UUID userId,
 
         String notificationType, // e.g., "PAYMENT_SUCCESS", "SECURITY_ALERT"
 

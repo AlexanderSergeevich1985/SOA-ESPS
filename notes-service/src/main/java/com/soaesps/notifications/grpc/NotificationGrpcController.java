@@ -1,9 +1,6 @@
 package com.soaesps.notifications.grpc;
 
-import com.soaesps.notifications.grpc.service.NotificationRequest;
-import com.soaesps.notifications.grpc.service.NotificationResponse;
-import com.soaesps.notifications.grpc.service.NotificationGrpcServiceGrpc;
-import com.soaesps.notifications.grpc.service.RegistrationRequest;
+import com.soaesps.notifications.grpc.service.*;
 import com.soaesps.notifications.integration.GrpcNotificationGateway;
 
 import io.grpc.stub.ServerCallStreamObserver;

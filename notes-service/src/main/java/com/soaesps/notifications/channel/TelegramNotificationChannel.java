@@ -12,6 +12,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * High-performance non-blocking Telegram notification channel powered by WebClient.
@@ -43,7 +44,7 @@ public class TelegramNotificationChannel implements NotificationChannel {
 
     @Override
     public boolean send(OutboundRoutingEnvelope envelope) {
-        Long userId = envelope.userId();
+        UUID userId = envelope.userId();
         List<String> chatIds = envelope.destinations();
 
         String text = "<b>%s</b>\n\n%s".formatted(
@@ -70,7 +71,7 @@ public class TelegramNotificationChannel implements NotificationChannel {
     /**
      * Executes an isolated non-blocking HTTP POST request to Telegram Bot API.
      */
-    private Mono<Boolean> executePostRequest(String chatId, String text, Long userId) {
+    private Mono<Boolean> executePostRequest(String chatId, String text, UUID userId) {
         return webClient.post()
                 .uri(apiUrl)
                 .contentType(MediaType.APPLICATION_JSON)

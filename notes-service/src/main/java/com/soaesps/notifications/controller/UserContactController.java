@@ -4,10 +4,13 @@ import com.soaesps.core.dto.ContactRegistrationRequest;
 import com.soaesps.notifications.dto.ContactResponseDto;
 import com.soaesps.notifications.dto.UserContactsProfileSummary;
 import com.soaesps.notifications.service.UserContactService;
+
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 /**
  * Consolidated Tomcat-compatible REST controller managing all communication endpoints.
@@ -31,7 +34,7 @@ public class UserContactController {
     @ResponseStatus(HttpStatus.CREATED)
     public ContactResponseDto createContact(@AuthenticationPrincipal String authenticatedUserId,
                                             @RequestBody ContactRegistrationRequest request) {
-        Long cleanUserId = Long.parseLong(authenticatedUserId);
+        UUID cleanUserId = UUID.fromString(authenticatedUserId);
 
         // Bridge: Safely execute the reactive pipeline and block the dedicated Tomcat HTTP worker thread
         return userContactService.processContactRegistration(cleanUserId, request)
@@ -43,7 +46,7 @@ public class UserContactController {
      */
     @GetMapping
     public UserContactsProfileSummary getMyContactsProfile(@AuthenticationPrincipal String authenticatedUserId) {
-        Long cleanUserId = Long.parseLong(authenticatedUserId);
+        UUID cleanUserId = UUID.fromString(authenticatedUserId);
 
         return userContactService.fetchUserProfileSummary(cleanUserId)
                 .block();
@@ -57,7 +60,8 @@ public class UserContactController {
                                                        @PathVariable String type,
                                                        @PathVariable Long id,
                                                        @RequestParam boolean active) {
-        Long cleanUserId = Long.parseLong(authenticatedUserId);
+        // Safely parse the shared cross-domain authentication index into a system UUID
+        UUID cleanUserId = UUID.fromString(authenticatedUserId);
 
         return userContactService.updateContactStatus(cleanUserId, type, id, active)
                 .block();
@@ -70,7 +74,7 @@ public class UserContactController {
     public ContactResponseDto deleteContact(@AuthenticationPrincipal String authenticatedUserId,
                                             @PathVariable String type,
                                             @PathVariable Long id) {
-        Long cleanUserId = Long.parseLong(authenticatedUserId);
+        UUID cleanUserId = UUID.fromString(authenticatedUserId);
 
         return userContactService.deleteUserContact(cleanUserId, type, id)
                 .block();

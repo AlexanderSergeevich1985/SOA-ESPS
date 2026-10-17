@@ -1,13 +1,14 @@
 package com.soaesps.notifications.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import com.soaesps.core.config.BaseKafkaConsumerConfig;
 import com.soaesps.core.Utils.CryptoHelper;
 import com.soaesps.core.component.aggregator.CorrelationStrategyI;
 import com.soaesps.core.component.aggregator.ReleaseStrategyI;
 import com.soaesps.notifications.dto.InboundNotificationEvent;
 import com.soaesps.notifications.component.InboundNotificationFilter;
-import com.soaesps.notifications.grpc.notification.NotificationRequest;
+import com.soaesps.notifications.grpc.service.NotificationRequest;
 
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.jetbrains.annotations.NotNull;
@@ -31,6 +32,7 @@ import org.springframework.integration.kafka.outbound.KafkaProducerMessageHandle
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
+import org.springframework.messaging.MessagingException;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -178,7 +180,7 @@ public class IntegrationConfiguration {
     // =========================================================================
 
     // Channel for incoming gRPC requests
-    @Bean(IntegrationConstant.GRPC_INPUT_CHANNEL)
+    @Bean(IntegrationConstant.GRPC_NOTIFY_INPUT_CHANNEL)
     public MessageChannel grpcNotificationInputChannel() {
         return new DirectChannel(); // Use ExecutorChannel if asynchronous input is required
     }
@@ -190,7 +192,7 @@ public class IntegrationConfiguration {
 
     @Bean
     public IntegrationFlow grpcInboundFlow(InboundNotificationFilter filter) {
-        return IntegrationFlow.from(IntegrationConstant.GRPC_INPUT_CHANNEL)
+        return IntegrationFlow.from(IntegrationConstant.GRPC_NOTIFY_INPUT_CHANNEL)
                 .transform(this::mapGrpcToInboundEvent)
                 .filter(
                         filter::isNotificationTypeSupported,
@@ -205,9 +207,11 @@ public class IntegrationConfiguration {
         try {
             // Extract gRPC request even if wrapped in a Spring Integration Message container
             NotificationRequest request = getNotificationRequest(payload);
+            String templateName = request.getNotificationDetails().getTemplateName();
+            Map<String, String> templatePayload = request.getNotificationDetails().getTemplatePayloadMap();
 
             // Extract and parse the nested raw JSON string into a dynamic parameters Map
-            String jsonPayload = request.getPayloadJson();
+            String jsonPayload = request.getNotificationDetails().getTemplateName();
             Map<String, Object> parsedParameters = new HashMap<>();
 
             if (!jsonPayload.isEmpty() && !jsonPayload.equals("{}")) {
@@ -224,12 +228,12 @@ public class IntegrationConfiguration {
             return new InboundNotificationEvent(
                     UUID.randomUUID().toString(),            // notificationId
                     null,                                              // userId (can be parsed from recipient if needed)
-                    request.getTemplateName(),                         // notificationType (mapped from templateName)
+                    "",//request.getTemplateName(),                         // notificationType (mapped from templateName)
                     parsedParameters                                   // parameters (dynamic data for templates)
             );
         } catch (Exception e) {
             //log.error("Critical mapping failure occurred inside mapGrpcToInboundEvent processing node!", e);
-            throw new org.springframework.messaging.MessagingException("Pipeline transformation mapping error: " + e.getMessage(), e);
+            throw new MessagingException("Pipeline transformation mapping error: " + e.getMessage(), e);
         }
     }
 

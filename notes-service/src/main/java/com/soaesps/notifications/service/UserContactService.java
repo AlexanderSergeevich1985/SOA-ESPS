@@ -5,14 +5,19 @@ import com.soaesps.notifications.dto.ContactResponseDto;
 import com.soaesps.notifications.dto.UserContactsProfileSummary;
 import com.soaesps.notifications.domain.reactive.*;
 import com.soaesps.notifications.repository.reactive.*;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 /**
@@ -46,7 +51,7 @@ public class UserContactService {
     // =========================================================================
 
     @Transactional
-    public Mono<ContactResponseDto> processContactRegistration(Long userId, ContactRegistrationRequest request) {
+    public Mono<ContactResponseDto> processContactRegistration(UUID userId, ContactRegistrationRequest request) {
         return Mono.defer(() -> {
             String channelType = request.type().toUpperCase();
             log.info("[Service-Create] Registering contact route '{}' for userId: {}", channelType, userId);
@@ -56,14 +61,14 @@ public class UserContactService {
                     String phone = request.meta().get("phoneNumber");
                     validateRegexp(phone, PHONE_PATTERN, "Malformed E.164 phone layout configuration format");
                     var smsRow = new SmsContactRow(null, userId, "SMS", true, request.primary(), LocalDateTime.now(), phone);
-                    yield smsContactRepository.save(smsRow)
+                    yield smsContactRepository.saveWithUser(smsRow)
                             .map(saved -> new ContactResponseDto(saved.id(), "SMS", "SUCCESS", "Phone routing registration finalized."));
                 }
                 case "EMAIL" -> {
                     String email = request.meta().get("emailAddress");
                     validateRegexp(email, EMAIL_PATTERN, "Invalid structural localized email parameters provided");
                     var emailRow = new EmailContactRow(null, userId, "EMAIL", true, request.primary(), LocalDateTime.now(), email);
-                    yield emailContactRepository.save(emailRow)
+                    yield emailContactRepository.saveWithUser(emailRow)
                             .map(saved -> new ContactResponseDto(saved.id(), "EMAIL", "SUCCESS", "Email identity routing synchronized."));
                 }
                 case "TELEGRAM" -> {
@@ -74,7 +79,7 @@ public class UserContactService {
                     }
                     String cleanUsername = (username != null) ? username : "";
                     var tgRow = new TelegramContactRow(null, userId, "TELEGRAM", true, request.primary(), LocalDateTime.now(), chatId, cleanUsername);
-                    yield telegramContactRepository.save(tgRow)
+                    yield telegramContactRepository.saveWithUser(tgRow)
                             .map(saved -> new ContactResponseDto(saved.id(), "TELEGRAM", "SUCCESS", "Telegram authentication tunnel established."));
                 }
                 case "PUSH" -> {
@@ -87,7 +92,7 @@ public class UserContactService {
                     if (deviceType == null || deviceType.isBlank()) yield Mono.error(new IllegalArgumentException("Missing targeting architectural flag 'deviceType'"));
 
                     var pushRow = new PushContactRow(null, userId, "PUSH", true, request.primary(), LocalDateTime.now(), token, deviceId, deviceType.toUpperCase());
-                    yield pushContactRepository.save(pushRow)
+                    yield pushContactRepository.saveWithUser(pushRow)
                             .map(saved -> new ContactResponseDto(saved.id(), "PUSH", "SUCCESS", "Mobile device FCM broadcast key linked successfully."));
                 }
                 default -> Mono.error(new IllegalArgumentException("Unsupported message dispatch target communication channel type: " + channelType));
@@ -96,10 +101,32 @@ public class UserContactService {
     }
 
     // =========================================================================
+    // EXPORT METHOD FOR BATCH gRPC REGISTRATION
+    // =========================================================================
+
+    /**
+     * Iterates over a collection of contact registrations, reusing the HTTP logic for each.
+     *
+     * @param userId   the system-wide user identity
+     * @param requests the collection of inbound contact details from gRPC stream
+     * @return a Flux emitting responses for each successfully persisted channel
+     */
+    public Flux<ContactResponseDto> processBatchContactRegistration(UUID userId, List<ContactRegistrationRequest> requests) {
+        if (requests == null || requests.isEmpty()) {
+            return Flux.empty();
+        }
+
+        // Convert the list into a reactive stream and process each via your existing HTTP service method
+        return Flux.fromIterable(requests)
+                .flatMap(request -> this.processContactRegistration(userId, request));
+    }
+
+
+    // =========================================================================
     // READ OPERATOR (Consolidated Pipeline Profiling)
     // =========================================================================
 
-    public Mono<UserContactsProfileSummary> fetchUserProfileSummary(Long userId) {
+    public Mono<UserContactsProfileSummary> fetchUserProfileSummary(UUID userId) {
         log.debug("[Service-Read] Asynchronously gathering multi-endpoint metadata matrices for user: {}", userId);
 
         // Все 4 запроса выполнятся параллельно (concurrently), так как Mono.zip подпишется на них одновременно
@@ -130,7 +157,7 @@ public class UserContactService {
     // =========================================================================
 
     @Transactional
-    public Mono<ContactResponseDto> updateContactStatus(Long userId, String type, Long contactId, boolean activeState) {
+    public Mono<ContactResponseDto> updateContactStatus(UUID userId, String type, Long contactId, boolean activeState) {
         return Mono.defer(() -> {
             log.info("[Service-Update] Altering status state onto {} for contact ID [{}] matching user {}", type, contactId, userId);
 
@@ -181,7 +208,7 @@ public class UserContactService {
     // =========================================================================
 
     @Transactional
-    public Mono<ContactResponseDto> deleteUserContact(Long userId, String type, Long contactId) {
+    public Mono<ContactResponseDto> deleteUserContact(UUID userId, String type, Long contactId) {
         return Mono.defer(() -> {
             log.warn("[Service-Delete] Initiating full physical row deletion for channel [{}] ID [{}] mapped under user {}", type, contactId, userId);
 
@@ -221,8 +248,8 @@ public class UserContactService {
         }
     }
 
-    private void validateRowOwnership(Object row, Long requestingUserId, Long targetContactId) {
-        Long genuineOwnerId = switch (row) {
+    private void validateRowOwnership(Object row, UUID requestingUserId, Long targetContactId) {
+        UUID genuineOwnerId = switch (row) {
             case SmsContactRow sms -> sms.userId();
             case EmailContactRow email -> email.userId();
             case TelegramContactRow tg -> tg.userId();
